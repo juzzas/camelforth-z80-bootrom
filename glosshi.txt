@@ -181,4 +181,5 @@ UD/MOD ud1 u2 -- u3 ud4          32/16->32 divide
 UINIT  -- addr       initial values for user area
 UMAX   u1 u2 -- u                unsigned maximum
 UMIN   u1 u2 -- u                unsigned minimum
+WARM   --                 warm start Forth system
 

@@ -672,7 +672,7 @@ INTER9: DW DROP,EXIT
     head(QUIT,QUIT,docolon)
         DW L0,LP,STORE
         DW R0,RPSTORE,lit,0,STATE,STORE
-QUIT1:  DW TIB,DUP,TIBSIZE,CPMACCEPT,SPACE
+QUIT1:  DW TIB,DUP,TIBSIZE,ACCEPT,SPACE
         DW INTERPRET
         DW STATE,FETCH,ZEROEQUAL,qbranch,QUIT2
         DW CR,XSQUOTE
@@ -1070,7 +1070,16 @@ tdiv1:
     head(COLD,COLD,docolon)
         DW UINIT,U0,NINIT,CMOVE
         DW XSQUOTE
-        DB 35,"Z80 CamelForth v1.01  25 Jan 1995"
+        DB 35,"Z80 CamelForth v1.02  25 Jan 1995"
+        DB 0dh,0ah
+        DW TYPE,ABORT       ; ABORT never returns
+
+;Z WARM     --      warm start Forth system
+;   ." Z80 CamelForth etc."
+;   ABORT ;
+    head(WARM,WARM,docolon)
+        DW XSQUOTE
+        DB 47,"Z80 CamelForth v1.02  25 Jan 1995 (warmstart)"
         DB 0dh,0ah
         DW TYPE,ABORT       ; ABORT never returns
 

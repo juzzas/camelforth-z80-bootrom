@@ -57,6 +57,12 @@
 ; IMMED defines a header for an IMMEDIATE word.
 ;
 
+INCLUDE "rc2014.inc"
+
+SECTION main_code
+PUBLIC main_code_start
+PUBLIC main_code_warmstart
+
 
 define(link, 0)
 define(head, `
@@ -103,9 +109,18 @@ define(ex_sp_de, `
 
 ; RESET AND INTERRUPT VECTORS ===================
 
-; RC2014 Entry point
-        org $9000
-reset:  ld hl,$fc00
+; RC2014 Entry points
+  
+main_code_start:
+        ld a, 0
+        jp main_code_init
+        
+main_code_warmstart:
+        ld a, 1
+        jp main_code_init
+        
+main_code_init:
+        ld hl,$fc00
         dec h        ; EM-100h
         ld sp,hl     ;      = top of param stack
         inc h        ; EM
@@ -116,7 +131,11 @@ reset:  ld hl,$fc00
         push hl
         pop iy       ;      = bottom of user area
         ld de,1      ; do reset if COLD returns
-        jp COLD      ; enter top-level Forth word
+        
+        or a
+        jp z, COLD
+        jp WARM
+        
 
 ; Memory map:
 ;   0080h       Terminal Input Buffer, 128 bytes
@@ -251,48 +270,41 @@ dodoes: ; -- a-addr
 
 ; TERMINAL I/O ==================================
 
-;C API1     a c -- a  execute API function
-    head(API1,API1,docode)
-        ex de,hl
-        ex (sp),hl     ; parameter A is in L, DE in TOS
-        ld a,l
-        rst $30
-        ld b,0
-        ld c,a
 
-        pop de
-        next
-
-;C API2     de a c -- a  execute API function
-    head(API2,AP2,docode)
-        pop hl
-        ld a,l
-        ex_sp_de
-        rst $30
-        ld b,0
-        ld c,a
-        pop de
-        next
-
+        
 ;C EMIT     c --    output character to console
 ;   6 BDOS DROP ;
 ; warning: if c=0ffh, will read one keypress
-    head(EMIT,EMIT,docolon)
-        DW lit,2,API1,DROP,EXIT
+    head(EMIT,EMIT,docode)
+        ld a,c
+        rst 0x08 
+        ;pop hl
+        pop bc
+        next
 
 ;X KEY?     -- f    return true if char waiting
 ;   0FF 6 BDOS DUP SAVEKEY C! ;   rtns 0 or key
 ; must use BDOS function 6 to work with KEY
-    head(QUERYKEY,KEY?,docolon)
-        DW lit,0,EXIT
+    head(QUERYKEY,KEY?,docode)
+        push bc
+        rst 0x18
+        ld c,a
+        ld b,0
+        next
+        
 
 ;C KEY      -- c    get character from keyboard
 ;   BEGIN SAVEKEY C@ 0= WHILE KEY? DROP REPEAT
 ;   SAVEKEY C@  0 SAVEKEY C! ;
 ; must use CP/M direct console I/O to avoid echo
 ; (BDOS function 6, contained within KEY?)
-    head(KEY,KEY,docolon)
-        DW lit,0,lit,1,API1,EXIT
+    head(KEY,KEY,docode)
+        push bc
+        rst 0x10
+        ld c,a
+        ld b,0
+        ;push bc
+        next
 
 dnl ;Z CPMACCEPT  c-addr +n -- +n'  get line of input
 dnl ;   SWAP 2 - TUCK C!      max # of characters
@@ -301,7 +313,8 @@ dnl ;   1+ C@  0A EMIT ;      get returned count
 dnl ; Note: requires the two locations before c-addr
 dnl ; to be available for use.
     head(CPMACCEPT,CPMACCEPT,docolon)
-        DW lit,4,API2,EXIT
+        ; DW lit,4,API2,EXIT
+        DW EXIT
 
 ;X BYE     i*x --    return to CP/M
     head(BYE,BYE,docode)
@@ -1030,4 +1043,4 @@ include(camel80d.asm.m4)   ; CPU Dependencies
 include(camel80h.asm.m4)   ; High Level words
 
         defc lastword=link       ; nfa of last word in dict.
-        defc enddict=asmpc       ; user's code starts here
+        defc enddict=0x9000 ;WRKSPC       ; user's code starts here
