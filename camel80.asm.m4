@@ -57,9 +57,8 @@
 ; IMMED defines a header for an IMMEDIATE word.
 ;
 
-INCLUDE "rc2014.inc"
+SECTION code_user
 
-SECTION main_code
 PUBLIC main_code_start
 PUBLIC main_code_warmstart
 
