@@ -3,3 +3,4 @@ rom_rst.asm
 asm_acia.asm
 main.asm
 camel80.asm.m4
+hexload.asm

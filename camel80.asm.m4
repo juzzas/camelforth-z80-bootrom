@@ -119,7 +119,7 @@ main_code_warmstart:
         jp main_code_init
         
 main_code_init:
-        ld hl,$fc00
+        ld hl,$8c00
         dec h        ; EM-100h
         ld sp,hl     ;      = top of param stack
         inc h        ; EM
@@ -302,18 +302,7 @@ dodoes: ; -- a-addr
         rst 0x10
         ld c,a
         ld b,0
-        ;push bc
         next
-
-dnl ;Z CPMACCEPT  c-addr +n -- +n'  get line of input
-dnl ;   SWAP 2 - TUCK C!      max # of characters
-dnl ;   DUP 0A BDOS DROP      CP/M Get Console Buffer
-dnl ;   1+ C@  0A EMIT ;      get returned count
-dnl ; Note: requires the two locations before c-addr
-dnl ; to be available for use.
-    head(CPMACCEPT,CPMACCEPT,docolon)
-        ; DW lit,4,API2,EXIT
-        DW EXIT
 
 ;X BYE     i*x --    return to CP/M
     head(BYE,BYE,docode)
@@ -1040,6 +1029,7 @@ snext:  next
 
 include(camel80d.asm.m4)   ; CPU Dependencies
 include(camel80h.asm.m4)   ; High Level words
+include(camel80r.asm.m4)   ; RC2014 extensions
 
         defc lastword=link       ; nfa of last word in dict.
         defc enddict=0x9000 ;WRKSPC       ; user's code starts here

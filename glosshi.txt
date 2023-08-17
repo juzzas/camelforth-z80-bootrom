@@ -153,6 +153,7 @@ document.  Others are functions I find useful.
                 -- c-addr 0      if convert error
 ?SIGN  adr n -- adr' n' f       get optional sign
      advance adr/n if sign; return NZ if negative
+CALL   a-addr --        call machine code routine
 CELL   -- n                      size of one cell
 COLD   --                 cold start Forth system
 COMPILE --          append inline execution token
@@ -160,6 +161,7 @@ DIGIT? c -- n -1          ..if c is a valid digit
          -- x  0          ..otherwise
 DP     -- a-addr             holds dictionary ptr
 ENDLOOP  adrs xt --   L: 0 a1 a2 .. aN --
+HEXLOAD  --            load Intel hex file to RAM
 HIDE   --                "hide" latest definition
 HP     -- a-addr                     HOLD pointer
 IMMED?  nfa -- f             fetch immediate flag
