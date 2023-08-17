@@ -45,7 +45,7 @@
 ;  HEX 82 CONSTANT TIB   CP/M systems: 126 bytes
 ;  HEX -80 USER TIB      others: below user area
     head(TIB,TIB,docon)
-        dw $e000
+        dw $8800
 
 ;Z u0      -- a-addr       current user area adrs
 ;  0 USER U0
