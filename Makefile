@@ -8,8 +8,10 @@ TARGET=camel80
 all: $(TARGET)
 
 clean:
-	rm -f *.o $(TARGET_BIN)
+	rm -f *.o $(TARGET)
 	rm -f .o *.lis *.map *.ihx *.bin
+	rm -f build/*
 
 $(TARGET):
-	zcc +embedded -startup=1 -clib=sdcc_iy ${CFLAGS} -pragma-include:zpragma.inc @camel80.lst -o camel80 -create-app
+	mkdir -p build
+	zcc +embedded -startup=1 -clib=sdcc_iy ${CFLAGS} -pragma-include:zpragma.inc @camel80.lst -o build/camel80 -create-app
