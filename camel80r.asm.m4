@@ -46,13 +46,34 @@ EXTERN _hexload
         
 ;C CALL       a-addr --    call machine code at address
     head(CALL,CALL,docode)
-        ld hl, call_exit
+        push ix
+        push iy
+        push hl
+        push de
+
+        ; protect against some stack abuse
+        ld (call_stack_save), sp
+
+        ld hl, call_exit  ; return address
         push hl
         ld h,b
         ld l,c
         jp (hl)
+
 call_exit:
-        jp main_code_warmstart
-        
-        
-        
+        ld sp, (call_stack_save)
+        pop de
+        pop hl
+        pop iy
+        pop ix
+
+        pop bc   ; DROP the address from TOS
+        next
+
+
+SECTION data_user
+
+call_stack_save:
+        DEFW  call_stack_save
+
+SECTION code_user
