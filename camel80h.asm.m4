@@ -312,6 +312,7 @@ UMAX1:  DW DROP,EXIT
 ;   BEGIN KEY           -- sa ea a c
 ;   DUP 0D <> WHILE
 ;       DUP EMIT        -- sa ea a c
+;       DUP 8 = IF  BL EMIT 8 EMIT   THEN
 ;       DUP 8 = IF  DROP 1-    >R OVER R> UMAX
 ;             ELSE  OVER C! 1+ OVER UMIN
 ;       THEN            -- sa ea a
@@ -320,7 +321,10 @@ UMAX1:  DW DROP,EXIT
     head(ACCEPT,ACCEPT,docolon)
         DW OVER,PLUS,ONEMINUS,OVER
 ACC1:   DW KEY,DUP,lit,0DH,NOTEQUAL,qbranch,ACC5
-        DW DUP,EMIT,DUP,lit,8,EQUAL,qbranch,ACC3
+        DW DUP,EMIT
+        DW DUP,lit,8,EQUAL,qbranch,ACC2
+        DW BL,EMIT,lit,8,EMIT
+ACC2:   DW DUP,lit,8,EQUAL,qbranch,ACC3
         DW DROP,ONEMINUS,TOR,OVER,RFROM,UMAX
         DW branch,ACC4
 ACC3:   DW OVER,CSTORE,ONEPLUS,OVER,UMIN
