@@ -299,10 +299,35 @@ dodoes: ; -- a-addr
 ; (BDOS function 6, contained within KEY?)
     head(KEY,KEY,docode)
         push bc
+
+KEY_loop:
         rst 0x10
+
+        ; convert DOS and Unix line-endings to CR keypress
+        cp 10
+        jr z, KEY_handle_lf
+        ld (last_key), a
+
+        jr KEY_end
+
+KEY_handle_lf:
+        ld a, (last_key)  ; is DOS line-ending?
+        cp 13
+        jr z, KEY_loop
+
+        ld (last_key), a  ; must be Unix-line-ending
+        ld a, 13
+        jr KEY_end
+
+KEY_end:
         ld c,a
         ld b,0
         next
+
+SECTION data_user
+last_key: db 0
+SECTION code_user
+
 
 ;X BYE     i*x --    return to CP/M
     head(BYE,BYE,docode)
