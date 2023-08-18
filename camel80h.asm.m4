@@ -676,7 +676,7 @@ QUIT1:  DW TIB,DUP,TIBSIZE,ACCEPT,SPACE
         DW INTERPRET
         DW STATE,FETCH,ZEROEQUAL,qbranch,QUIT2
         DW CR,XSQUOTE
-        DB 3,"ok "
+        DB 4,"OK",13,10
         DW TYPE
 QUIT2:  DW branch,QUIT1
 
