@@ -93,7 +93,6 @@ document.  Others are functions I find useful.
                           run-time code for +LOOP
 ><     x1 -- x2                        swap bytes 
 ?branch  x --                  branch if TOS zero
-BDOS   DE C -- A                   call CP/M BDOS
 branch --                           branch always
 lit    -- x         fetch inline literal to stack
 PC!    c p-addr --            output char to port
