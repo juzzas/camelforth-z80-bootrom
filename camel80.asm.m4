@@ -119,7 +119,7 @@ main_code_warmstart:
         jp main_code_init
         
 main_code_init:
-        ld hl,$8c00
+        ld hl,$8800
         dec h        ; EM-100h
         ld sp,hl     ;      = top of param stack
         inc h        ; EM
@@ -137,15 +137,18 @@ main_code_init:
         
 
 ; Memory map:
-;   0080h       Terminal Input Buffer, 128 bytes
-;   0100h       Forth kernel = start of CP/M TPA
-;     ? h       Forth dictionary (user RAM)
+;   8000h       ACIA buffers
+;   8200h       ACIA buffers
+;   8400h       Terminal Input Buffer, 128 bytes
 ;   EM-200h     User area, 128 bytes
 ;   EM-180h     Parameter stack, 128B, grows down
 ;   EM-100h     HOLD area, 40 bytes, grows down
 ;   EM-0D8h     PAD buffer, 88 bytes
 ;   EM-80h      Return stack, 128 B, grows down
-;   EM          End of RAM = start of CP/M BDOS
+;   EM=87ffh    End of RAM workspace
+;   8800h       Forth kernel = start of CP/M TPA
+;     ? h       Forth dictionary (user RAM)
+;   FFFFh       Top of RAM
 ; See also the definitions of U0, S0, and R0
 ; in the "system variables & constants" area.
 ; A task w/o terminal input requires 200h bytes.
@@ -1057,4 +1060,4 @@ include(camel80h.asm.m4)   ; High Level words
 include(camel80r.asm.m4)   ; RC2014 extensions
 
         defc lastword=link       ; nfa of last word in dict.
-        defc enddict=0x9000 ;WRKSPC       ; user's code starts here
+        defc enddict=0x8800 ;WRKSPC       ; user's code starts here

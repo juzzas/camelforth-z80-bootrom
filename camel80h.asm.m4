@@ -39,13 +39,13 @@
 
 ;Z tibsize  -- n         size of TIB
     head(TIBSIZE,TIBSIZE,docon)
-        dw 124          ; 2 chars safety zone
+        dw 252          ; 2 chars safety zone
 
 ;X tib     -- a-addr     Terminal Input Buffer
 ;  HEX 82 CONSTANT TIB   CP/M systems: 126 bytes
 ;  HEX -80 USER TIB      others: below user area
     head(TIB,TIB,docon)
-        dw $8800
+        dw $8400
 
 ;Z u0      -- a-addr       current user area adrs
 ;  0 USER U0
