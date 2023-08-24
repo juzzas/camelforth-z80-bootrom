@@ -76,6 +76,11 @@ This is a simple Forth program that print `RC2014` in random positions on the te
 This file contains a number of Forth words that are used to control the terminal, (such as CLS, AT, INK, PAPER) and a
 simple RANDOM number generator.
 
+Use `RUN80` to run the demo if you're using the RC2014 Pico VGA module in 80 column, or a terminal emulator. (The Pico
+VGA module with ignore the colour commands.)
+
+Use `RUN40` to run the demo if you're using the RC2014 Pico VGA module in 40 column colour.
+
 ## blink.fth
 
 This is a simple Forth program that will blink the LED on the RC2014.
