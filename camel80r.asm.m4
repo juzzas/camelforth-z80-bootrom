@@ -46,13 +46,17 @@ EXTERN _hexload
         
 ;C CALL       a-addr --    call machine code at address
     head(CALL,CALL,docode)
+        ; protect against some stack abuse
+        ld (forth_stack_save), sp
+        ld sp, forth_state_stack_top
         push ix
         push iy
         push hl
         push de
+        ld (forth_state_stack_save), sp
 
-        ; protect against some stack abuse
-        ld (call_stack_save), sp
+        ; set up user stack
+        ld sp, 0    ; end of RAM
 
         ld hl, call_exit  ; return address
         push hl
@@ -61,19 +65,47 @@ EXTERN _hexload
         jp (hl)
 
 call_exit:
-        ld sp, (call_stack_save)
+        ld sp, (forth_state_stack_save)
         pop de
         pop hl
         pop iy
         pop ix
 
-        pop bc   ; DROP the address from TOS
+        ld sp, (forth_stack_save)
+        pop bc   ; DROP the address from TOS and fill BC with new TOS
         next
 
+PUBLIC forth_push
+forth_push:
+        ld (user_stack_save), sp
+        ld sp, (forth_stack_save)
+        push de
+        ld (forth_stack_save), sp
+        ld sp, (user_stack_save)
+        ret
+
+PUBLIC forth_pop
+forth_pop:
+        ld (user_stack_save), sp
+        ld sp, (forth_stack_save)
+        pop de
+        ld (forth_stack_save), sp
+        ld sp, (user_stack_save)
+        ret
 
 SECTION data_user
 
-call_stack_save:
-        DEFW  call_stack_save
+forth_stack_save:
+        DEFW  0
+
+user_stack_save:
+        DEFW  0
+
+forth_state_stack:
+        DEFS 16
+forth_state_stack_top:
+
+forth_state_stack_save:
+        DEFW  0
 
 SECTION code_user

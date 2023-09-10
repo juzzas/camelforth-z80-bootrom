@@ -43,6 +43,10 @@ EXTERN acia_putc
 EXTERN acia_getc
 EXTERN acia_pollc
 
+EXTERN forth_push
+EXTERN forth_pop
+
+
 
 SECTION code_user
 
@@ -61,6 +65,13 @@ PUBLIC _z80_rst_18h
 _z80_rst_18h:
     jp acia_pollc
 
+PUBLIC _z80_rst_20h
+_z80_rst_20h:
+    jp forth_push
+
+PUBLIC _z80_rst_28h
+_z80_rst_28h:
+    jp forth_pop
 
 PUBLIC _z80_rst_38h
 _z80_rst_38h:
