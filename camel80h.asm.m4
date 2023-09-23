@@ -671,7 +671,7 @@ INTER9: DW DROP,EXIT
 ;   BEGIN
 ;       TIB DUP TIBSIZE ACCEPT  SPACE
 ;       INTERPRET
-;       STATE @ 0= IF CR ." OK" THEN
+;       STATE @ 0= IF ."  OK" CR THEN
 ;   AGAIN ;
     head(QUIT,QUIT,docolon)
         DW L0,LP,STORE
@@ -679,9 +679,9 @@ INTER9: DW DROP,EXIT
 QUIT1:  DW TIB,DUP,TIBSIZE,ACCEPT,SPACE
         DW INTERPRET
         DW STATE,FETCH,ZEROEQUAL,qbranch,QUIT2
-        DW CR,XSQUOTE
-        DB 4,"OK",13,10
-        DW TYPE
+        DW XSQUOTE
+        DB 3," OK"
+        DW TYPE,CR
 QUIT2:  DW branch,QUIT1
 
 ;C ABORT    i*x --   R: j*x --   clear stk & QUIT
