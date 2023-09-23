@@ -50,6 +50,6 @@ SECTION rodata_user
 
 signon_msg:
     DEFM 13, 10
-    DEFM "RC2014 - CamelForth BootROM - v20230819", 13, 10
+    DEFM "RC2014 - CamelForth BootROM - DEV", 13, 10
     DEFM "Ported to RC2014 ROM by Justin Skists", 13, 10, 0
 
