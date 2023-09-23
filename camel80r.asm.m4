@@ -34,16 +34,6 @@
 
 EXTERN _hexload
 
-;C HEXLOAD           --    call Hexloader
-    head(HEXLOAD,HEXLOAD,docode)
-        push bc
-        push de
-        call _hexload
-        pop de
-        pop bc
-        next
-        
-        
 ;C CALL       a-addr --    call machine code at address
     head(CALL,CALL,docode)
         ; protect against some stack abuse
@@ -109,3 +99,11 @@ forth_state_stack_save:
         DEFW  0
 
 SECTION code_user
+
+; ===============================================
+
+;C HEXLOAD           --    call Hexloader
+    head(HEXLOAD,HEXLOAD,docolon)
+        dw lit,_hexload,CALL
+        dw EXIT
+
