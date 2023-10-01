@@ -13,9 +13,9 @@
 ORG 0xf000
 
 start:
-    rst 0x28  ; fetch TOS to DE
-    ld a, d   ; swap D with E
-    ld d, e
-    ld e, a
-    rst 0x20  ; push de onto forth stack
+    rst 0x28  ; fetch TOS to BC
+    ld a, b   ; swap B with C
+    ld b, c
+    ld c, a
+    rst 0x20  ; push BC onto forth stack
     ret

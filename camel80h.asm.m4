@@ -92,6 +92,31 @@
     head(LP,LP,douser)
         dw 18
 
+;Z BLK      -- a-addr     block number storage
+;  20 USER BLK
+    head(BLK,BLK,douser)
+        dw 20
+
+;Z DSK      -- a-addr     disk number storage
+;  22 USER DSK
+    head(DSK,DSK,douser)
+        dw 22
+
+;Z BLKBUFFER    -- a-addr  1024byte block buffer
+;  24 USER BLKBUFFER
+    head(BLKBUFFER,BLKBUFFER,douser)
+        dw 24
+
+;Z BLKUPDATE    -- a-addr  block update flag storage
+;  26 USER BLKUPDATE
+    head(BLKUPDATE,BLKUPDATE,douser)
+        dw 26
+
+;Z SCR          -- a-addr  last edited screen number
+;  28 USER SCR
+    head(SCR,SCR,douser)
+        dw 28
+
 ;Z s0       -- a-addr     end of parameter stack
     head(S0,S0,douser)
         dw 100h
@@ -116,10 +141,16 @@
         DW 0,0          ; SOURCE init'd elsewhere
         DW lastword     ; LATEST
         DW 0            ; HP init'd elsewhere
+        DW 0            ; LP init'd elsewhere
+        DW 65535        ; BLK
+        DW 0            ; DSK
+        DW 0xf800            ; BLKBUFFER
+        DW 0            ; BLKUPDATE
+        DW 0            ; SCR
 
 ;Z #init    -- n    #bytes of user area init data
     head(NINIT,``#INIT'',docon)
-        DW 18
+        DW 30
 
 ; ARITHMETIC OPERATORS ==========================
 

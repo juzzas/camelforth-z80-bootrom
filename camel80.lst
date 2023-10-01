@@ -4,3 +4,4 @@ asm_acia.asm
 main.asm
 camel80.asm.m4
 hexload.asm
+asm_cflash.asm

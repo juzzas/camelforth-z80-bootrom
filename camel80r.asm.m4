@@ -34,7 +34,10 @@
 
 EXTERN _hexload
 
-;C CALL       a-addr --    call machine code at address
+EXTERN cflash_read_block
+EXTERN cflash_write_block
+
+;Z CALL       a-addr --    call machine code at address
     head(CALL,CALL,docode)
         ; protect against some stack abuse
         ld (forth_stack_save), sp
@@ -65,20 +68,25 @@ call_exit:
         pop bc   ; DROP the address from TOS and fill BC with new TOS
         next
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; forth_push --  push BC onto the forth stack
 PUBLIC forth_push
 forth_push:
         ld (user_stack_save), sp
         ld sp, (forth_stack_save)
-        push de
+        push bc
         ld (forth_stack_save), sp
         ld sp, (user_stack_save)
         ret
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; forth_push --  pop BC from the forth stack
 PUBLIC forth_pop
 forth_pop:
         ld (user_stack_save), sp
         ld sp, (forth_stack_save)
-        pop de
+        pop bc
         ld (forth_stack_save), sp
         ld sp, (user_stack_save)
         ret
@@ -102,8 +110,27 @@ SECTION code_user
 
 ; ===============================================
 
-;C HEXLOAD           --    call Hexloader
+;X HEXLOAD           --    call Hexloader
     head(HEXLOAD,HEXLOAD,docolon)
         dw lit,_hexload,CALL
         dw EXIT
 
+; ===============================================
+;Z BLOCK-READ  --  Compact Flash read block  BLK and DSK
+; Reads the block from the Compact Flash card into memory
+; address found at 'adrs'. 'dks' and 'blk' are the disk
+; and block numbers respectively
+    head(BLOCK_READ,BLOCK-READ,docolon)
+        dw DSK,FETCH,BLK,FETCH,BLKBUFFER,FETCH
+        dw lit,cflash_read_block,CALL
+        dw EXIT
+
+; ===============================================
+;Z BLOCK-WRITE  --  Compact Flash read write BLK and DSK
+; Reads the block from the Compact Flash card into memory
+; address found at 'adrs'. 'dks' and 'blk' are the disk
+; and block numbers respectively
+    head(BLOCK_WRITE,BLOCK-WRITE,docolon)
+        dw DSK,FETCH,BLK,FETCH,BLKBUFFER,FETCH
+        dw lit,cflash_write_block,CALL
+        dw EXIT

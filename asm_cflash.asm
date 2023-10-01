@@ -6,6 +6,8 @@
 ; March 2018
 ;
 
+SECTION     code_user
+
 defc __IO_CF_IDE_DATA = 0x10
 defc __IO_CF_IDE_ERROR = 0x11
 defc __IO_CF_IDE_FEATURE = 0x11
@@ -33,29 +35,23 @@ defc __IDE_CMD_ID = 0xEC
 defc __IDE_CMD_FEATURE = 0xEF
 
 
-ORG 0xf000
 
-buffer_ptr:
-    DEFW 0
-
-buffer_blk:
-    DEFW 0
-
-block_read:
-    jp cflash_read_block
-
-block_write:
-    jp cflash_write_block
-
-
+PUBLIC cflash_read_block
 cflash_read_block:
-    ld bc, 0
-    ld de, (buffer_blk)
+    rst 0x28    ; read buffer_ptr from TOS
+    ld hl, bc
+
+    rst 0x28    ; read block number from TOS
+    ld de, bc
+
+    rst 0x28    ; read disk number from TOS to BC
+
+    ; convert disk and block number to LBA
     sla e
     sra d
     sra c
     sra b
-    ld hl, (buffer_ptr)
+
     push bc
     push de
     call ide_read_sector
@@ -65,14 +61,22 @@ cflash_read_block:
     call ide_read_sector
     ret
 
+PUBLIC cflash_write_block
 cflash_write_block:
-    ld bc, 0
-    ld de, (buffer_blk)
+    rst 0x28    ; read buffer_ptr from TOS
+    ld hl, bc
+
+    rst 0x28    ; read block number from TOS
+    ld de, bc
+
+    rst 0x28    ; read disk number from TOS
+
+    ; convert disk and block number to LBA
     sla e
     sra d
     sra c
     sra b
-    ld hl, (buffer_ptr)
+
     push bc
     push de
     call ide_write_sector
