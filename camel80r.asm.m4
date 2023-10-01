@@ -115,7 +115,19 @@ SECTION code_user
         dw lit,_hexload,CALL
         dw EXIT
 
-; ===============================================
+; RC2014 EXTENSION CONSTANTS ====================
+
+;C C/L      -- n         columns per line
+    head(C_L,C/L,docon)
+        dw 64
+
+
+; BLOCK implementation ==========================
+
+;Z BLKFIRST      -- a-adrs      address of first block buffer
+    head(BLKFIRST,BLKFIRST,docon)
+        dw 0x8800
+
 ;Z BLOCK-READ  --  Compact Flash read block  BLK and DSK
 ; Reads the block from the Compact Flash card into memory
 ; address found at 'adrs'. 'dks' and 'blk' are the disk
@@ -125,7 +137,6 @@ SECTION code_user
         dw lit,cflash_read_block,CALL
         dw EXIT
 
-; ===============================================
 ;Z BLOCK-WRITE  --  Compact Flash read write BLK and DSK
 ; Reads the block from the Compact Flash card into memory
 ; address found at 'adrs'. 'dks' and 'blk' are the disk

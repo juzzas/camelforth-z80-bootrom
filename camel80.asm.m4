@@ -146,7 +146,8 @@ main_code_init:
 ;   EM-0D8h     PAD buffer, 88 bytes
 ;   EM-80h      Return stack, 128 B, grows down
 ;   EM=87ffh    End of RAM workspace
-;   8800h       Forth kernel = start of CP/M TPA
+;   8800h       Forth kernel = start of BLOCK buffer
+;   8C00h       end of block buffer
 ;     ? h       Forth dictionary (user RAM)
 ;   FFFFh       Top of RAM
 ; See also the definitions of U0, S0, and R0
@@ -1060,4 +1061,4 @@ include(camel80h.asm.m4)   ; High Level words
 include(camel80r.asm.m4)   ; RC2014 extensions
 
         defc lastword=link       ; nfa of last word in dict.
-        defc enddict=0x8800 ;WRKSPC       ; user's code starts here
+        defc enddict=0x8C00 ;WRKSPC       ; user's code starts here
