@@ -145,3 +145,46 @@ SECTION code_user
         dw DSK,FETCH,BLK,FETCH,BLKBUFFER,FETCH
         dw lit,cflash_write_block,CALL
         dw EXIT
+
+;C BUFFER        n -- addr         push buffer address
+;     BLKFIRST BLKBUFFER !
+;     BLKUPDATE @ IF BLOCK-WRITE  0 BLKUPDATE ! THEN
+;     BLK !
+;     BLKBUFFER @      ( push buffer address ) ;
+    head(BUFFER,BUFFER,docolon)
+        dw BLKFIRST,BLKBUFFER,STORE
+        dw BLKUPDATE,FETCH,qbranch,BUFF1
+        dw BLOCK_WRITE,lit,0,BLKUPDATE,STORE
+BUFF1:
+        dw BLK,STORE
+        dw BLKBUFFER,FETCH
+        dw EXIT
+
+;C BLOCK                    n -- addr    load block
+;     DUP BLK @ = IF
+;       DROP BLKBUFFER @
+;     ELSE
+;       BUFFER BLOCK-READ
+;     THEN ;
+    head(BLOCK,BLOCK,docolon)
+        dw DUP,BLK,FETCH,EQUAL,qbranch,BLOCK1
+        dw DROP,BLKBUFFER,FETCH
+        dw branch,BLOCK2
+BLOCK1:
+        dw BUFFER,BLOCK_READ
+BLOCK2:
+        dw EXIT
+
+;C UPDATE                    --    mark block to update
+;     -1 BLKUPDATE ! ;
+    head(UPDATE,UPDATE,docolon)
+        dw lit,0xffff,BLKUPDATE,STORE
+        dw EXIT
+
+;C FLUSH                    --    flush blocks to disk
+;     BLKUPDATE @ IF BLOCK-WRITE  0 BLKUPDATE ! THEN ;
+    head(FLUSH,FLUSH,docolon)
+        dw BLKUPDATE,FETCH,qbranch,FLUSH1
+        dw BLOCK_WRITE,lit,0,BLKUPDATE,STORE
+FLUSH1:
+        dw EXIT

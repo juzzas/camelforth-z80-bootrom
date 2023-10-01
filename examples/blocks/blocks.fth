@@ -1,19 +1,4 @@
 
-: BUFFER ( n -- addr   push buffer address )
-    BLKFIRST BLKBUFFER !
-    BLKUPDATE @ IF BLOCK-WRITE  0 BLKUPDATE ! THEN
-    BLK !
-    BLKBUFFER @      ( push buffer address ) ;
-
-: BLOCK ( n -- addr    load block )
-    DUP BLK @ = IF DROP BLKBUFFER @ ELSE BUFFER BLOCK-READ THEN ;
-
-: UPDATE ( --    update block )
-    -1 BLKUPDATE ! ;
-
-: FLUSH ( --    flush block )
-    BLKUPDATE @ IF BLOCK-WRITE  0 BLKUPDATE ! THEN ;
-
 : DUMP ( addr n --    dump memory )
     0 DO DUP I + C@ . LOOP ;
 
