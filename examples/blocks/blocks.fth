@@ -12,11 +12,10 @@ DECIMAL
     BLKBUFFER @      ( push buffer address ) ;
 
 : BLOCK ( n -- addr    load block )
-    DUP BLK @ = IF BUFFER EXIT THEN
-    BUFFER BLOCK-READ ;
+    DUP BLK @ = IF DROP BLKBUFFER @ ELSE BUFFER BLOCK-READ THEN ;
 
 : UPDATE ( --    update block )
-    1 BLKUPDATE ! ;
+    -1 BLKUPDATE ! ;
 
 : FLUSH ( --    flush block )
     BLKUPDATE @ IF BLOCK-WRITE  0 BLKUPDATE ! THEN ;
