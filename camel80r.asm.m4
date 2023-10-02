@@ -202,3 +202,48 @@ FLUSH1:
         dw RFROM,BLOCK
         dw EXIT
 
+; RC2014 EXTENSIONS (TERMINAL) ==================
+
+;Z (D.W)         ( d width --   width with leading 0's )
+;    1- DUP 1 < IF DROP 1 THEN <# 0 DO # LOOP #S #> ;
+    head(XDDOTW,(D.W),docolon)
+        dw ONEMINUS,DUP,lit,1,LESS,qbranch,XDDOTW1
+        dw DROP,lit,1
+XDDOTW1:
+        dw LESSNUM,lit,0,xdo
+XDDOTW2:
+        dw NUM,xloop,XDDOTW2
+        dw NUMS,NUMGREATER
+        dw EXIT
+
+;Z (.W)         ( n width --   width with leading 0's )
+;    >R S>D R> (D.W) ;
+    head(XDOTW,(.W),docolon)
+        dw TOR,STOD,RFROM,XDDOTW
+        dw EXIT
+
+;Z .W
+;    (.W) TYPE SPACE ;
+    head(DOTW,.W,docolon)
+        dw XDOTW,TYPE,SPACE
+        dw EXIT
+
+;Z D.R                       ( d width -- right align )
+;    >R SWAP OVER <# #S SIGN #>
+;    R> OVER - SPACES TYPE ;
+    head(DDOTR,D.R,docolon)
+        dw TOR,SWOP,OVER,LESSNUM,NUMS,NUMGREATER
+        dw RFROM,OVER,MINUS,SPACES,TYPE
+        dw EXIT
+
+;Z .R                ( n width -- right align )
+;    >R S>D R> D.R ;
+    head(DOTR,.R,docolon)
+        dw TOR,STOD,RFROM,DDOTR
+        dw EXIT
+
+;Z PRINTABLE?         ( n - flag  is characte printable? )
+;    20 7F WITHIN ;
+    head(PRINTABLEQ,PRINTABLE?,docolon)
+        dw lit,0x20,lit,0x7f,WITHIN
+        dw EXIT
