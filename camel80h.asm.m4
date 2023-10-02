@@ -454,17 +454,27 @@ NUMS1:  DW NUM,TWODUP,OR,ZEROEQUAL,qbranch,NUMS1
         DW ZEROLESS,qbranch,SIGN1,lit,2DH,HOLD
 SIGN1:  DW EXIT
 
-;C U.    u --           display u unsigned
-;   <# 0 #S #> TYPE SPACE ;
+;Z (U.)    u -- c-addr +n   u unsigned to counted string
+;   <# 0 #S #> ;
+    head(XUDOT,(U.),docolon)
+        DW LESSNUM,lit,0,NUMS,NUMGREATER
+        DW EXIT
+
+;C U.    u --               display u unsigned
+;   (U.) TYPE SPACE ;
     head(UDOT,U.,docolon)
-        DW LESSNUM,lit,0,NUMS,NUMGREATER,TYPE
-        DW SPACE,EXIT
+        DW XUDOT,TYPE,SPACE,EXIT
+
+;Z (.)   n -- c-addr +n     n signed to counted string
+;   <# DUP ABS 0 #S ROT SIGN #> ;
+    head(XDOT,(.),docolon)
+        DW LESSNUM,DUP,ABS,lit,0,NUMS
+        DW ROT,SIGN,NUMGREATER,EXIT
 
 ;C .     n --           display n signed
-;   <# DUP ABS 0 #S ROT SIGN #> TYPE SPACE ;
+;   (.) TYPE SPACE ;
     head(DOT,.,docolon)
-        DW LESSNUM,DUP,ABS,lit,0,NUMS
-        DW ROT,SIGN,NUMGREATER,TYPE,SPACE,EXIT
+        DW XDOT,TYPE,SPACE,EXIT
 
 ;C DECIMAL  --      set number base to decimal
 ;   10 BASE ! ;
