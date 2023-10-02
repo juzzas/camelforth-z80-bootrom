@@ -1039,10 +1039,14 @@ WDS1:   DW DUP,COUNT,TYPE,SPACE,NFATOLFA,FETCH
 DOTS1:  DW II,FETCH,UDOT,lit,-2,xplusloop,DOTS1
 DOTS2:  DW EXIT
 
+;C (D.)    d -- c-addr +n      d signed to counted string
+    head(XDDOT,(D.),docolon)
+        DW LESSNUM,DUP,TOR,DABS,NUMS
+        DW RFROM,SIGN,NUMGREATER,EXIT
+
 ;C D.    d --           display d signed
     head(DDOT,D.,docolon)
-        DW LESSNUM,DUP,TOR,DABS,NUMS
-        DW RFROM,SIGN,NUMGREATER,TYPE,SPACE,EXIT
+        DW XDDOT,TYPE,SPACE,EXIT
 
 ;X D+               d1 d2 -- d1+d2              Add double numbers
     head(DPLUS,D+,docode)

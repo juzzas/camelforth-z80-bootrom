@@ -228,11 +228,11 @@ XDDOTW2:
         dw XDOTW,TYPE,SPACE
         dw EXIT
 
-;Z D.R                       ( d width -- right align )
-;    >R SWAP OVER <# #S SIGN #>
+;Z D.R                       ( d width -- right align ) 
+;    >R (D.)
 ;    R> OVER - SPACES TYPE ;
     head(DDOTR,D.R,docolon)
-        dw TOR,SWOP,OVER,LESSNUM,NUMS,NUMGREATER
+        dw TOR,XDDOT
         dw RFROM,OVER,MINUS,SPACES,TYPE
         dw EXIT
 
