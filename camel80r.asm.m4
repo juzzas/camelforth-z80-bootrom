@@ -121,6 +121,9 @@ SECTION code_user
     head(C_L,C/L,docon)
         dw 64
 
+;C B/BLK      -- n       bytes per block
+    head(B_BLK,B/BLK,docon)
+        dw 1024
 
 ; BLOCK implementation ==========================
 
@@ -188,3 +191,18 @@ BLOCK2:
         dw BLOCK_WRITE,lit,0,BLKUPDATE,STORE
 FLUSH1:
         dw EXIT
+
+;C LOAD                  n  --    load block n
+;     BLK @ >R
+;     >IN @ >R
+;     BLOCK B/BLK INTERPRET
+;     R> >IN !
+;     R> BLOCK ;
+    head(LOAD,LOAD,docolon)
+        dw BLK,FETCH,TOR
+        dw TOIN,FETCH,TOR
+        dw BLOCK,B_BLK,INTERPRET
+        dw RFROM,TOIN,STORE
+        dw RFROM,BLOCK
+        dw EXIT
+
