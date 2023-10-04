@@ -194,15 +194,11 @@ FLUSH1:
 
 ;C LOAD                  n  --    load block n
 ;     BLK @ >R
-;     >IN @ >R
 ;     BLOCK B/BLK INTERPRET
-;     R> >IN !
 ;     R> BLOCK ;
     head(LOAD,LOAD,docolon)
         dw BLK,FETCH,TOR
-        dw TOIN,FETCH,TOR
-        dw BLOCK,B_BLK,INTERPRET
-        dw RFROM,TOIN,STORE
+        dw BLOCK,B_BLK,EVALUATE
         dw RFROM,BLOCK
         dw EXIT
 
