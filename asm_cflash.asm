@@ -34,10 +34,16 @@ defc __IDE_CMD_CACHE_FLUSH = 0xE7
 defc __IDE_CMD_ID = 0xEC
 defc __IDE_CMD_FEATURE = 0xEF
 
-
+;CF Features
+defc __CF_8BIT = 0x01
+defc __CF_NOCACHE =	0x82
 
 PUBLIC cflash_read_block
 cflash_read_block:
+    ld a,(cflash_init_flag)
+    or a
+    call z, cflash_init
+
     rst 0x28    ; read buffer_ptr from TOS
     ld hl, bc
 
@@ -63,6 +69,10 @@ cflash_read_block:
 
 PUBLIC cflash_write_block
 cflash_write_block:
+    ld a,(cflash_init_flag)
+    or a
+    call z, cflash_init
+
     rst 0x28    ; read buffer_ptr from TOS
     ld hl, bc
 
@@ -90,6 +100,28 @@ cflash_write_block:
 ;------------------------------------------------------------------------------
 ; start of common area driver - Compact Flash IDE functions
 ;------------------------------------------------------------------------------
+
+PUBLIC cflash_init
+cflash_init:
+    call ide_wait_ready         ;make sure drive is ready to proceed
+
+    ; Set 8-bit mode
+    ld a,__CF_8BIT
+    out (__IO_CF_IDE_FEATURE),a ; set 8bit mode
+    ld a,__IDE_CMD_FEATURE
+    out (__IO_CF_IDE_COMMAND),a ; command to enable 8 bit mode
+
+    ; Set No cache
+    ld a,__CF_NOCACHE
+    out (__IO_CF_IDE_FEATURE),a
+    ld a,__IDE_CMD_FEATURE
+    out (__IO_CF_IDE_COMMAND),a
+
+    call ide_wait_ready
+
+    ld a, 1
+    ld (cflash_init_flag), a
+    ret
 
 ; set up the drive LBA registers
 ; Uses AF, BC, DE
@@ -217,3 +249,8 @@ ide_write_sector:
 ;   out (__IO_CF_IDE_COMMAND),a ;tell drive to flush its hardware cache
 
     jp ide_wait_ready           ;wait until the write is complete
+
+SECTION     data_user
+cflash_init_flag: defb 0
+
+SECTION     code_user
