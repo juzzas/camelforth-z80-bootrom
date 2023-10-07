@@ -150,16 +150,14 @@ SECTION code_user
         dw EXIT
 
 ;C BUFFER        n -- addr         push buffer address
-;     BLKFIRST BLKBUFFER !
-;     BLKUPDATE @ IF BLOCK-WRITE  0 BLKUPDATE ! THEN
+;     FLUSH
 ;     BLK !
+;     BLKFIRST BLKBUFFER !
 ;     BLKBUFFER @      ( push buffer address ) ;
     head(BUFFER,BUFFER,docolon)
-        dw BLKFIRST,BLKBUFFER,STORE
-        dw BLKUPDATE,FETCH,qbranch,BUFF1
-        dw BLOCK_WRITE,lit,0,BLKUPDATE,STORE
-BUFF1:
+        dw FLUSH
         dw BLK,STORE
+        dw BLKFIRST,BLKBUFFER,STORE
         dw BLKBUFFER,FETCH
         dw EXIT
 
@@ -197,9 +195,9 @@ UPDATEDQ2:
         dw EXIT
 
 ;C FLUSH                    --    flush blocks to disk
-;     BLKUPDATE @ IF BLOCK-WRITE  0 BLKUPDATE ! THEN ;
+;     BLK @ UPDATED? IF BLOCK-WRITE  0 BLKUPDATE ! THEN ;
     head(FLUSH,FLUSH,docolon)
-        dw BLKUPDATE,FETCH,qbranch,FLUSH1
+        dw BLK,FETCH,UPDATEDQ,qbranch,FLUSH1
         dw BLOCK_WRITE,lit,0,BLKUPDATE,STORE
 FLUSH1:
         dw EXIT
