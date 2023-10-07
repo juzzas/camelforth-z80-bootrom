@@ -1,30 +1,31 @@
-.( Retro Forth block editor for gForth )
-cr
+( Retro Forth block editor for gForth )
+CR
 
-16 constant l/b
-: (block) scr @ block ;
-: (line) c/l * (block) + ;
+16 CONSTANT L/B
+: (BLOCK) SCR @ BLOCK ;
+: (LINE) C/L * (BLOCK) + ;
 
-: row dup c/l type c/l + cr ;
-: .rows l/b 0 do i . row loop ;
-: .block ." Block: " scr @ dup . updated? 43 + emit space ;
+: (LL) DUP C/L TYPE C/L + CR ;
+: (LIST) L/B 0 DO I 2 .R SPACE (LL) LOOP ;
+: .BLOCK ." Block: " SCR @ DUP . UPDATED? 43 + EMIT SPACE ;
 : +--- ." +---" ;
 : :--- ." :---" ;
 : x--- +--- :--- +--- :--- ;
-: --- space space x--- x--- x--- x--- cr ;
-: vb --- scr @ block .rows drop --- ;
-: .stack ." Stack: " .s ;
-: status .block .stack ;
-: v cr vb status ;
+: ---  3 SPACES x--- x--- x--- x--- CR ;
+: VB --- SCR @ BLOCK (LIST) DROP --- ;
+: .STACK ." Stack: " .S ;
+: STATUS .BLOCK .STACK ;
+: V CR VB STATUS ;
 
-: v* update v ;
-: s dup scr ! block drop v ;
-: ia (line) + >r 10 parse r> swap move v* ;
-: i 0 swap ia v* ;
-: d (line) c/l bl fill v* ;
-: x (block) l/b c/l * bl fill v* ;
-: p -1 scr +! v ;
-: n 1 scr +! v ;
-: e scr @ load ;
+: V* UPDATE V ;
+: S DUP SCR ! BLOCK DROP V ;
+: IA (LINE) + >R 13 WORD COUNT R> SWAP MOVE V* ;
+: P 0 SWAP IA ;
+: D (LINE) C/L BL FILL V* ;
+: X (BLOCK) L/B C/L * BL FILL V* ;
+: B -1 SCR +! V ;
+: N 1 SCR +! V ;
+: E SCR @ LOAD ;
+: LIST SCR ! ." Block # " SCR @ DUP . BLOCK CR (LIST) DROP ;
 
-cr .( editor loaded ) cr
+CR ( editor loaded ) CR
