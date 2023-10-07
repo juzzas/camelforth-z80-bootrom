@@ -244,9 +244,9 @@ ide_write_sector:
     otir
     otir
 
-;   call ide_wait_ready
-;   ld a,__IDE_CMD_CACHE_FLUSH
-;   out (__IO_CF_IDE_COMMAND),a ;tell drive to flush its hardware cache
+    call ide_wait_ready
+    ld a,__IDE_CMD_CACHE_FLUSH
+    out (__IO_CF_IDE_COMMAND),a ;tell drive to flush its hardware cache
 
     jp ide_wait_ready           ;wait until the write is complete
 
