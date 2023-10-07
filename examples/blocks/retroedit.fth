@@ -5,9 +5,12 @@ CR
 : (BLOCK) SCR @ BLOCK ;
 : (LINE) C/L * (BLOCK) + ;
 
-: (LL) DUP C/L TYPE C/L + CR ;
-: (LIST) L/B 0 DO I 2 .R SPACE (LL) LOOP ;
-: .BLOCK ." Block: " SCR @ DUP . UPDATED? 43 + EMIT SPACE ;
+: LL ( line# -- ( List Line )  (LINE) C/L TYPE CR ;
+: (LIST) L/B 0 DO I 2 .R SPACE I LL LOOP ;
+: LIST ( n -- ) DUP SCR ! ." SCR # " . CR (LIST) ;
+: INDEX ( from to -- ) CR 1+ SWAP DO I DUP SCR ! BLOCK DROP 0 LL LOOP ;
+
+: .BLOCK ." Screen: " SCR @ DUP . UPDATED? 43 + EMIT SPACE ;
 : +--- ." +---" ;
 : :--- ." :---" ;
 : x--- +--- :--- +--- :--- ;
@@ -26,6 +29,5 @@ CR
 : B -1 SCR +! V ;
 : N 1 SCR +! V ;
 : E SCR @ LOAD ;
-: LIST SCR ! ." Block # " SCR @ DUP . BLOCK CR (LIST) DROP ;
 
 CR ( editor loaded ) CR
