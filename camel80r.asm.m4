@@ -184,6 +184,18 @@ BLOCK2:
         dw lit,0xffff,BLKUPDATE,STORE
         dw EXIT
 
+;C UPDATED?                 n -- f   is block updated?
+;     BLK @ = IF
+;         BLKUPDATE FETCH
+;     ELSE 0 THEN ;
+    head(UPDATEDQ,UPDATED?,docolon)
+        dw BLK,FETCH,EQUAL,qbranch,UPDATEDQ1
+        dw BLKUPDATE,FETCH,branch,UPDATEDQ2
+UPDATEDQ1:
+        dw lit,0
+UPDATEDQ2:
+        dw EXIT
+
 ;C FLUSH                    --    flush blocks to disk
 ;     BLKUPDATE @ IF BLOCK-WRITE  0 BLKUPDATE ! THEN ;
     head(FLUSH,FLUSH,docolon)
