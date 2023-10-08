@@ -1,14 +1,4 @@
-( Retro Forth block editor for gForth )
-CR
-
-16 CONSTANT L/B
-: (BLOCK) SCR @ BLOCK ;
-: (LINE) C/L * (BLOCK) + ;
-
-: LL ( line# -- ( List Line )  (LINE) C/L TYPE CR ;
-: (LIST) L/B 0 DO I 2 .R SPACE I LL LOOP ;
-: LIST ( n -- ) DUP SCR ! ." SCR # " . CR (LIST) ;
-: INDEX ( from to -- ) CR 1+ SWAP DO I DUP SCR ! BLOCK DROP 0 LL LOOP ;
+( Retro Forth block editor for CamelForth )
 
 : .BLOCK ." Screen: " SCR @ DUP . UPDATED? 43 + EMIT SPACE ;
 : +--- ." +---" ;

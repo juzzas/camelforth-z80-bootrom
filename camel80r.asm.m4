@@ -112,6 +112,10 @@ SECTION code_user
     head(C_L,C/L,docon)
         dw 64
 
+;C L/B      -- n         lines per block
+    head(L_B,L/B,docon)
+        dw 16
+
 ;C B/BLK      -- n       bytes per block
     head(B_BLK,B/BLK,docon)
         dw 1024
@@ -202,6 +206,55 @@ FLUSH1:
         dw BLOCK,B_BLK,EVALUATE
         dw RFROM,BLOCK
         dw EXIT
+
+; RC2014 EXTENSION (SCREENS) ====================
+
+;Z (BLOCK)                 -- a-addr  load block in SCR
+;     SCR @ BLOCK ;
+    head(XBLOCK,(BLOCK),docolon)
+        dw SCR,FETCH,BLOCK
+        dw EXIT
+
+;Z (LINE)           line# -- c-addr   address of line in block
+;     C/L * (BLOCK) + ;
+    head(XLINE,(LINE),docolon)
+        dw C_L,STAR,XBLOCK,PLUS
+        dw EXIT
+
+;Z LL               line# --      List Line
+;     (LINE) C/L TYPE CR ;
+    head(LL,LL,docolon)
+        dw XLINE,C_L,TYPE,CR
+        dw EXIT
+
+
+;Z  (LIST)            --    runtime for list screen
+;     L/B 0 DO I 2 .R SPACE I LL LOOP ;
+    head(XLIST,(LIST),docolon)
+        dw L_B,lit,0,xdo
+XLIST1:
+        dw II,lit,2,DOTR,SPACE,II,LL,xloop,XLIST1
+        dw EXIT
+
+;C LIST ( n -- )            list screen number
+;     DUP SCR ! ." SCR # " . CR (LIST) ;
+    head(LIST,LIST,docolon)
+        dw DUP,SCR,STORE,XSQUOTE
+        db 6,"SCR # "
+        dw TYPE,DOT,CR
+        dw XLIST
+        dw EXIT
+
+;C INDEX ( from to -- )     print first line of each screen
+;     CR 1+ SWAP DO I 2 .R SPACE I DUP SCR ! BLOCK DROP 0 LL LOOP ;
+    head(INDEX,INDEX,docolon)
+        dw CR,ONEPLUS,SWOP,xdo
+INDEX1:
+        dw II,lit,2,DOTR,SPACE
+        dw II,DUP,SCR,STORE,BLOCK,DROP
+        dw lit,0,LL,xloop,INDEX1
+        dw EXIT
+
 
 ; RC2014 EXTENSIONS (TERMINAL) ==================
 
