@@ -112,10 +112,10 @@ cflash_init:
     out (__IO_CF_IDE_COMMAND),a ; command to enable 8 bit mode
 
     ; Set No cache
-    ld a,__CF_NOCACHE
-    out (__IO_CF_IDE_FEATURE),a
-    ld a,__IDE_CMD_FEATURE
-    out (__IO_CF_IDE_COMMAND),a
+;    ld a,__CF_NOCACHE
+;    out (__IO_CF_IDE_FEATURE),a
+;    ld a,__IDE_CMD_FEATURE
+;    out (__IO_CF_IDE_COMMAND),a
 
     call ide_wait_ready
 
