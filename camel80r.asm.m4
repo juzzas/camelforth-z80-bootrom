@@ -32,8 +32,6 @@
 ;   "internal" implementation words & extensions.
 ; ===============================================
 
-EXTERN _hexload
-
 EXTERN cflash_read_block
 EXTERN cflash_write_block
 
@@ -107,13 +105,6 @@ forth_state_stack_save:
         DEFW  0
 
 SECTION code_user
-
-; ===============================================
-
-;X HEXLOAD           --    call Hexloader
-    head(HEXLOAD,HEXLOAD,docolon)
-        dw lit,_hexload,CALL
-        dw EXIT
 
 ; RC2014 EXTENSION CONSTANTS ====================
 
