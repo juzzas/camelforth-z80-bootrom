@@ -301,3 +301,36 @@ XDDOTW2:
     head(PRINTABLEQ,PRINTABLE?,docolon)
         dw lit,0x20,lit,0x7f,WITHIN
         dw EXIT
+
+;Z ESC  ( --  emit escape character )
+;    27 EMIT ;
+    head(ESC,ESC,docolon)
+        dw lit,0x1b,EMIT
+        dw EXIT
+
+;Z CLS  ( --  clear screen )
+;    ESC ." [2J"
+    head(CLS,CLS,docolon)
+        dw ESC, XSQUOTE
+        db 3,"[2J"
+        dw TYPE
+        dw EXIT
+
+;Z RESET  ( -- reset attributes )
+;    ESC ." [0m" ;
+    head(RESET,RESET,docolon)
+        dw ESC, XSQUOTE
+        db 3,"[0m"
+        dw TYPE
+        dw EXIT
+
+;Z AT-XY  ( x y -- move cursor to x,y )
+;    ESC ." [" 1+ (.) TYPE ." ;" 1+ (.) TYPE ." H" ;
+    head(AT_XY,AT-XY,docolon)
+        dw ESC, XSQUOTE
+        dw lit,'[',EMIT
+        dw ONEPLUS,XDOT,TYPE
+        dw lit,';',EMIT
+        dw ONEPLUS,XDOT,TYPE
+        dw lit,'H',EMIT
+        dw EXIT
