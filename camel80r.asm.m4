@@ -280,10 +280,22 @@ XDDOTW2:
         dw TOR,STOD,RFROM,XDDOTW
         dw EXIT
 
-;Z .W
+;Z .W           ( n width --   width with leading 0's )
 ;    (.W) TYPE SPACE ;
     head(DOTW,.W,docolon)
         dw XDOTW,TYPE,SPACE
+        dw EXIT
+
+;Z (U.W)        ( u width --   width with leading 0's )
+;    0 SWAP (D.W) ;
+    head(XUDOTW,(U.W),docolon)
+        dw lit,0,SWOP,XDDOTW
+        dw EXIT
+
+;Z U.W         ( u width --   width with leading 0's )
+;    (U.W) TYPE SPACE ;
+    head(UDOTW,U.W,docolon)
+        dw XUDOTW,TYPE,SPACE
         dw EXIT
 
 ;Z D.R                       ( d width -- right align ) 

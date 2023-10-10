@@ -151,3 +151,53 @@ DASHES1:
         dw EXIT
 
 ;: E SCR @ LOAD ;
+
+
+;  RC2014 Memdump =========================
+
+;Z (MEMDUMP)  ( addr u --    memory dump lin )
+;     DUP >R
+;     OVER 4 .W ." : "
+;     0 DO DUP I + C@ 2 .W LOOP
+;     DROP R>
+;     SPACE
+;     0 DO DUP I + C@
+;         DUP PRINTABLE? INVERT IF DROP [CHAR] . THEN EMIT
+;     LOOP
+;     DROP ;
+    head(XMEMDUMP,(MEMDUMP),docolon)
+        dw DUP,TOR
+        dw OVER,lit,4,UDOTW,XSQUOTE
+        db 2,": "
+        dw TYPE
+        dw lit,0,xdo
+XMEMDUMP1:
+        dw DUP,II,PLUS,CFETCH,lit,2,DOTW
+        dw xloop,XMEMDUMP1
+        dw DROP,RFROM,SPACE
+        dw lit,0,xdo
+XMEMDUMP2:
+        dw DUP,II,PLUS,CFETCH
+        dw DUP,PRINTABLEQ,INVERT,qbranch,XMEMDUMP3
+        dw DROP,lit,46
+XMEMDUMP3:
+        dw EMIT
+        dw xloop,XMEMDUMP2
+        dw DROP,EXIT
+
+
+;Z MEMDUMP  ( addr u --    memory dump utility )
+;     BASE @ >R HEX
+;     OVER +               ( addr addr+u )
+;     SWAP                 ( addr+u  addr )
+;     DO I DUP 16 CR (MEMDUMP) 16 +LOOP
+;     R> BASE ! ;
+    head(MEMDUMP,MEMDUMP,docolon)
+        dw BASE,FETCH,TOR,HEX
+        dw OVER,PLUS,SWOP
+        dw xdo
+MEMDUMP1:
+        dw II,DUP,lit,16,CR,XMEMDUMP,lit,16,xplusloop,MEMDUMP1
+        dw RFROM,BASE,STORE
+        dw EXIT
+
