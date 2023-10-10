@@ -39,3 +39,115 @@ EXTERN _hexload
         dw lit,_hexload,CALL
         dw EXIT
 
+;  RC2014 simple editor =========================
+
+;Z .BLOCK  ( --  block status )
+;    ." Screen: " SCR @ DUP . UPDATED? 43 + EMIT SPACE ;
+    head(DOTBLOCK,.BLOCK,docolon)
+        dw XSQUOTE
+        db 8,"Screen: "
+        dw TYPE
+        dw SCR,FETCH,DUP,DOT
+        dw UPDATEDQ,lit,43,PLUS,EMIT,SPACE
+        dw EXIT
+
+;Z DASHES  ( n -- )    print n dashes
+;    0 DO 45 EMIT LOOP ;
+    head(DASHES,DASHES,docolon)
+        dw lit,0,xdo
+DASHES1:
+        dw lit,45,EMIT
+        dw xloop,DASHES1
+        dw EXIT
+
+;Z ---  ( n -- )    print border
+;    3 SPACES 64 DASHES CR ;
+    head(DASHDASHDASH,---,docolon)
+        dw lit,3,SPACES
+        dw lit,64,DASHES
+        dw CR
+        dw EXIT
+
+; Z VB  ( -- )    visual list
+;     --- SCR @ BLOCK (LIST) DROP --- ;
+    head(VB,VB,docolon)
+        dw DASHDASHDASH
+        dw SCR,FETCH,BLOCK,XLIST,DROP
+        dw DASHDASHDASH
+        dw EXIT
+
+
+;Z .STACK  ( -- )    display stack status
+;     ." Stack: " .S ;
+    head(DOTSTACK,.STACK,docolon)
+        dw XSQUOTE
+        db 7,"Stack: "
+        dw TYPE
+        dw DOTS
+        dw EXIT
+
+
+;Z STATUS  ( -- )    status line
+;     .BLOCK .STACK ;
+    head(STATUS,STATUS,docolon)
+        dw DOTBLOCK
+        dw DOTSTACK
+        dw EXIT
+
+;Z V    ( -- )      visual list
+;     CR VB STATUS ;
+    head(VEE,V,docolon)
+        dw CR,VB,STATUS
+        dw EXIT
+
+;Z V*   ( -- )      visual list update
+;     UPDATE V ;
+    head(VSTAR,V*,docolon)
+        dw UPDATE,VEE
+        dw EXIT
+
+;Z S    ( n -- )     select screen n
+;     DUP SCR ! BLOCK DROP V ;
+    head(S,S,docolon)
+        dw DUP,SCR,STORE,BLOCK,DROP,VEE
+        dw EXIT
+
+;Z IA   ( column row -- )  insert at column,row
+;     (LINE) + >R 13 WORD COUNT R> SWAP MOVE V* ;
+    head(IA,IA,docolon)
+        dw XLINE,PLUS,TOR
+        dw lit,13,WORD,COUNT,RFROM
+        dw SWOP,MOVE,VSTAR
+        dw EXIT
+
+;Z P   ( n -- )       place at line n
+;     0 SWAP IA ;
+    head(P,P,docolon)
+        dw lit,0,SWOP,IA
+        dw EXIT
+
+;Z D   ( n -- )       delete line n
+;    (LINE) C/L BL FILL V* ;
+    head(D,D,docolon)
+        dw XLINE,C_L,BL,FILL,VSTAR
+        dw EXIT
+
+;Z X   ( -- )
+;     (BLOCK) L/B C/L * BL FILL V* ;
+    head(X,X,docolon)
+        dw XBLOCK,L_B,C_L,STAR,BL,FILL,VSTAR
+        dw EXIT
+
+;Z B   ( -- )
+;     -1 SCR +! V ;
+    head(B,B,docolon)
+        dw lit,-1,SCR,PLUSSTORE,VEE
+        dw EXIT
+
+;Z N   ( -- )
+;     1 SCR +! V ;
+    head(N,N,docolon)
+        dw lit,1,SCR,PLUSSTORE,VEE
+        dw EXIT
+
+;: E SCR @ LOAD ;
