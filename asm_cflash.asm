@@ -60,12 +60,16 @@ cflash_read_block:
 
     push bc
     push de
+    and a
     call ide_read_sector
+    jr nc, read_write_error
     pop de
     pop bc
     inc e
+    and a
     call ide_read_sector
-    ret
+    jr nc, read_write_error
+    jp read_write_ok
 
 PUBLIC cflash_write_block
 cflash_write_block:
@@ -89,11 +93,25 @@ cflash_write_block:
 
     push bc
     push de
+    and a
     call ide_write_sector
     pop de
     pop bc
+    jr nc, read_write_error
+
     inc e
+    and a
     call ide_write_sector
+    jr nc, read_write_error
+
+read_write_ok:
+    ld bc, 0xffff
+    rst 0x20
+    ret
+
+read_write_error:
+    ld bc, 0x0000
+    rst 0x20
     ret
 
 
@@ -111,11 +129,13 @@ cflash_init:
     ld a,__IDE_CMD_FEATURE
     out (__IO_CF_IDE_COMMAND),a ; command to enable 8 bit mode
 
+    call ide_wait_ready
+
     ; Set No cache
-;    ld a,__CF_NOCACHE
-;    out (__IO_CF_IDE_FEATURE),a
-;    ld a,__IDE_CMD_FEATURE
-;    out (__IO_CF_IDE_COMMAND),a
+    ld a,__CF_NOCACHE
+    out (__IO_CF_IDE_FEATURE),a
+    ld a,__IDE_CMD_FEATURE
+    out (__IO_CF_IDE_COMMAND),a
 
     call ide_wait_ready
 
@@ -138,6 +158,10 @@ ide_setup_lba:
     and 00001111b               ;lowest 4 bits LBA address used only
     or  11100000b               ;to enable LBA address master mode
     out (__IO_CF_IDE_LBA3),a    ;set LBA3 24:27 + bits 5:7=111
+
+    ld a,1
+    out (__IO_CF_IDE_SEC_CNT),a ;set sector count to 1
+
     ret
 
 ; How to poll (waiting for the drive to be ready to transfer data):
@@ -179,6 +203,7 @@ ide_wait_drq:
     scf                         ;set carry flag on success
     ret
 
+
 ;------------------------------------------------------------------------------
 ; Routines that talk with the IDE drive, these should not be called by
 ; the main program.
@@ -194,9 +219,6 @@ ide_read_sector:
     call ide_wait_ready         ;make sure drive is ready
     call ide_setup_lba          ;tell it which sector we want in BCDE
 
-    ld a,1
-    out (__IO_CF_IDE_SEC_CNT),a ;set sector count to 1
-
     ld a,__IDE_CMD_READ
     out (__IO_CF_IDE_COMMAND),a ;ask the drive to read it
 
@@ -206,9 +228,20 @@ ide_read_sector:
     ;Read a block of 512 bytes (one sector) from the drive
     ;8 bit data register and store it in memory at (HL++)
 
-    ld bc,__IO_CF_IDE_DATA&0xFF ;keep iterative count in b, I/O port in c
-    inir
-    inir
+;    ld bc,__IO_CF_IDE_DATA&0xFF ;keep iterative count in b, I/O port in c
+;    inir
+;    inir
+    ld c,4
+rd4secs:
+    ld b,128
+rdByte:
+    in a,(__IO_CF_IDE_DATA)
+    ld (hl),a
+    inc hl
+    dec b
+    jr nz, rdByte
+    dec c
+    jr nz, rd4secs
 
     scf                         ;carry = 1 on return = operation ok
     ret
@@ -228,9 +261,6 @@ ide_write_sector:
     call ide_wait_ready         ;make sure drive is ready
     call ide_setup_lba          ;tell it which sector we want in BCDE
 
-    ld a,1
-    out (__IO_CF_IDE_SEC_CNT),a ;set sector count to 1
-
     ld a,__IDE_CMD_WRITE
     out (__IO_CF_IDE_COMMAND),a ;instruct drive to write a sector
 
@@ -239,14 +269,21 @@ ide_write_sector:
 
     ;Write a block of 512 bytes (one sector) from (HL++) to
     ;the drive 8 bit data register
+    ; ld bc,__IO_CF_IDE_DATA&0xFF ;keep iterative count in b, I/O port in c
+    ;otir
+    ;otir
+    ld c,4
+wr4secs:
+    ld b,128
+wrByte:
+	ld a,(hl)
+    out (__IO_CF_IDE_DATA),a
+    inc hL
+    dec b
+    jr nz, wrByte
 
-    ld bc,__IO_CF_IDE_DATA&0xFF ;keep iterative count in b, I/O port in c
-    otir
-    otir
-
-    call ide_wait_ready
-    ld a,__IDE_CMD_CACHE_FLUSH
-    out (__IO_CF_IDE_COMMAND),a ;tell drive to flush its hardware cache
+    dec c
+    jr nz,wr4secs
 
     jp ide_wait_ready           ;wait until the write is complete
 

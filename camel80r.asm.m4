@@ -126,23 +126,27 @@ SECTION code_user
     head(BLKFIRST,BLKFIRST,docon)
         dw 0x8800
 
-;Z BLOCK-READ  --  Compact Flash read block  BLK and DSK
+;Z BLOCK-READ  ( -- f )   Compact Flash read block  BLK and DSK
 ; Reads the block from the Compact Flash card into memory
 ; address found at 'adrs'. 'dks' and 'blk' are the disk
 ; and block numbers respectively
     head(BLOCK_READ,BLOCK-READ,docolon)
         dw DSK,FETCH,BLK,FETCH,BLKBUFFER,FETCH
         dw lit,cflash_read_block,CALL
-        dw EXIT
+        dw INVERT,XSQUOTE
+        db 10,"DISK ERROR"
+        dw QABORT,EXIT
 
-;Z BLOCK-WRITE  --  Compact Flash read write BLK and DSK
+;Z BLOCK-WRITE  ( -- f )  Compact Flash read write BLK and DSK
 ; Reads the block from the Compact Flash card into memory
 ; address found at 'adrs'. 'dks' and 'blk' are the disk
 ; and block numbers respectively
     head(BLOCK_WRITE,BLOCK-WRITE,docolon)
         dw DSK,FETCH,BLK,FETCH,BLKBUFFER,FETCH
         dw lit,cflash_write_block,CALL
-        dw EXIT
+        dw INVERT,XSQUOTE
+        db 10,"DISK ERROR"
+        dw QABORT,EXIT
 
 ;C BUFFER        n -- addr         push buffer address
 ;     FLUSH
