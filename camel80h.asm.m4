@@ -142,9 +142,9 @@
             DW lastword     ; LATEST
             DW 0            ; HP init'd elsewhere
             DW 0            ; LP init'd elsewhere
-            DW 0            ; BLK
-            DW 0            ; DSK
-            DW 0xf800            ; BLKBUFFER
+            DW 65535        ; BLK
+            DW 1            ; DSK
+            DW 0x8800       ; BLKBUFFER
             DW 0            ; BLKUPDATE
             DW 0            ; SCR
 
