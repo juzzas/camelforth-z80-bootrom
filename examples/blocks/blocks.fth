@@ -3,22 +3,6 @@
     0 DO DUP I + C@ . LOOP ;
 
 
-
-: (.)  ( n -- addr c   convert value to string )
-    S>D <# #S #> ;
-
-: ESC  ( -- emit escape character )
-    27 EMIT ;
-
-: CLS  ( -- clear screen )
-    ESC ." [2J" ;
-
-: RESET  ( -- reset attributes )
-    ESC ." [0m" ;
-
-: AT-XY  ( x y -- move cursor to x,y )
-    ESC ." [" 1+ (.) TYPE ." ;" 1+ (.) TYPE ." H" ;
-
 : \ 13 WORD DROP ; IMMEDIATE
 
 : LL ( line# -- ( List Line )
