@@ -1019,13 +1019,20 @@ MOVE2:  DW EXIT
 
 ;X WORDS    --          list all words in dict.
 ;   LATEST @ BEGIN
-;       DUP COUNT TYPE SPACE
+;       DUP COUNT
+;           ( ignore zero-length names, AKA :NONAME )
+;       ?DUP 0= IF DROP ELSE TYPE SPACE THEN
 ;       NFA>LFA @
 ;   DUP 0= UNTIL
 ;   DROP ;
     head(WORDS,WORDS,docolon)
         DW LATEST,FETCH
-WDS1:   DW DUP,COUNT,TYPE,SPACE,NFATOLFA,FETCH
+WDS1:   DW DUP,COUNT
+        DW QDUP,ZEROEQUAL,qbranch,WDS2
+        DW DROP
+        DW branch,WDS3
+WDS2:   DW TYPE,SPACE
+WDS3:   DW NFATOLFA,FETCH
         DW DUP,ZEROEQUAL,qbranch,WDS1
         DW DROP,EXIT
 

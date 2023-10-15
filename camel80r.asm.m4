@@ -363,3 +363,19 @@ XDDOTW2:
         dw ONEPLUS,XDOT,TYPE
         dw lit,'H',EMIT
         dw EXIT
+
+dnl ;Z :NONAME       ( -- xt      define anonymous xt )
+dnl ;    LATEST @ , 0 C,    ( last link + immed flag )
+dnl ;    HERE LATEST !      ( new "latest" )
+dnl ;    0 C,          ( empty NFA )
+dnl ;    HERE               ( push xt to stack             )
+dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
+    head(NONAME,:NONAME,docolon)
+        dw LATEST,FETCH,COMMA,lit,0,CCOMMA
+        dw HERE,LATEST,STORE
+        dw lit,0,CCOMMA
+        dw HERE
+        dw HIDE,RIGHTBRACKET,lit,docolon,COMMACF
+        dw EXIT
+
+
