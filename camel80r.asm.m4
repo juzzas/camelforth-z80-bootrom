@@ -216,6 +216,14 @@ LOAD2:
         dw RFROM,BLOCK
         dw EXIT
 
+;C THRU            n1 n2  --    load blocks n1 to n2
+;     1+ SWAP DO I LOAD LOOP ;
+    head(THRU,THRU,docolon)
+        dw ONEPLUS,SWOP,xdo
+THRU1:
+        dw II,DUP,DOT,LOAD,xloop,THRU1
+        dw EXIT
+
 ; RC2014 EXTENSION (SCREENS) ====================
 
 ;Z (BLOCK)                 -- a-addr  load block in SCR
