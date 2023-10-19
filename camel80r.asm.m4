@@ -203,11 +203,16 @@ FLUSH1:
 
 ;C LOAD                  n  --    load block n
 ;     BLK @ >R
-;     BLOCK B/BLK INTERPRET
+;     DUP 0= IF    BLOCK DROP
+;            ELSE  BLOCK B/BLK EVALUATE  THEN
 ;     R> BLOCK ;
     head(LOAD,LOAD,docolon)
         dw BLK,FETCH,TOR
+        dw DUP,lit,0,EQUAL,qbranch,LOAD1
+        dw BLOCK,DROP,branch,LOAD2
+LOAD1:
         dw BLOCK,B_BLK,EVALUATE
+LOAD2:
         dw RFROM,BLOCK
         dw EXIT
 
