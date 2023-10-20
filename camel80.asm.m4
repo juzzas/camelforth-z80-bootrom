@@ -1059,6 +1059,8 @@ snext:  next
 include(camel80d.asm.m4)   ; CPU Dependencies
 include(camel80h.asm.m4)   ; High Level words
 include(camel80r.asm.m4)   ; RC2014 extensions
+
+include(camel80x.asm.m4)   ; RC2014 16K ROM extensions
 include(camel80u.asm.m4)   ; RC2014 Utilities
 
         defc lastword=link       ; nfa of last word in dict.
