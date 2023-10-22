@@ -15,4 +15,5 @@ clean:
 $(TARGET):
 	mkdir -p build
 	zcc +embedded -startup=1 -clib=sdcc_iy ${CFLAGS} -pragma-include:zpragma.inc @camel80.lst -o build/camel80 -create-app -Cz"--romsize=0x4000"
-#	dd if=build/camel80_RC2014.bin of=build/camel80.rom bs=1 seek=8150 conv=notrunc
+	dd if=build/camel80_RC2014.bin of=build/camel80.rom bs=1 seek=8150 conv=notrunc
+	dd if=build/camel80_code_user_16k.bin of=build/camel80.rom bs=1 seek=8192 conv=notrunc

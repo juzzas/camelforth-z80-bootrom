@@ -33,7 +33,7 @@
 ; ===============================================
 
 
-SECTION code_user
+SECTION code_user_16k
 
 ; RC2014 EXTENSION (SCREENS) ====================
 

@@ -34,10 +34,7 @@
 
 EXTERN _hexload
 
-;X HEXLOAD           --    call Hexloader
-    head(HEXLOAD,HEXLOAD,docolon)
-        dw lit,_hexload,CALL
-        dw EXIT
+SECTION code_user_16k
 
 ;  RC2014 simple editor =========================
 

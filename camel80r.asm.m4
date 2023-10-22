@@ -289,6 +289,12 @@ INDEX1:
         dw lit,0,LL,xloop,INDEX1
         dw EXIT
 
+; HEXLOAD implementation ==========================
 
+
+;X HEXLOAD           --    call Hexloader
+    head(HEXLOAD,HEXLOAD,docolon)
+        dw lit,_hexload,CALL
+        dw EXIT
 
 
