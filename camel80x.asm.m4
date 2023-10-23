@@ -37,6 +37,20 @@ SECTION code_user_16k
 
 ; RC2014 EXTENSION (MISC) =======================
 
+dnl ;Z :NONAME       ( -- xt      define anonymous xt )
+dnl ;    LATEST @ , 0 C,    ( last link + immed flag )
+dnl ;    HERE LATEST !      ( new "latest" )
+dnl ;    0 C,          ( empty NFA )
+dnl ;    HERE               ( push xt to stack             )
+dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
+    head(NONAME,:NONAME,docolon)
+        dw LATEST,FETCH,COMMA,lit,0,CCOMMA
+        dw HERE,LATEST,STORE
+        dw lit,0,CCOMMA
+        dw HERE
+        dw HIDE,RIGHTBRACKET,lit,docolon,COMMACF
+        dw EXIT
+
 ;C ERASE       ( a-addr u --   fill with 0's )
 ;    0 FILL
 ;    ;
@@ -127,19 +141,4 @@ XDDOTW2:
         dw ONEPLUS,XDOT,TYPE
         dw lit,'H',EMIT
         dw EXIT
-
-dnl ;Z :NONAME       ( -- xt      define anonymous xt )
-dnl ;    LATEST @ , 0 C,    ( last link + immed flag )
-dnl ;    HERE LATEST !      ( new "latest" )
-dnl ;    0 C,          ( empty NFA )
-dnl ;    HERE               ( push xt to stack             )
-dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
-    head(NONAME,:NONAME,docolon)
-        dw LATEST,FETCH,COMMA,lit,0,CCOMMA
-        dw HERE,LATEST,STORE
-        dw lit,0,CCOMMA
-        dw HERE
-        dw HIDE,RIGHTBRACKET,lit,docolon,COMMACF
-        dw EXIT
-
 
