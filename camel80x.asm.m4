@@ -35,8 +35,21 @@
 
 SECTION code_user_16k
 
-; RC2014 EXTENSION (SCREENS) ====================
+; RC2014 EXTENSION (MISC) =======================
 
+;C ERASE       ( a-addr u --   fill with 0's )
+;    0 FILL
+;    ;
+    head(ERASE,ERASE,docolon)
+        dw lit,0,FILL
+        dw EXIT
+
+;C BLANKS       ( a-addr u --   fill with spaces )
+;    BL FILL
+;    ;
+    head(BLANKS,BLANKS,docolon)
+        dw lit,32,FILL
+        dw EXIT
 
 ; RC2014 EXTENSIONS (TERMINAL) ==================
 
