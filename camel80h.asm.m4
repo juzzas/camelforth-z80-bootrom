@@ -1118,6 +1118,16 @@ tdiv1:
     head(MSTARSLASH,M*/,docolon)
         DW TOR,TSTAR,RFROM,TDIV,EXIT
 
+;Z ?ROM16K    -- f      is it a 16K ROM?
+;
+    head(ROM16KQ,ROM16K?,docolon)
+        DW lit,rom_16k_signature
+        DW XSQUOTE
+        DB 6,"RC2014"
+        DW sequal,ZEROEQUAL
+        DW EXIT
+
+
 ;Z COLD     --      cold start Forth system
 ;   UINIT U0 #INIT CMOVE      init user area
 ;   80 COUNT INTERPRET       interpret CP/M cmd
@@ -1128,7 +1138,15 @@ tdiv1:
         DW XSQUOTE
         DB 35,"Z80 CamelForth v1.02  25 Jan 1995"
         DB 0dh,0ah
-        DW TYPE,ABORT       ; ABORT never returns
+        DW TYPE
+        DW ROM16KQ,qbranch,COLD1
+        DW XSQUOTE
+        DB 10," - 16K ROM"
+        DW branch,COLD2
+COLD1:  DW lit,lastword8k,LATEST,STORE
+        DW XSQUOTE
+        DB 9," - 8K ROM"
+COLD2:  DW TYPE,CR,ABORT       ; ABORT never returns
 
 ;Z WARM     --      warm start Forth system
 ;   ." Z80 CamelForth etc."
