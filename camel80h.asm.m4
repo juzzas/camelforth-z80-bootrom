@@ -355,14 +355,14 @@
     ;       THEN            -- sa ea a
     ;   REPEAT              -- sa ea a c
     ;   DROP NIP SWAP - ;
-        head(ACCEPT,ACCEPT,docolon)
-            DW OVER,PLUS,ONEMINUS,OVER
-    ACC1:   DW KEY,DUP,lit,0DH,NOTEQUAL,qbranch,ACC5
-            DW DUP,EMIT
-            DW DUP,lit,8,EQUAL,qbranch,ACC2
-            DW BL,EMIT,lit,8,EMIT
-    ACC2:   DW DUP,lit,8,EQUAL,qbranch,ACC3
-            DW DROP,ONEMINUS,TOR,OVER,RFROM,UMAX
+    head(ACCEPT,ACCEPT,docolon)
+        DW OVER,PLUS,ONEMINUS,OVER
+ACC1:   DW KEY,DUP,lit,0DH,NOTEQUAL,qbranch,ACC5
+        DW DUP,EMIT
+        DW DUP,lit,8,EQUAL,qbranch,ACC2
+        DW BL,EMIT,lit,8,EMIT
+ACC2:   DW DUP,lit,8,EQUAL,qbranch,ACC3
+        DW DROP,ONEMINUS,TOR,OVER,RFROM,UMAX
         DW branch,ACC4
 ACC3:   DW OVER,CSTORE,ONEPLUS,OVER,UMIN
 ACC4:   DW branch,ACC1

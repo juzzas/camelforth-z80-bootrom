@@ -164,6 +164,28 @@ SECTION code_user
 ; 1 CONSTANT IHXEND
 ; 2 CONSTANT IHXERROR
 
+;Z <ACCEPT  ( c-addr +n -- +n'   get line from term.; no echo )
+;    OVER + 1- OVER      \ sa ea a
+;    BEGIN KEY           \ sa ea a c
+;    DUP 13 <> WHILE
+;        OVER C! 1+ OVER UMIN
+;    REPEAT              \ sa ea a c
+;    DROP NIP SWAP - ;
+    head(FROMACCEPT,<ACCEPT,docolon)
+        DW OVER,PLUS,ONEMINUS,OVER
+
+FROMACC1:
+        DW KEY,DUP,lit,0DH,NOTEQUAL,qbranch,ACC5
+
+FROMACC3:
+        DW OVER,CSTORE,ONEPLUS,OVER,UMIN
+
+FROMACC4:
+        DW branch,ACC1
+
+FROMACC5:
+        DW DROP,NIP,SWOP,MINUS,EXIT
+
 ;Z IHXCRC+  ( c -- )
 ;    IHXCRC @ + FF AND IHXCRC ! ;
     head(IHXCRCPLUS,IHXCRC+,docolon)
@@ -304,7 +326,7 @@ IHXREC4:
         DW lit,58,EMIT
 
 HEXLOAD1:
-        DW TIB,DUP,TIBSIZE,ACCEPT
+        DW TIB,DUP,TIBSIZE,FROMACCEPT
         DW DROP
         DW IHXREC
 
