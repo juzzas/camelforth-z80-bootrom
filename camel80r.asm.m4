@@ -153,33 +153,33 @@ SECTION code_user
         dw EXIT
 
 
-;Z ESC  ( --  emit escape character )
-;    27 EMIT ;
-    head(ESC,ESC,docolon)
+;Z VT-ESC  ( --  emit escape character )
+;    27 EMIT [CHAR] [ EMIT ;
+    head(VT_ESC,VT-ESC,docolon)
         dw lit,0x1b,EMIT
+        dw lit,'[',EMIT
         dw EXIT
 
 ;Z CLS  ( --  clear screen )
-;    ESC ." [2J"
+;    VT-ESC ." 2J"
     head(CLS,CLS,docolon)
-        dw ESC, XSQUOTE
-        db 3,"[2J"
+        dw VT_ESC, XSQUOTE
+        db 2,"2J"
         dw TYPE
         dw EXIT
 
 ;Z RESET  ( -- reset attributes )
-;    ESC ." [0m" ;
+;    VT-ESC ." 0m" ;
     head(RESET,RESET,docolon)
-        dw ESC, XSQUOTE
-        db 3,"[0m"
+        dw VT_ESC, XSQUOTE
+        db 2,"0m"
         dw TYPE
         dw EXIT
 
 ;Z AT-XY  ( x y -- move cursor to x,y )
-;    ESC ." [" 1+ (.) TYPE ." ;" 1+ (.) TYPE ." H" ;
+;    VT-ESC 1+ (.) TYPE ." ;" 1+ (.) TYPE ." H" ;
     head(AT_XY,AT-XY,docolon)
-        dw ESC, XSQUOTE
-        dw lit,'[',EMIT
+        dw VT_ESC
         dw ONEPLUS,XDOT,TYPE
         dw lit,';',EMIT
         dw ONEPLUS,XDOT,TYPE
