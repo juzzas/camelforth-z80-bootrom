@@ -118,9 +118,14 @@
             dw 28
 
     ;Z IHXCRC       -- a-addr  location for current HEXLOAD CRC
-    ;  30 USER SCR
+    ;  30 USER IHXCRC
         head(IHXCRC,IHXCRC,douser)
             dw 30
+
+    ;Z SEED        -- a-addr   seed for random number generator
+    ;  32 USER SEED
+        head(SEED,SEED,douser)
+            dw 32
 
     ;Z s0       -- a-addr     end of parameter stack
         head(S0,S0,douser)
@@ -153,10 +158,11 @@
             DW 0            ; BLKUPDATE
             DW 0            ; SCR
             DW 0            ; IHXCRC
+            DW 42           ; SEED
 
     ;Z #init    -- n    #bytes of user area init data
         head(NINIT,``#INIT'',docon)
-            DW 30
+            DW 34
 
     ; ARITHMETIC OPERATORS ==========================
 

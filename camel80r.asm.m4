@@ -106,6 +106,36 @@ forth_state_stack_save:
 
 SECTION code_user
 
+; RC2014 EXTENSION misc ======================
+
+;Z (XORSHIFT) ( n -- n   xorshift random number generator )
+;    DUP 7 LSHIFT XOR
+;    DUP 9 RSHIFT XOR
+;    DUP 8 LSHIFT XOR ;
+    head(XXORSHIFT,(XORSHIFT),docolon)
+        DW DUP,lit,7,LSHIFT,XOR
+        DW DUP,lit,9,RSHIFT,XOR
+        DW DUP,lit,8,LSHIFT,XOR
+        DW EXIT
+
+;: RND  ( -- n   generate random 16bit value from seed )
+;    SEED @
+;    (XORSHIFT)
+;    DUP SEED ! ;
+    head(RND,RND,docolon)
+        DW SEED,FETCH
+        DW XXORSHIFT
+        DW DUP,SEED,STORE
+        DW EXIT
+
+;: RANDOM (  n -- n  generate random value between 0 and value on stack )
+;    ( WARNING: Not evenly distributed but should be good )
+;    RND SWAP MOD ABS ;
+    head(RANDOM,RANDOM,docolon)
+        DW RND,SWOP,MOD,ABS
+        DW EXIT
+
+
 ; RC2014 EXTENSION output ====================
 
 ;Z D.R                       ( d width -- right align )
