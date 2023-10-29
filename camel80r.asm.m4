@@ -459,9 +459,9 @@ IHXREC4:
 ;            [CHAR] # EMIT
 ;        THEN
 ;
-;    DUP IHX-OK <> UNTIL  ;
+;    ?DUP IHX-OK <> UNTIL
 ;
-;    DUP IHX-ERROR = IF
+;    IHX-ERROR = IF
 ;        ABORT" HEXLOAD ERROR"
 ;    THEN
 ;    RFROM BASE ! EXIT ;
@@ -482,10 +482,10 @@ HEXLOAD2:
         DW lit,35,EMIT
 
 HEXLOAD3:
-        DW DUP,lit,0,NOTEQUAL,qbranch,HEXLOAD1
+        DW QDUP,lit,0,NOTEQUAL,qbranch,HEXLOAD1
 
 HEXLOAD4:
-        DW DUP,lit,2,EQUAL,qbranch,HEXLOAD5
+        DW lit,2,EQUAL,qbranch,HEXLOAD5
         DW XSQUOTE
         DB 13,"HEXLOAD ERROR"
         DW TYPE
