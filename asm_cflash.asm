@@ -6,7 +6,7 @@
 ; March 2018
 ;
 
-SECTION     code_user
+SECTION     code_user_16k
 
 defc __IO_CF_IDE_DATA = 0x10
 defc __IO_CF_IDE_ERROR = 0x11
