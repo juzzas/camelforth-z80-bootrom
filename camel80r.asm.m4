@@ -257,7 +257,52 @@ SECTION code_user
 INK1:
         dw EXIT
 
+;: BRIGHT.INK  ( n -- change fg to n 0-7 )
+;    DUP 0 #COLOURS WITHIN IF
+;        VT-ESC
+;        90 + (.) TYPE ." m"
+;    THEN ;
+    head(BRIGHTINK,BRIGHT.INK,docolon)
+        dw DUP,lit,0,NCOLOURS,WITHIN,qbranch,BRINK1
+        dw VT_ESC
+        dw lit,90,PLUS,XDOT,TYPE
+        dw lit,'m',EMIT
+BRINK1:
+        dw EXIT
 
+;: PAPER  ( n -- change bg to n 0-7 )
+;    DUP 0 #COLOURS WITHIN IF
+;        VT-ESC
+;        40 + (.) TYPE ." m"
+;    THEN ;
+    head(PAPER,PAPER,docolon)
+        dw DUP,lit,0,NCOLOURS,WITHIN,qbranch,PAPER1
+        dw VT_ESC
+        dw lit,40,PLUS,XDOT,TYPE
+        dw lit,'m',EMIT
+PAPER1:
+        dw EXIT
+
+;: BRIGHT.PAPER  ( n -- change bg to n 0-7 )
+;    DUP 0 #COLOURS WITHIN IF
+;        VT-ESC
+;        100 + (.) TYPE ." m"
+;    THEN ;
+    head(BRIGHTPAPER,BRIGHT.PAPER,docolon)
+        dw DUP,lit,0,NCOLOURS,WITHIN,qbranch,BRPAPER1
+        dw VT_ESC
+        dw lit,100,PLUS,XDOT,TYPE
+        dw lit,'m',EMIT
+BRPAPER1:
+        dw EXIT
+
+;Z REVERSE  ( -- reverse attributes )
+;    VT-ESC ." 7m" ;
+    head(REVERSE,REVERSE,docolon)
+        dw VT_ESC, XSQUOTE
+        db 2,"7m"
+        dw TYPE
+        dw EXIT
 
 
 
