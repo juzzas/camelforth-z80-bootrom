@@ -278,15 +278,11 @@ INK1:
         DW OVER,PLUS,ONEMINUS,OVER
 
 FROMACC1:
-        DW KEY,DUP,lit,0DH,NOTEQUAL,qbranch,ACC5
-
-FROMACC3:
+        DW KEY,DUP,lit,0DH,NOTEQUAL,qbranch,FROMACC2
         DW OVER,CSTORE,ONEPLUS,OVER,UMIN
+        DW branch,FROMACC1
 
-FROMACC4:
-        DW branch,ACC1
-
-FROMACC5:
+FROMACC2:
         DW DROP,NIP,SWOP,MINUS,EXIT
 
 ;Z IHXCRC+  ( c -- )
@@ -404,7 +400,8 @@ IHXREC4:
 ; \ :06F00000EF78414FE7C963
 
 ;: HEXLOAD
-;    ." HEXLOAD test" CR
+;    ." Waiting for input" CR
+;    BASE @ >R HEX
 ;    [CHAR] : EMIT
 ;
 ;    BEGIN
@@ -422,10 +419,12 @@ IHXREC4:
 ;    DUP IHX-ERROR = IF
 ;        ABORT" HEXLOAD ERROR"
 ;    THEN
+;    RFROM BASE ! EXIT ;
     head(HEXLOAD,HEXLOAD,docolon)
         DW XSQUOTE
-        DB 12,"HEXLOAD test"
+        DB 17,"Waiting for input"
         DW TYPE,CR
+        DW BASE,FETCH,TOR,HEX
         DW lit,58,EMIT
 
 HEXLOAD1:
@@ -448,6 +447,7 @@ HEXLOAD4:
         DW ABORT
 
 HEXLOAD5:
+        DW RFROM,BASE,STORE
         DW EXIT
 
 
