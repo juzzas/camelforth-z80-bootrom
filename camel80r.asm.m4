@@ -208,38 +208,6 @@ SECTION code_user
         dw lit,7,EMIT
         dw EXIT
 
-; 0 CONSTANT BLACK
-    head(BLACK,BLACK,docon)
-        dw 0
-
-; 1 CONSTANT RED
-    head(RED,RED,docon)
-        dw 1
-
-; 2 CONSTANT GREEN
-    head(GREEN,GREEN,docon)
-        dw 2
-
-; 3 CONSTANT YELLOW
-    head(YELLOW,YELLOW,docon)
-        dw 3
-
-; 4 CONSTANT BLUE
-    head(BLUE,BLUE,docon)
-        dw 4
-
-; 5 CONSTANT MAGENTA
-    head(MAGENTA,MAGENTA,docon)
-        dw 5
-
-; 6 CONSTANT CYAN
-    head(CYAN,CYAN,docon)
-        dw 6
-
-; 7 CONSTANT WHITE
-    head(WHITE,WHITE,docon)
-        dw 7
-
 ; 8 CONSTANT #COLOURS
     head(NCOLOURS,``#COLOURS'',docon)
         dw 8
