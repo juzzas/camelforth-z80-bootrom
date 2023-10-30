@@ -35,6 +35,8 @@
 EXTERN cflash_read_block
 EXTERN cflash_write_block
 
+EXTERN asm_z80_delay_ms
+
 ;Z CALL       a-addr --    call machine code at address
     head(CALL,CALL,docode)
         ; protect against some stack abuse
@@ -108,49 +110,33 @@ SECTION code_user
 
 ; RC2014 EXTENSION misc ======================
 
-;Z (XORSHIFT) ( n -- n   xorshift random number generator )
-;    DUP 7 LSHIFT XOR
-;    DUP 9 RSHIFT XOR
-;    DUP 8 LSHIFT XOR ;
-    head(XXORSHIFT,(XORSHIFT),docolon)
-        DW DUP,lit,7,LSHIFT,XOR
-        DW DUP,lit,9,RSHIFT,XOR
-        DW DUP,lit,8,LSHIFT,XOR
-        DW EXIT
+dnl ;Z :NONAME       ( -- xt      define anonymous xt )
+dnl ;    LATEST @ , 0 C,    ( last link + immed flag )
+dnl ;    HERE LATEST !      ( new "latest" )
+dnl ;    0 C,          ( empty NFA )
+dnl ;    HERE               ( push xt to stack             )
+dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
+    head(NONAME,:NONAME,docolon)
+        dw LATEST,FETCH,COMMA,lit,0,CCOMMA
+        dw HERE,LATEST,STORE
+        dw lit,0,CCOMMA
+        dw HERE
+        dw HIDE,RIGHTBRACKET,lit,docolon,COMMACF
+        dw EXIT
 
-;: RND  ( -- n   generate random 16bit value from seed )
-;    SEED @
-;    (XORSHIFT)
-;    DUP SEED ! ;
-    head(RND,RND,docolon)
-        DW SEED,FETCH
-        DW XXORSHIFT
-        DW DUP,SEED,STORE
-        DW EXIT
-
-;: RANDOM (  n -- n  generate random value between 0 and value on stack )
-;    ( WARNING: Not evenly distributed but should be good )
-;    RND SWAP MOD ABS ;
-    head(RANDOM,RANDOM,docolon)
-        DW RND,SWOP,MOD,ABS
-        DW EXIT
+;Z   MS ( n -- )  delay n milliseconds
+    head(MS,MS,docode)
+        push hl
+        push de
+        ld hl, bc
+        call asm_z80_delay_ms
+        pop de
+        pop hl
+        pop bc
+        next
 
 
 ; RC2014 EXTENSION output ====================
-
-;Z D.R                       ( d width -- right align )
-;    >R (D.)
-;    R> OVER - SPACES TYPE ;
-    head(DDOTR,D.R,docolon)
-        dw TOR,XDDOT
-        dw RFROM,OVER,MINUS,SPACES,TYPE
-        dw EXIT
-
-;Z .R                ( n width -- right align )
-;    >R S>D R> D.R ;
-    head(DOTR,.R,docolon)
-        dw TOR,STOD,RFROM,DDOTR
-        dw EXIT
 
 
 ;Z VT-ESC  ( --  emit escape character )

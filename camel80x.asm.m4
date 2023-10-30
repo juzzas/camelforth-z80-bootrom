@@ -52,20 +52,6 @@ SECTION code_user_16k
 
 ; RC2014 EXTENSION (MISC) =======================
 
-dnl ;Z :NONAME       ( -- xt      define anonymous xt )
-dnl ;    LATEST @ , 0 C,    ( last link + immed flag )
-dnl ;    HERE LATEST !      ( new "latest" )
-dnl ;    0 C,          ( empty NFA )
-dnl ;    HERE               ( push xt to stack             )
-dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
-    head(NONAME,:NONAME,docolon)
-        dw LATEST,FETCH,COMMA,lit,0,CCOMMA
-        dw HERE,LATEST,STORE
-        dw lit,0,CCOMMA
-        dw HERE
-        dw HIDE,RIGHTBRACKET,lit,docolon,COMMACF
-        dw EXIT
-
 ;C ERASE       ( a-addr u --   fill with 0's )
 ;    0 FILL
 ;    ;
@@ -80,7 +66,49 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
         dw lit,32,FILL
         dw EXIT
 
+;Z (XORSHIFT) ( n -- n   xorshift random number generator )
+;    DUP 7 LSHIFT XOR
+;    DUP 9 RSHIFT XOR
+;    DUP 8 LSHIFT XOR ;
+    head(XXORSHIFT,(XORSHIFT),docolon)
+        DW DUP,lit,7,LSHIFT,XOR
+        DW DUP,lit,9,RSHIFT,XOR
+        DW DUP,lit,8,LSHIFT,XOR
+        DW EXIT
+
+;: RND  ( -- n   generate random 16bit value from seed )
+;    SEED @
+;    (XORSHIFT)
+;    DUP SEED ! ;
+    head(RND,RND,docolon)
+        DW SEED,FETCH
+        DW XXORSHIFT
+        DW DUP,SEED,STORE
+        DW EXIT
+
+;: RANDOM (  n -- n  generate random value between 0 and value on stack )
+;    ( WARNING: Not evenly distributed but should be good )
+;    RND SWAP MOD ABS ;
+    head(RANDOM,RANDOM,docolon)
+        DW RND,SWOP,MOD,ABS
+        DW EXIT
+
+
 ; RC2014 EXTENSIONS (TERMINAL) ==================
+
+;Z D.R                       ( d width -- right align )
+;    >R (D.)
+;    R> OVER - SPACES TYPE ;
+    head(DDOTR,D.R,docolon)
+        dw TOR,XDDOT
+        dw RFROM,OVER,MINUS,SPACES,TYPE
+        dw EXIT
+
+;Z .R                ( n width -- right align )
+;    >R S>D R> D.R ;
+    head(DOTR,.R,docolon)
+        dw TOR,STOD,RFROM,DDOTR
+        dw EXIT
 
 ;Z (D.W)         ( d width --   width with leading 0's )
 ;    1- DUP 1 < IF DROP 1 THEN <# 0 DO # LOOP #S #> ;
