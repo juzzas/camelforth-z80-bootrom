@@ -93,6 +93,65 @@ SECTION code_user_16k
         DW RND,SWOP,MOD,ABS
         DW EXIT
 
+;C NOOP        ( -- )        no operation
+;    ;
+    head(NOOP,NOOP,docolon)
+        dw EXIT
+
+;C DEFER    ( "name" -- )        create a deferred word
+;    CREATE ['] NOOP ,
+;   DOES>
+;    @ EXECUTE ;
+    head(DEFER,DEFER,docolon)
+        DW CREATE,lit,NOOP,COMMA
+
+        DW XDOES
+        call dodoes
+        DW FETCH,EXECUTE
+        dw EXIT
+
+;C DEFER!   ( xt2 xt1 -- )             store xt2 in xt1
+;   >BODY ! ;
+    head(DEFERSTOR,DEFER!,docolon)
+        DW TOBODY,STORE
+        DW EXIT
+
+;C DEFER@   ( xt2 xt1 -- )             store xt2 in xt1
+;   >BODY ! ;
+    head(DEFERFETCH,DEFER@,docolon)
+        DW TOBODY,FETCH
+        DW EXIT
+
+;C IS       ( xt "name" -- )     define a deferred word
+;   STATE @ IF
+;      POSTPONE ['] POSTPONE DEFER!
+;   ELSE
+;      ' DEFER!
+;   THEN ; IMMEDIATE
+    immed(IS,IS,docolon)
+        DW STATE,FETCH,qbranch,IS1
+        DW BRACTICK,lit,DEFERSTOR,COMMAXT
+        DW branch,IS2
+IS1:
+        DW TICK,DEFERSTOR
+IS2:
+        DW EXIT
+
+;C ACTION-OF  ( "name -- xt" )     get the action of a deferred word
+;   STATE @ IF
+;      POSTPONE ['] POSTPONE DEFER@
+;   ELSE
+;      ' DEFER@
+;   THEN ; IMMEDIATe
+    immed(ACTION_OF,ACTION-OF,docolon)
+        DW STATE,FETCH,qbranch,AOF1
+        DW BRACTICK,lit,DEFERFETCH,COMMAXT
+        DW branch,AOF2
+AOF1:
+        DW TICK,DEFERFETCH
+AOF2:
+        DW EXIT
+
 
 ; RC2014 EXTENSIONS (TERMINAL) ==================
 
