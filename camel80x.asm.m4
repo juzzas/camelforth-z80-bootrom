@@ -50,6 +50,129 @@ SECTION code_user_16k
         dw 1024
 
 
+; RC2014 EXTENSION (plan for 8K) ================
+
+; 8 CONSTANT #COLOURS
+    head(NCOLOURS,``#COLOURS'',docon)
+        dw 8
+
+;: INK  ( n -- change fg to n 0-7 )
+;    DUP 0 #COLOURS WITHIN IF
+;        VT-ESC
+;        30 + (.) TYPE ." m"
+;    THEN ;
+    head(INK,INK,docolon)
+        dw DUP,lit,0,NCOLOURS,WITHIN,qbranch,INK1
+        dw VT_ESC
+        dw lit,30,PLUS,XDOT,TYPE
+        dw lit,'m',EMIT
+INK1:
+        dw EXIT
+
+;: BRIGHT.INK  ( n -- change fg to n 0-7 )
+;    DUP 0 #COLOURS WITHIN IF
+;        VT-ESC
+;        90 + (.) TYPE ." m"
+;    THEN ;
+    head(BRIGHTINK,BRIGHT.INK,docolon)
+        dw DUP,lit,0,NCOLOURS,WITHIN,qbranch,BRINK1
+        dw VT_ESC
+        dw lit,90,PLUS,XDOT,TYPE
+        dw lit,'m',EMIT
+BRINK1:
+        dw EXIT
+
+;: PAPER  ( n -- change bg to n 0-7 )
+;    DUP 0 #COLOURS WITHIN IF
+;        VT-ESC
+;        40 + (.) TYPE ." m"
+;    THEN ;
+    head(PAPER,PAPER,docolon)
+        dw DUP,lit,0,NCOLOURS,WITHIN,qbranch,PAPER1
+        dw VT_ESC
+        dw lit,40,PLUS,XDOT,TYPE
+        dw lit,'m',EMIT
+PAPER1:
+        dw EXIT
+
+;: BRIGHT.PAPER  ( n -- change bg to n 0-7 )
+;    DUP 0 #COLOURS WITHIN IF
+;        VT-ESC
+;        100 + (.) TYPE ." m"
+;    THEN ;
+    head(BRIGHTPAPER,BRIGHT.PAPER,docolon)
+        dw DUP,lit,0,NCOLOURS,WITHIN,qbranch,BRPAPER1
+        dw VT_ESC
+        dw lit,100,PLUS,XDOT,TYPE
+        dw lit,'m',EMIT
+BRPAPER1:
+        dw EXIT
+
+;Z REVERSE  ( -- reverse attributes )
+;    VT-ESC ." 7m" ;
+    head(REVERSE,REVERSE,docolon)
+        dw VT_ESC, XSQUOTE
+        db 2,"7m"
+        dw TYPE
+        dw EXIT
+
+; DEBUG LED implementation ========================
+
+;Z /LED ( -- )                       initialise LED
+;      0 led_state C!
+;      0 0 PC!   ;
+    head(SLASHLED,/LED,docolon)
+        DW lit,0,lit,led_state,CSTORE
+        DW lit,0,lit,0,PCSTORE
+        DW EXIT
+
+;Z @LED ( -- c )                    fetch LED value
+;      led_state C@ ;
+    head(LEDFETCH,@LED,docolon)
+        DW led_state,CFETCH
+        DW EXIT
+
+;Z !LED ( -- c )                    store LED value
+;      DUP led_state C! 0 PC! ;
+    head(LEDSTORE,!LED,docolon)
+        DW DUP,lit,led_state,CSTORE
+        DW lit,0,PCSTORE
+        DW EXIT
+
+;Z +LED ( n -- )                       enable LED n
+;       DUP 0 8 WITHIN IF
+;           1 SWAP LSHIFT LED@ OR LED!
+;       ELSE
+;           DROP
+;       THEN ;
+    head(PLUSLED,+LED,docolon)
+        DW DUP,lit,0,lit,8,WITHIN,qbranch,PLUSLED1
+        DW lit,1,SWOP,LSHIFT,LEDFETCH,OR,LEDSTORE
+        DW EXIT
+PLUSLED1:
+        DW DROP,EXIT
+
+;Z -LED ( n -- )                      disable LED n
+;       DUP 0 8 WITHIN IF
+;           1 SWAP LSHIFT INVERT LED@ AND LED!
+;       ELSE
+;           DROP
+;       THEN ;
+    head(MINUSLED,-LED,docolon)
+        DW DUP,lit,0,lit,8,WITHIN,qbranch,MINUSLED1
+        DW lit,1,SWOP,LSHIFT,INVERT,LEDFETCH,AND,LEDSTORE
+        DW EXIT
+MINUSLED1:
+        DW DROP,EXIT
+
+SECTION data_user
+
+led_state:
+        DEFB 0
+
+SECTION code_user_16k
+
+
 ; RC2014 EXTENSION (MISC) =======================
 
 ;C ERASE       ( a-addr u --   fill with 0's )

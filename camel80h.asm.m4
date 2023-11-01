@@ -112,20 +112,60 @@
         head(BLKUPDATE,BLKUPDATE,douser)
             dw 26
 
+    ;Z BLKREADVEC   -- a-addr  1024byte block buffer
+    ;  24 USER BLKREADVEC
+        head(BLKREADVEC,BLKREADVEC,douser)
+            dw 28
+
+    ;Z BLKWRITEVEC   -- a-addr  1024byte block buffer
+    ;  24 USER BLKWRITEVEC
+        head(BLKWRITEVEC,BLKWRITEVEC,douser)
+            dw 30
+
     ;Z SCR          -- a-addr  last edited screen number
     ;  28 USER SCR
         head(SCR,SCR,douser)
-            dw 28
+            dw 32
 
     ;Z IHXCRC       -- a-addr  location for current HEXLOAD CRC
     ;  30 USER IHXCRC
         head(IHXCRC,IHXCRC,douser)
-            dw 30
+            dw 34
 
     ;Z SEED        -- a-addr   seed for random number generator
     ;  32 USER SEED
         head(SEED,SEED,douser)
-            dw 32
+            dw 36
+
+    ;Z CONTEXT      -- a-addr   context for VOCABULARY
+    ;  32 USER CONTEXT
+        head(CONTEXT,CONTEXT,douser)
+            dw 38
+
+    ;Z CURRENT      -- a-addr   context for CURRENT
+    ;  32 USER CURRENT
+        head(CURRENT,CURRENT,douser)
+            dw 40
+
+    ;Z VOC-LINK      -- a-addr   context for CURRENT
+    ;  32 USER CURRENT
+        head(VOC_LINK,VOC-LINK,douser)
+            dw 42
+
+    ;Z CALLSP      -- a-addr   address to set SP during CALL
+    ;  32 USER CALLSP
+        head(CALLSP,CALLSP,douser)
+            dw 44
+
+    ;Z INTVEC      -- a-addr   interrupt vector
+    ;  32 USER INTVEC
+        head(INTVEC,INTVEC,douser)
+            dw 46
+
+    ;Z RST30VEC     -- a-addr   RST30 vector
+    ;  32 USER RST30VEC
+        head(RST30VEC,RST30VEC,douser)
+            dw 48
 
     ;Z s0       -- a-addr     end of parameter stack
         head(S0,S0,douser)
@@ -156,13 +196,22 @@
             DW 1            ; DSK
             DW 0x8800       ; BLKBUFFER
             DW 0            ; BLKUPDATE
+            DW 0            ; BLKREADVEC
+            DW 0            ; BLKWRITEVEC
             DW 0            ; SCR
             DW 0            ; IHXCRC
             DW 42           ; SEED
+            DW 0            ; CONTEXT
+            DW 0            ; CURRENT
+            DW 0            ; VOC-LINK
+            DW 0            ; CALLSP
+            DW 0            ; INTVEC
+            DW 0            ; RST30VEC
+
 
     ;Z #init    -- n    #bytes of user area init data
         head(NINIT,``#INIT'',docon)
-            DW 34
+            DW 50
 
     ; ARITHMETIC OPERATORS ==========================
 
