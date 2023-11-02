@@ -128,7 +128,6 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
     head(MS,MS,docode)
         push hl
         push de
-        ld hl, bc
         call asm_z80_delay_ms
         pop de
         pop hl
