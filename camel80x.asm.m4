@@ -334,6 +334,137 @@ XDDOTW2:
         dw lit,0x20,lit,0x7f,WITHIN
         dw EXIT
 
+; VOCABULARY implementation =====================
+; Vocabularies are implemented in this version of CamelForth the ANS Forth '94 way.
+; The search order is implemented as a stack of word list identifiers (wid).
+; The current word list that is compiled into is identified by the CURRENT variable.
+; A word list identifier is a pointer to the call that contains the pointer to
+; the NFA of the "latest" wordlist word entry.
+; The FORTH wordlist is equivalent to LATEST in CamelForth
+
+; https://www.taygeta.com/forth/dpans16.htm#16.6.2.1965
+
+DEFC NVOCS = 16
+
+SECTION data_user
+
+WID_ORDER:
+        dw 0;
+WID_CONTEXT:
+        ds 32
+
+SECTION code_user_16k
+
+;WORDLIST ( -- wid )
+; Create a new empty word list, returning its word list identifier wid.
+; The new word list may be returned from a pool of preallocated word lists
+; or may be dynamically allocated in data space. A system shall allow the
+; creation of at least 8 new word lists in addition to any provided as part
+; of the system.
+;     HERE >R  0 ,  R> ;
+        head(WORDLIST,WORDLIST,docolon)
+            dw HERE,TOR,lit,0,COMMA,RFROM,EXIT
+
+;SEARCH-WORDLIST ( c-addr u wid -- 0 | xt 1 | xt -1 )
+; Find the definition identified by the string c-addr u in the word list
+; identified by wid. If the definition is not found, return zero. If the
+; definition is found, return its execution token xt and one (1) if the
+; definition is immediate, minus-one (-1) otherwise.
+
+;: FORTH-WORDLIST ( -- wid )
+; Return wid, the identifier of the word list that includes all standard
+; words provided by the implementation. This word list is initially the
+; compilation word list and is part of the initial search order.
+        head(FORTH_WORDLIST,FORTH-WORDLIST,docolon)
+            dw LATEST
+            dw EXIT
+
+;: #ORDER  ( -- n )
+        head(NORDER,``#ORDER'',docolon)
+            dw lit,WID_ORDER
+            dw EXIT
+
+;: GET-ORDER  ( -- wid1 .. widn n )
+;    #ORDER @ ?DUP IF
+;      0 DO
+;        #ORDER @  I - 1- CELLS CONTEXT + @
+;      LOOP
+;    THEN
+;    #ORDER @     ;
+        head(GET_ORDER,GET-ORDER,docolon)
+            dw NORDER,FETCH,QDUP,qbranch,GET_ORDER1
+            dw lit,0,xdo
+GET_ORDER2: dw NORDER,FETCH,II,MINUS,ONEMINUS,CELLS,CONTEXT,PLUS,FETCH
+            dw xloop,GET_ORDER2
+GET_ORDER1: dw NORDER,FETCH
+            dw EXIT
+
+;: SET-ORDER  ( wid1 .. widn n -- )
+;    DUP -1 = IF
+;      DROP  FORTH-WORDLIST  1
+;    THEN
+;    DUP #ORDER !
+;     ?DUP IF  0 DO  I CELLS CONTEXT + ! LOOP  THEN   ;
+        head(SET_ORDER,SET-ORDER,docolon)
+            dw DUP,lit,-1,EQUAL,qbranch,SET_ORDER1
+            dw DROP,FORTH_WORDLIST,lit,1
+SET_ORDER1: dw DUP,NORDER,STORE
+            dw QDUP,qbranch,SET_ORDER3
+            dw lit,0,xdo
+SET_ORDER2: dw II,CELLS,CONTEXT,PLUS,STORE
+            dw xloop,SET_ORDER2
+SET_ORDER3: dw EXIT
+
+
+;: SET-CURRENT  ( wid -- )
+;    CURRENT !  ;
+        head(SET_CURRENT,SET-CURRENT,docolon)
+            dw CURRENT,STORE
+            dw EXIT
+
+;: GET-CURRENT  ( -- wid )
+;    CURRENT @  ;
+        head(GET_CURRENT,GET-CURRENT,docolon)
+            dw CURRENT,FETCH
+            dw EXIT
+
+dnl ;: FIND  ( c-addr -- c-addr 0 | w 1 | w -1 )
+dnl ;    0                     ( c-addr 0 )
+dnl ;    #ORDER @ ?DUP  IF 0 DO
+dnl ;      OVER COUNT          ( c-addr 0 c-addr' u )
+dnl ;      I CELLS CONTEXT + @ ( c-addr 0 c-addr' u wid)
+dnl ;      SEARCH-WORDLIST     ( c-addr 0; 0 | w 1 | w -1 )
+dnl ;      ?DUP IF             ( c-addr 0; w 1 | w -1 )
+dnl ;        2SWAP 2DROP LEAVE ( w 1 | w -1 )
+dnl ;      THEN                ( c-addr 0 )
+dnl ;    LOOP  THEN    ;       ( c-addr 0 | w 1 | w -1 )
+
+
+;WORDLIST CONSTANT ROOT   ROOT SET-CURRENT
+
+;: DO-VOCABULARY  ( -- ) \ Implementation factor
+;    DOES>  @ >R           (  ) ( R: widnew )
+;     GET-ORDER  SWAP DROP ( wid1 ... widn-1 n )
+;     R> SWAP SET-ORDER
+;  ;
+
+;: DISCARD  ( x1 .. xu u - ) \ Implementation factor
+;   ?DUP IF  0 DO DROP LOOP  THEN        \ DROP u+1 stack items
+;  ;
+
+;CREATE FORTH  FORTH-WORDLIST , DO-VOCABULARY
+
+;: VOCABULARY  ( name -- )  WORDLIST CREATE ,  DO-VOCABULARY ;
+
+;: ALSO  ( -- )  GET-ORDER  OVER SWAP 1+  SET-ORDER ;
+
+;: PREVIOUS  ( --  )  GET-ORDER  SWAP DROP 1-  SET-ORDER ;
+
+;: DEFINITIONS  ( -- )  GET-ORDER  OVER SET-CURRENT  DISCARD ;
+
+;: ONLY ( -- )  FORTH-WORDLIST DUP  2 SET-ORDER ;
+
+
 ; BLOCK implementation ==========================
 
 ;Z BLKFIRST      -- a-adrs      address of first block buffer
