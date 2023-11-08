@@ -94,7 +94,7 @@ DASHES1:
 ;Z V    ( -- )      visual list
 ;     CR VB STATUS ;
     head(VEE,V,docolon)
-        dw CR,VB,STATUS
+        dw CLS,lit,0,DUP,AT_XY,VB,STATUS
         dw EXIT
 
 ;Z V*   ( -- )      visual list update
@@ -148,6 +148,70 @@ DASHES1:
         dw EXIT
 
 ;: E SCR @ LOAD ;
+
+;  RC2014 Full screen editor =========================
+
+;: !XY ( i -- i ) 1023 AND DUP C/L /MOD 3 2 D+ AT-XY ;
+    head(STOREXY,!XY,docolon)
+        dw lit,1023,AND,DUP,C_L,SLASHMOD,lit,3,lit,1,DPLUS,AT_XY
+        dw EXIT
+
+;: !CH ( c i -- c i ) 2DUP SCR @ BLOCK + C! UPDATE OVER EMIT ;
+    head(STORECH,!CH,docolon)
+        dw TWODUP,SCR,FETCH,BLOCK,PLUS,CSTORE,UPDATE
+        dw OVER,EMIT
+        dw EXIT
+
+;: ?CH ( c i -- c i' ( VIM like controls )
+;    OVER BL - 95 U< IF !CH 1+ EXIT THEN ( text )
+;    OVER 8 = IF 1- THEN ( left ^h )
+;    OVER 12 = IF 1+ THEN ( right ^l )
+;    OVER 11 = IF C/L - THEN ( up ^k )
+;    OVER 10 = IF C/L + THEN ( down ^j )
+;    OVER 13 = IF C/L 2DUP MOD - + THEN ( crlf return )
+;    OVER 127 = IF 1- THEN ( left delete )
+;    OVER 2 = IF B L THEN ( back ^b )
+;    OVER 14 = IF N L THEN ( nextscr ^n ) ;
+    head(QCH,?CH,docolon)
+        dw OVER,BL,MINUS,lit,95,ULESS,qbranch,QCH1
+        dw STORECH,ONEPLUS
+QCH1:
+        dw OVER,lit,8,EQUAL,qbranch,QCH2
+        dw ONEMINUS
+QCH2:
+        dw OVER,lit,12,EQUAL,qbranch,QCH3
+        dw ONEPLUS
+QCH3:
+        dw OVER,lit,11,EQUAL,qbranch,QCH4
+        dw C_L,MINUS
+QCH4:
+        dw OVER,lit,10,EQUAL,qbranch,QCH5
+        dw C_L,PLUS
+QCH5:
+        dw OVER,lit,13,EQUAL,qbranch,QCH6
+        dw C_L,TWODUP,MOD,MINUS,PLUS
+QCH6:
+        dw OVER,lit,127,EQUAL,qbranch,QCH7
+        dw ONEMINUS
+QCH7:
+;        dw OVER,lit,2,EQUAL,qbranch,QCH8
+;        dw B,L
+;QCH8:
+;        dw OVER,lit,14,EQUAL,qbranch,QCH9
+;        dw N,L
+;QCH9:
+        dw EXIT
+
+
+;: EDIT ( n -- ) CLS 0 DUP AT-XY LIST 0
+;    BEGIN !XY KEY SWAP ?CH SWAP 27 = UNTIL DROP L ;
+    head(EDIT,EDIT,docolon)
+        DW S
+        dw lit,0
+EDIT1:
+        dw STOREXY,KEY,SWOP,QCH,SWOP,lit,27,EQUAL,qbranch,EDIT1
+        dw DROP,VEE
+        dw EXIT
 
 
 ;  RC2014 Memdump =========================
