@@ -35,6 +35,111 @@
 
 SECTION code_user_16k
 
+; RC2014 EXTENDED STRUCTURES ====================
+
+; http://www.forth.org/svfig/Len/softstak.htm
+
+dnl ; During compilation, create a STACK (software stack) with n cells.
+dnl ; On execution, return the address of the stack.
+dnl ;     lifo+0 -> ptr to top of stack + 2
+dnl ;     lifo+2 -> bottom of stack
+dnl ; : STACK ( n -- ) ( -- adr)
+dnl ;      CREATE HERE CELL+ , CELLS ALLOT
+dnl ;   DOES>  ;
+    head(STACK,STACK,docolon)
+        DW CREATE,HERE,CELLPLUS,COMMA,CELLS,ALLOT
+        DW XDOES
+        call dodoes
+        dw EXIT
+
+; Push number onto STACK
+; : >STACK ( n lifo -- )
+;      SWAP OVER @ ! CELL SWAP +! ;
+    head(TOSTACK,>STACK,docolon)
+        DW SWOP,OVER,FETCH,STORE,CELL,SWOP,PLUSSTORE
+        DW EXIT
+
+; Pop number from STACK
+; : STACK> ( lifo -- x )
+;      CELL NEGATE    ( lifo -2 )
+;      OVER           ( lifo -2 lifo )
+;      +!             ( lifo )
+;      @ ;
+    head(STACKFROM,STACK>,docolon)
+        DW CELL,NEGATE,OVER,PLUSSTORE,FETCH
+        DW EXIT
+
+; Fetch the value at the top of the STACK
+; : STACK@ ( lifo -- x )
+;      @ CELL - @ ;
+    head(STACKFETCH,STACK@,docolon)
+        DW FETCH,CELL,MINUS,FETCH
+        DW EXIT
+
+; Clear STACK
+; : STACK.CLEAR ( lifo -- )
+;      DUP    ( lifo lifo )
+;      CELL+  ( lifo lifo+2 )
+;      SWAP   ( lifo+2 lifo )
+;      !     ;
+    head(STACKCLEAR,STACK.CLEAR,docolon)
+        DW DUP,CELLPLUS,SWOP,STORE
+        DW EXIT
+
+; : STACK-DEPTH ( lifo -- n )
+;      STACK.BOUNDS - CELL /  ;
+    head(STACKDEPTH,STACK.DEPTH,docolon)
+        DW STACKBOUNDS,MINUS
+        DW TWOSLASH      ;  optimize "DW CELL,SLASH" for 16bit
+        DW EXIT
+
+; : STACK.EMPTY? ( lifo -- flag )
+;      STACK.BOUNDS = ;
+    head(STACKEMPTYQ,STACK.EMPTY?,docolon)
+        DW STACKBOUNDS,EQUAL
+        DW EXIT
+
+; Create parameters for a ?DO loop that will scan every item currently in STACK. The intended use is:
+;      ( lifo )   STACK.BOUNDS ?DO -- CELL +LOOP
+; : STACK.BOUNDS ( lifo -- addr1 addr2 )
+;     DUP @ SWAP CELL+ ;
+    head(STACKBOUNDS,STACK.BOUNDS,docolon)
+        DW DUP,FETCH,SWOP,CELLPLUS
+        DW EXIT
+
+; Set the stack from the data stack
+; : SET-STACK ( rec-n .. rec-1 n lifo -- )
+;     2DUP SWAP CELLS + SWAP
+
+; Get the STACK onto the data stack
+; : STACK.GET  ( lifo -- rec-n .. rec-1 n )
+;     DUP STACK.DEPTH    ( lifo n )
+;     DUP IF             ( lifo n )
+;         >R             ( lifo )
+;         STACK.BOUNDS   ( addr1 addr2 )
+;         DO              (  )
+;             I @         ( rec-i )
+;             CELL
+;         +LOOP           ( rec-i )
+;         R>              ( rec-i n )
+;     ELSE                ( lifo n )
+;         NIP             ( n )
+;     THEN                ( )
+;     ;
+    head(STACKGET,STACK.GET,docolon)
+        DW DUP,STACKDEPTH,DUP,qbranch,STACKGET2
+        DW TOR,STACKBOUNDS,xdo
+STACKGET1:
+        DW II,FETCH,CELL,xplusloop,STACKGET1
+        DW RFROM
+        DW EXIT
+
+STACKGET2:
+        DW NIP
+        DW EXIT
+
+
+
 ; RC2014 EXTENSION CONSTANTS ====================
 
 ;C C/L      -- n         columns per line
