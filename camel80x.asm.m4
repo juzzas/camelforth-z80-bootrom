@@ -419,7 +419,7 @@ FLUSH1:
 ;     BLK @ >R
 ;     DUP 0= IF    BLOCK DROP
 ;            ELSE  BLOCK B/BLK EVALUATE  THEN
-;     R> BLOCK ;
+;     R> BLOCK DROP  ;
     head(LOAD,LOAD,docolon)
         dw BLK,FETCH,TOR
         dw DUP,lit,0,EQUAL,qbranch,LOAD1
@@ -427,7 +427,7 @@ FLUSH1:
 LOAD1:
         dw BLOCK,B_BLK,EVALUATE
 LOAD2:
-        dw RFROM,BLOCK
+        dw RFROM,BLOCK,DROP
         dw EXIT
 
 ;C THRU            n1 n2  --    load blocks n1 to n2
