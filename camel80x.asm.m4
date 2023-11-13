@@ -37,6 +37,13 @@ SECTION code_user_16k
 
 ; RC2014 EXTENDED STRUCTURES ====================
 
+;C CELL-    a-addr1 -- a-addr2    subtract cell size
+;   2 - ;
+    head(CELLMINUS,CELL-,docode)
+        dec bc
+        dec bc
+        next
+
 ; http://www.forth.org/svfig/Len/softstak.htm
 
 dnl ; During compilation, create a STACK (software stack) with n cells.
@@ -108,8 +115,29 @@ dnl ;   DOES>  ;
         DW EXIT
 
 ; Set the stack from the data stack
-; : SET-STACK ( rec-n .. rec-1 n lifo -- )
-;     2DUP SWAP CELLS + SWAP
+; : STACK.SET     ( rec-n .. rec-1 n lifo )
+;    OVER IF
+;      2DUP SWAP CELLS + CELL+ ( n lifo tos+2 )
+;      DUP ROT !           ( ... n tos+2 )
+;      SWAP 0 DO           ( rec-n rec-1 tos+2)
+;         CELL- DUP >R ! R>   ( rec-n ... rec-i addr )
+;      LOOP   DROP
+;    ELSE
+;      NIP STACK.CLEAR
+;    THEN    ;
+    head(STACKSET,STACK.SET,docolon)
+        DW OVER,qbranch,STACKSET2
+        DW TWODUP,SWOP,CELLS,PLUS,CELLPLUS
+        DW DUP,ROT,STORE
+        DW SWOP,lit,0,xdo
+STACKSET1:
+        DW CELLMINUS,DUP,TOR,STORE,RFROM
+        DW xloop,STACKSET1
+        DW DROP
+        DW EXIT
+STACKSET2:
+        DW NIP,STACKCLEAR
+        DW EXIT
 
 ; Get the STACK onto the data stack
 ; : STACK.GET  ( lifo -- rec-n .. rec-1 n )
@@ -138,7 +166,53 @@ STACKGET2:
         DW NIP
         DW EXIT
 
+; : STACK.FOREACH  ( xt lifo -- )  ( execute xt for every item in stack )
+; \ XT should not return anything on stack
+;      DUP @ SWAP STACK.DEPTH   ( xt tos+2 n )
+;      ?DUP IF   0 DO           ( xt tos+2 )
+;         CELL-                 ( xt tos )
+;         2DUP @ SWAP EXECUTE
+;      LOOP   THEN
+;      DROP DROP  ;
+    head(STACKFOREACH,STACK.FOREACH,docolon)
+        DW DUP,FETCH,SWOP,STACKDEPTH
+        DW QDUP,qbranch,STACKFOREACH2
+        DW lit,0,xdo
+STACKFOREACH1:
+        DW CELLMINUS,TWODUP,FETCH,SWOP,EXECUTE
+        DW xloop,STACKFOREACH1
+STACKFOREACH2:
+        DW DROP,DROP
+        DW EXIT
 
+; : STACK.UNTIL  ( xt lifo -- x*i flag )  ( execute xt for every item in stack, until xt returns true )
+; \ XT should return flag on stack
+;      DUP @ SWAP STACK.DEPTH   ( xt tos+2 n )
+;      ?DUP IF   0 DO           ( xt tos+2 )
+;         CELL-                 ( xt tos )
+;         2DUP >R >R            ( xt tos ; tos xt )
+;         @ SWAP EXECUTE   ( i*x flag ; tos xt )
+;         R> R> ROT        ( i*x xt tos flag )
+;         IF
+;            DROP DROP -1 UNLOOP EXIT      ( i*x flag )
+;         THEN
+;      LOOP   THEN
+;      DROP DROP 0 ;
+    head(STACKUNTIL,STACK.UNTIL,docolon)
+        DW DUP,FETCH,SWOP,STACKDEPTH
+        DW QDUP,qbranch,STACKUNTIL3
+        DW lit,0,xdo
+STACKUNTIL1:
+        DW CELLMINUS,TWODUP,TOR,TOR
+        DW FETCH,SWOP,EXECUTE
+        DW RFROM,RFROM,ROT
+        DW qbranch,STACKUNTIL2
+        DW DROP,DROP,lit,-1,UNLOOP,EXIT
+STACKUNTIL2:
+        DW xloop,STACKUNTIL1
+STACKUNTIL3:
+        DW DROP,DROP,lit,0
+        DW EXIT
 
 ; RC2014 EXTENSION CONSTANTS ====================
 
