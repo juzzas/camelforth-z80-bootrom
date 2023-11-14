@@ -48,29 +48,28 @@ SECTION code_user_16k
         dw UPDATEDQ,lit,43,PLUS,EMIT,SPACE
         dw EXIT
 
-;Z DASHES  ( n -- )    print n dashes
-;    0 DO 45 EMIT LOOP ;
-    head(DASHES,DASHES,docolon)
-        dw lit,0,xdo
-DASHES1:
-        dw lit,45,EMIT
-        dw xloop,DASHES1
-        dw EXIT
-
-;Z ---  ( n -- )    print border
-;    3 SPACES 64 DASHES CR ;
-    head(DASHDASHDASH,---,docolon)
+;Z RULER  ( --  print ruler )
+;    print ruler
+RULER:
+        call docolon
         dw lit,3,SPACES
-        dw lit,64,DASHES
+        dw RULER1,RULER1,RULER1,RULER1
         dw CR
         dw EXIT
+
+RULER1:
+        call docolon
+        dw XSQUOTE
+        db 16,"+---:---+---:---"
+        dw TYPE,EXIT
+
 
 ; Z VB  ( -- )    visual list
 ;     --- SCR @ BLOCK (LIST) DROP --- ;
     head(VB,VB,docolon)
-        dw DASHDASHDASH
+        dw RULER
         dw SCR,FETCH,BLOCK,XLIST,DROP
-        dw DASHDASHDASH
+        dw RULER
         dw EXIT
 
 
@@ -165,13 +164,19 @@ DASHES1:
 ;: ?CH ( c i -- c i' ( VIM like controls )
 ;    OVER BL - 95 U< IF !CH 1+ EXIT THEN ( text )
 ;    OVER 8 = IF 1- THEN ( left ^h )
-;    OVER 12 = IF 1+ THEN ( right ^l )
-;    OVER 11 = IF C/L - THEN ( up ^k )
-;    OVER 10 = IF C/L + THEN ( down ^j )
+;    OVER 19 = IF 1- THEN ( left ^s )
+;    OVER 4 = IF 1+ THEN ( right ^d )
+;    OVER 5 = IF C/L - THEN ( up ^e )
+;    OVER 24 = IF C/L + THEN ( down ^x )
 ;    OVER 13 = IF C/L 2DUP MOD - + THEN ( crlf return )
 ;    OVER 127 = IF 1- THEN ( left delete )
-;    OVER 2 = IF B L THEN ( back ^b )
-;    OVER 14 = IF N L THEN ( nextscr ^n ) ;
+;    OVER 22 = IF insert_char THEN ( insert space ^v )
+;    OVER 7 = IF delete_char THEN ( delete char ^g )
+;    OVER 18 = IF B L THEN ( back ^r )
+;    OVER 3 = IF N L THEN ( nextscr ^c ) ;
+;    OVER 25 = IF cut_line THEN ( cut line, shift up ^y ) ;
+;    OVER 15 = IF insert_line THEN ( shift down, empty line ^o ) ;
+;    OVER 16 = IF paste_line THEN ( shift down, paste line ^p ) ;
     head(QCH,?CH,docolon)
         dw OVER,BL,MINUS,lit,95,ULESS,qbranch,QCH1
         dw STORECH,ONEPLUS
@@ -179,27 +184,30 @@ QCH1:
         dw OVER,lit,8,EQUAL,qbranch,QCH2
         dw ONEMINUS
 QCH2:
-        dw OVER,lit,12,EQUAL,qbranch,QCH3
-        dw ONEPLUS
-QCH3:
-        dw OVER,lit,11,EQUAL,qbranch,QCH4
-        dw C_L,MINUS
-QCH4:
-        dw OVER,lit,10,EQUAL,qbranch,QCH5
-        dw C_L,PLUS
-QCH5:
-        dw OVER,lit,13,EQUAL,qbranch,QCH6
-        dw C_L,TWODUP,MOD,MINUS,PLUS
-QCH6:
-        dw OVER,lit,127,EQUAL,qbranch,QCH7
+        dw OVER,lit,19,EQUAL,qbranch,QCH3
         dw ONEMINUS
+QCH3:
+        dw OVER,lit,4,EQUAL,qbranch,QCH4
+        dw ONEPLUS
+QCH4:
+        dw OVER,lit,5,EQUAL,qbranch,QCH5
+        dw C_L,MINUS
+QCH5:
+        dw OVER,lit,24,EQUAL,qbranch,QCH6
+        dw C_L,PLUS
+QCH6:
+        dw OVER,lit,13,EQUAL,qbranch,QCH7
+        dw C_L,TWODUP,MOD,MINUS,PLUS
 QCH7:
-;        dw OVER,lit,2,EQUAL,qbranch,QCH8
+        dw OVER,lit,127,EQUAL,qbranch,QCH8
+        dw ONEMINUS
+QCH8:
+;        dw OVER,lit,2,EQUAL,qbranch,QCH9
 ;        dw B,L
-;QCH8:
-;        dw OVER,lit,14,EQUAL,qbranch,QCH9
-;        dw N,L
 ;QCH9:
+;        dw OVER,lit,14,EQUAL,qbranch,QCH10
+;        dw N,L
+;QCH10:
         dw EXIT
 
 
