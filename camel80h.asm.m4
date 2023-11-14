@@ -1207,7 +1207,9 @@ tdiv1:
 COLD1:  DW lit,lastword8k,LATEST,STORE
         DW XSQUOTE
         DB 9," - 8K ROM"
-COLD2:  DW TYPE,CR,ABORT       ; ABORT never returns
+COLD2:  DW TYPE,CR
+        DW FORTH_WORDLIST,lit,1,SET_ORDER
+        DW ABORT       ; ABORT never returns
 
 ;Z WARM     --      warm start Forth system
 ;   ." Z80 CamelForth etc."
@@ -1216,5 +1218,7 @@ COLD2:  DW TYPE,CR,ABORT       ; ABORT never returns
         DW XSQUOTE
         DB 47,"Z80 CamelForth v1.02  25 Jan 1995 (warmstart)"
         DB 0dh,0ah
-        DW TYPE,ABORT       ; ABORT never returns
+        DW TYPE
+        DW FORTH_WORDLIST,lit,1,SET_ORDER
+        DW ABORT       ; ABORT never returns
 

@@ -523,14 +523,10 @@ XDDOTW2:
 
 ; https://www.taygeta.com/forth/dpans16.htm#16.6.2.1965
 
-DEFC NVOCS = 16
-
 SECTION data_user
 
-WID_ORDER:
-        dw 0;
-WID_CONTEXT:
-        ds 32
+STACK_WORDLISTS:
+        ds 34    ; 16 cells + stack top pointer
 
 SECTION code_user_16k
 
@@ -558,42 +554,15 @@ SECTION code_user_16k
             dw LATEST
             dw EXIT
 
-;: #ORDER  ( -- n )
-        head(NORDER,``#ORDER'',docolon)
-            dw lit,WID_ORDER
-            dw EXIT
-
 ;: GET-ORDER  ( -- wid1 .. widn n )
-;    #ORDER @ ?DUP IF
-;      0 DO
-;        #ORDER @  I - 1- CELLS CONTEXT + @
-;      LOOP
-;    THEN
-;    #ORDER @     ;
         head(GET_ORDER,GET-ORDER,docolon)
-            dw NORDER,FETCH,QDUP,qbranch,GET_ORDER1
-            dw lit,0,xdo
-GET_ORDER2: dw NORDER,FETCH,II,MINUS,ONEMINUS,CELLS,CONTEXT,PLUS,FETCH
-            dw xloop,GET_ORDER2
-GET_ORDER1: dw NORDER,FETCH
+            dw lit,STACK_WORDLISTS,STACKGET
             dw EXIT
 
 ;: SET-ORDER  ( wid1 .. widn n -- )
-;    DUP -1 = IF
-;      DROP  FORTH-WORDLIST  1
-;    THEN
-;    DUP #ORDER !
-;     ?DUP IF  0 DO  I CELLS CONTEXT + ! LOOP  THEN   ;
         head(SET_ORDER,SET-ORDER,docolon)
-            dw DUP,lit,-1,EQUAL,qbranch,SET_ORDER1
-            dw DROP,FORTH_WORDLIST,lit,1
-SET_ORDER1: dw DUP,NORDER,STORE
-            dw QDUP,qbranch,SET_ORDER3
-            dw lit,0,xdo
-SET_ORDER2: dw II,CELLS,CONTEXT,PLUS,STORE
-            dw xloop,SET_ORDER2
-SET_ORDER3: dw EXIT
-
+            dw lit,STACK_WORDLISTS,STACKSET
+            dw EXIT
 
 ;: SET-CURRENT  ( wid -- )
 ;    CURRENT !  ;
