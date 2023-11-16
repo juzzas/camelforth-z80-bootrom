@@ -193,8 +193,8 @@ STACKFOREACH2:
 ;         2DUP >R >R            ( xt tos ; tos xt )
 ;         @ SWAP EXECUTE   ( i*x flag ; tos xt )
 ;         R> R> ROT        ( i*x xt tos flag )
-;         IF
-;            DROP DROP -1 UNLOOP EXIT      ( i*x flag )
+;         ?DUP IF
+;            NIP NIP UNLOOP EXIT      ( i*x flag )
 ;         THEN
 ;      LOOP   THEN
 ;      DROP DROP 0 ;
@@ -206,8 +206,8 @@ STACKUNTIL1:
         DW CELLMINUS,TWODUP,TOR,TOR
         DW FETCH,SWOP,EXECUTE
         DW RFROM,RFROM,ROT
-        DW qbranch,STACKUNTIL2
-        DW DROP,DROP,lit,-1,UNLOOP,EXIT
+        DW QDUP,qbranch,STACKUNTIL2
+        DW NIP,NIP,UNLOOP,EXIT
 STACKUNTIL2:
         DW xloop,STACKUNTIL1
 STACKUNTIL3:
@@ -587,6 +587,54 @@ dnl ;        2SWAP 2DROP LEAVE ( w 1 | w -1 )
 dnl ;      THEN                ( c-addr 0 )
 dnl ;    LOOP  THEN    ;       ( c-addr 0 | w 1 | w -1 )
 
+
+
+
+
+;C FIND-NAME-IN   c-addr len wid   --  0       if not found
+;C                                     nfa     if found
+;   @ BEGIN                    -- a len nfa
+;       2DUP                   -- a len nfa len nfa
+;       C@  =                   -- a len nfa f
+;       IF                     -- a len nfa
+;         >R OVER              -- a len a ; nfa
+;         R@ COUNT                -- a len a nfa+1 nfa-len ; nfa
+;         S= R> SWAP              -- a len nfa f
+;       ELSE
+;         -1                      -- a len nfa f
+;       THEN
+;       DUP IF
+;           DROP
+;           NFA>LFA @      -- a len link
+;       THEN
+;   0= UNTIL                   -- a len nfa  OR  a len 0
+;   NIP NIP   ;
+    head(FIND_NAME_IN,FIND-NAME-IN,docolon)
+        DW FETCH
+FINDIN1:
+        DW TWODUP,CFETCH,EQUAL
+        DW qbranch,FINDIN2
+        DW TOR,OVER
+        DW RFETCH,COUNT
+        DW sequal,RFROM,SWOP
+        DW branch,FINDIN3
+FINDIN2:
+        DW lit,-1
+FINDIN3:
+        DW DUP,qbranch,FINDIN4
+        DW DROP,NFATOLFA,FETCH,DUP
+FINDIN4:
+        DW ZEROEQUAL,qbranch,FINDIN1
+FINDIN5:
+        DW NIP,NIP
+        DW EXIT
+
+;C FIND-NAME   c-addr len      -- 0   if not found
+;C                                nt  if found
+;    ' FIND-NAME-IN STACK_WORDLISTS STACK.UNTIL
+    head(FIND_NAME,FIND-NAME,docolon)
+        DW lit,FIND_NAME_IN,lit,STACK_WORDLISTS,STACKUNTIL
+        DW EXIT
 
 ;WORDLIST CONSTANT ROOT   ROOT SET-CURRENT
 
