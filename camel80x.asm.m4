@@ -576,21 +576,6 @@ SECTION code_user_16k
             dw CURRENT,FETCH
             dw EXIT
 
-dnl ;: FIND  ( c-addr -- c-addr 0 | w 1 | w -1 )
-dnl ;    0                     ( c-addr 0 )
-dnl ;    #ORDER @ ?DUP  IF 0 DO
-dnl ;      OVER COUNT          ( c-addr 0 c-addr' u )
-dnl ;      I CELLS CONTEXT + @ ( c-addr 0 c-addr' u wid)
-dnl ;      SEARCH-WORDLIST     ( c-addr 0; 0 | w 1 | w -1 )
-dnl ;      ?DUP IF             ( c-addr 0; w 1 | w -1 )
-dnl ;        2SWAP 2DROP LEAVE ( w 1 | w -1 )
-dnl ;      THEN                ( c-addr 0 )
-dnl ;    LOOP  THEN    ;       ( c-addr 0 | w 1 | w -1 )
-
-
-
-
-
 ;C FIND-NAME-IN   c-addr len wid   --  0       if not found
 ;C                                     nfa     if found
 ;   @ BEGIN                    -- a len nfa
@@ -634,6 +619,24 @@ FINDIN5:
 ;    ' FIND-NAME-IN STACK_WORDLISTS STACK.UNTIL
     head(FIND_NAME,FIND-NAME,docolon)
         DW lit,FIND_NAME_IN,lit,STACK_WORDLISTS,STACKUNTIL
+        DW EXIT
+
+;C FIND   c-addr -- c-addr 0   if not found
+;C                  xt  1      if immediate
+;C                  xt -1      if "normal"
+;   DUP COUNT FIND-NAME     c-addr nt | c-addr 0
+;   DUP IF
+;       NIP DUP NFA>CFA        -- nfa xt
+;       SWAP IMMED?            -- xt iflag
+;       0= 1 OR                -- xt 1/-1
+;   THEN ;
+    head(FIND,FIND,docolon)
+        DW DUP,COUNT,FIND_NAME
+        DW DUP,qbranch,FIND1
+        DW NIP,DUP,NFATOCFA
+        DW SWOP,IMMEDQ
+        DW ZEROEQUAL,lit,1,OR
+FIND1:
         DW EXIT
 
 ;WORDLIST CONSTANT ROOT   ROOT SET-CURRENT

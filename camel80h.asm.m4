@@ -644,16 +644,16 @@ WORD1:  DW RFROM,RFROM,ROT,MINUS,TOIN,PLUSSTORE
 ;       SWAP IMMED?            -- xt iflag
 ;       0= 1 OR                -- xt 1/-1
 ;   THEN ;
-    head(FIND,FIND,docolon)
-        DW LATEST,FETCH
-FIND1:  DW TWODUP,OVER,CFETCH,CHARPLUS
-        DW sequal,DUP,qbranch,FIND2
-        DW DROP,NFATOLFA,FETCH,DUP
-FIND2:  DW ZEROEQUAL,qbranch,FIND1
-        DW DUP,qbranch,FIND3
-        DW NIP,DUP,NFATOCFA
-        DW SWOP,IMMEDQ,ZEROEQUAL,lit,1,OR
-FIND3:  DW EXIT
+dnl ;    head(FIND,FIND,docolon)
+;        DW LATEST,FETCH
+;FIND1:  DW TWODUP,OVER,CFETCH,CHARPLUS
+;        DW sequal,DUP,qbranch,FIND2
+;        DW DROP,NFATOLFA,FETCH,DUP
+;FIND2:  DW ZEROEQUAL,qbranch,FIND1
+;        DW DUP,qbranch,FIND3
+;        DW NIP,DUP,NFATOCFA
+;        DW SWOP,IMMEDQ,ZEROEQUAL,lit,1,OR
+;FIND3:  DW EXIT
 
 ;C LITERAL  x --        append numeric literal
 ;   STATE @ IF ['] LIT ,XT , THEN ; IMMEDIATE
