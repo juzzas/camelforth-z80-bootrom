@@ -78,9 +78,16 @@ dnl ;   DOES>  ;
 
 ; Fetch the value at the top of the STACK
 ; : STACK@ ( lifo -- x )
-;      @ CELL - @ ;
+;      @ CELL- @ ;
     head(STACKFETCH,STACK@,docolon)
-        DW FETCH,CELL,MINUS,FETCH
+        DW FETCH,CELLMINUS,FETCH
+        DW EXIT
+
+; Replace the value at the top of the STACK
+; : STACK! ( x lifo -- )
+;      @ CELL- ! ;
+    head(STACKSTORE,STACK!,docolon)
+        DW FETCH,CELLMINUS,STORE
         DW EXIT
 
 ; Clear STACK
@@ -551,7 +558,12 @@ SECTION code_user_16k
 ; words provided by the implementation. This word list is initially the
 ; compilation word list and is part of the initial search order.
         head(FORTH_WORDLIST,FORTH-WORDLIST,docolon)
-            dw LATEST
+            dw lit,FORTH_WORDLIST_WID
+            dw EXIT
+
+;: EDITOR-WORDLIST ( -- wid )
+        head(EDITOR_WORDLIST,EDITOR-WORDLIST,docolon)
+            dw lit,EDITOR_WORDLIST_WID
             dw EXIT
 
 ;: GET-ORDER  ( -- wid1 .. widn n )
@@ -576,8 +588,15 @@ SECTION code_user_16k
             dw CURRENT,FETCH
             dw EXIT
 
-;C FIND-NAME-IN   c-addr len wid   --  0       if not found
-;C                                     nfa     if found
+;: CONTEXT      ( -- wid )
+;    STACK_WORDLIST STACK@
+        head(CONTEXT,CONTEXT,docolon)
+            dw lit,STACK_WORDLISTS,STACKFETCH
+            dw EXIT
+
+
+;C FIND-NAME-IN   c-addr len wid   --  c-addr len 0       if not found
+;C                                     c-addr len nfa     if found
 ;   @ BEGIN                    -- a len nfa
 ;       2DUP                   -- a len nfa len nfa
 ;       C@  =                   -- a len nfa f
@@ -593,7 +612,7 @@ SECTION code_user_16k
 ;           NFA>LFA @      -- a len link
 ;       THEN
 ;   0= UNTIL                   -- a len nfa  OR  a len 0
-;   NIP NIP   ;
+;      ;
     head(FIND_NAME_IN,FIND-NAME-IN,docolon)
         DW FETCH
 FINDIN1:
@@ -611,7 +630,6 @@ FINDIN3:
 FINDIN4:
         DW ZEROEQUAL,qbranch,FINDIN1
 FINDIN5:
-        DW NIP,NIP
         DW EXIT
 
 ;C FIND-NAME   c-addr len      -- 0   if not found
@@ -619,6 +637,7 @@ FINDIN5:
 ;    ' FIND-NAME-IN STACK_WORDLISTS STACK.UNTIL
     head(FIND_NAME,FIND-NAME,docolon)
         DW lit,FIND_NAME_IN,lit,STACK_WORDLISTS,STACKUNTIL
+        DW NIP,NIP
         DW EXIT
 
 ;C FIND   c-addr -- c-addr 0   if not found
@@ -652,16 +671,39 @@ FIND1:
 ;  ;
 
 ;CREATE FORTH  FORTH-WORDLIST , DO-VOCABULARY
+    head(FORTH,FORTH,docolon)
+        dw FORTH_WORDLIST
+        dw lit,STACK_WORDLISTS,STACKSTORE
+        dw EXIT
+
+;CREATE EDITOR  EDITOR-WORDLIST , DO-VOCABULARY
+    head(EDITOR,EDITOR,docolon)
+        dw EDITOR_WORDLIST
+        dw lit,STACK_WORDLISTS,STACKSTORE
+        dw EXIT
 
 ;: VOCABULARY  ( name -- )  WORDLIST CREATE ,  DO-VOCABULARY ;
 
-;: ALSO  ( -- )  GET-ORDER  OVER SWAP 1+  SET-ORDER ;
+;: ALSO  ( -- )  STACK_WORDLISTS DUP STACK@ >STACK ;
+    head(ALSO,ALSO,docolon)
+        dw lit,STACK_WORDLISTS,STACKFETCH
+        dw lit,STACK_WORDLISTS,TOSTACK
+        dw EXIT
 
-;: PREVIOUS  ( --  )  GET-ORDER  SWAP DROP 1-  SET-ORDER ;
+;: PREVIOUS  ( --  )  STACK_WORDLISTS >STACK, DROP ;
+    head(PREVIOUS,PREVIOUS,docolon)
+        dw lit,STACK_WORDLISTS,STACKFROM,DROP
+        dw EXIT
 
-;: DEFINITIONS  ( -- )  GET-ORDER  OVER SET-CURRENT  DISCARD ;
+;: DEFINITIONS  ( -- )  STACK_WORDLISTS STACK@ SET-CURRENT ;
+    head(DEFINITIONS,DEFINITIONS,docolon)
+        dw lit,STACK_WORDLISTS,STACKFETCH,SET_CURRENT
+        dw EXIT
 
-;: ONLY ( -- )  FORTH-WORDLIST DUP  2 SET-ORDER ;
+;: ONLY ( -- )  FORTH-WORDLIST 1 SET-ORDER ;
+    head(ONLY,ONLY,docolon)
+        dw FORTH_WORDLIST,lit,1,SET_ORDER
+        dw EXIT
 
 
 ; BLOCK implementation ==========================

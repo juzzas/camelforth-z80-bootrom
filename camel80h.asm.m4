@@ -139,7 +139,7 @@
 
     ;Z CONTEXT      -- a-addr   context for VOCABULARY
     ;  32 USER CONTEXT
-        head(CONTEXT,CONTEXT,douser)
+        head(CONTEXT_OLD,CONTEXT_OLD,douser)
             dw 38
 
     ;Z CURRENT      -- a-addr   context for CURRENT
@@ -1087,7 +1087,7 @@ MOVE2:  DW EXIT
 ;   DUP 0= UNTIL
 ;   DROP ;
     head(WORDS,WORDS,docolon)
-        DW LATEST,FETCH
+        DW CONTEXT,FETCH
 WDS1:   DW DUP,COUNT
         DW QDUP,ZEROEQUAL,qbranch,WDS2
         DW DROP
@@ -1208,6 +1208,8 @@ COLD1:  DW lit,lastword8k,LATEST,STORE
         DW XSQUOTE
         DB 9," - 8K ROM"
 COLD2:  DW TYPE,CR
+        DW lit,lastword,lit,FORTH_WORDLIST_WID,STORE
+        DW lit,editor_lastword,lit,EDITOR_WORDLIST_WID,STORE
         DW FORTH_WORDLIST,lit,1,SET_ORDER
         DW ABORT       ; ABORT never returns
 
@@ -1219,6 +1221,8 @@ COLD2:  DW TYPE,CR
         DB 47,"Z80 CamelForth v1.02  25 Jan 1995 (warmstart)"
         DB 0dh,0ah
         DW TYPE
+        DW lit,lastword,lit,FORTH_WORDLIST_WID,STORE
+        DW lit,editor_lastword,lit,EDITOR_WORDLIST_WID,STORE
         DW FORTH_WORDLIST,lit,1,SET_ORDER
         DW ABORT       ; ABORT never returns
 

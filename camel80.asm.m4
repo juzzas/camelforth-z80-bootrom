@@ -85,6 +85,17 @@ $1:
       ifelse($3,docode,, call $3)
       ')
 
+define(link_editor, 0)
+define(head_editor, `
+      dw link_editor
+      db 0
+$1_link:
+      define(`link_editor', `$1_link')
+      defm len($2), "patsubst($2, ", `",34,"')"
+$1:
+      ifelse($3,docode,, call $3)
+      ')
+
 ; NEXTHL is used when the IP is already in HL.
 define(nexthl, `
         ld e,(hl)
@@ -1072,5 +1083,11 @@ rom_16k_signature:
 include(camel80x.asm.m4)   ; RC2014 16K ROM extensions
 include(camel80u.asm.m4)   ; RC2014 Utilities
 
-        defc lastword=link       ; nfa of last word in dict.
+        defc lastword=link                ; nfa of last word in dict.
+        defc editor_lastword=link_editor  ; nfa of last word in EDITOR wordlist.
         defc enddict=0x8C00 ;WRKSPC       ; user's code starts here
+
+SECTION data_user
+
+FORTH_WORDLIST_WID:
+        dw lastword

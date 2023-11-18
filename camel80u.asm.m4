@@ -34,13 +34,18 @@
 
 EXTERN _hexload
 
+SECTION data_user
+
+EDITOR_WORDLIST_WID:
+        dw editor_lastword
+
 SECTION code_user_16k
 
 ;  RC2014 simple editor =========================
 
 ;Z .BLOCK  ( --  block status )
 ;    ." Screen: " SCR @ DUP . UPDATED? 43 + EMIT SPACE ;
-    head(DOTBLOCK,.BLOCK,docolon)
+    head_editor(DOTBLOCK,.BLOCK,docolon)
         dw XSQUOTE
         db 8,"Screen: "
         dw TYPE
@@ -66,7 +71,7 @@ RULER1:
 
 ; Z VB  ( -- )    visual list
 ;     --- SCR @ BLOCK (LIST) DROP --- ;
-    head(VB,VB,docolon)
+    head_editor(VB,VB,docolon)
         dw RULER
         dw SCR,FETCH,BLOCK,XLIST,DROP
         dw RULER
@@ -75,7 +80,7 @@ RULER1:
 
 ;Z .STACK  ( -- )    display stack status
 ;     ." Stack: " .S ;
-    head(DOTSTACK,.STACK,docolon)
+    head_editor(DOTSTACK,.STACK,docolon)
         dw XSQUOTE
         db 7,"Stack: "
         dw TYPE
@@ -85,32 +90,32 @@ RULER1:
 
 ;Z STATUS  ( -- )    status line
 ;     .BLOCK .STACK ;
-    head(STATUS,STATUS,docolon)
+    head_editor(STATUS,STATUS,docolon)
         dw DOTBLOCK
         dw DOTSTACK
         dw EXIT
 
 ;Z V    ( -- )      visual list
 ;     CR VB STATUS ;
-    head(VEE,V,docolon)
+    head_editor(VEE,V,docolon)
         dw CLS,lit,0,DUP,AT_XY,VB,STATUS
         dw EXIT
 
 ;Z V*   ( -- )      visual list update
 ;     UPDATE V ;
-    head(VSTAR,V*,docolon)
+    head_editor(VSTAR,V*,docolon)
         dw UPDATE,VEE
         dw EXIT
 
 ;Z S    ( n -- )     select screen n
 ;     DUP SCR ! BLOCK DROP V ;
-    head(S,S,docolon)
+    head_editor(S,S,docolon)
         dw DUP,SCR,STORE,BLOCK,DROP,VEE
         dw EXIT
 
 ;Z IA   ( column row -- )  insert at column,row
 ;     (LINE) + >R 13 WORD COUNT R> SWAP MOVE V* ;
-    head(IA,IA,docolon)
+    head_editor(IA,IA,docolon)
         dw XLINE,PLUS,TOR
         dw lit,13,WORD,COUNT,RFROM
         dw SWOP,MOVE,VSTAR
@@ -118,31 +123,31 @@ RULER1:
 
 ;Z P   ( n -- )       place at line n
 ;     0 SWAP IA ;
-    head(P,P,docolon)
+    head_editor(P,P,docolon)
         dw lit,0,SWOP,IA
         dw EXIT
 
 ;Z D   ( n -- )       delete line n
 ;    (LINE) C/L BL FILL V* ;
-    head(D,D,docolon)
+    head_editor(D,D,docolon)
         dw XLINE,C_L,BL,FILL,VSTAR
         dw EXIT
 
 ;Z X   ( -- )
 ;     (BLOCK) L/B C/L * BL FILL V* ;
-    head(X,X,docolon)
+    head_editor(X,X,docolon)
         dw XBLOCK,L_B,C_L,STAR,BL,FILL,VSTAR
         dw EXIT
 
 ;Z B   ( -- )
 ;     -1 SCR +! V ;
-    head(B,B,docolon)
+    head_editor(B,B,docolon)
         dw lit,-1,SCR,PLUSSTORE,VEE
         dw EXIT
 
 ;Z N   ( -- )
 ;     1 SCR +! V ;
-    head(N,N,docolon)
+    head_editor(N,N,docolon)
         dw lit,1,SCR,PLUSSTORE,VEE
         dw EXIT
 
@@ -151,12 +156,12 @@ RULER1:
 ;  RC2014 Full screen editor =========================
 
 ;: !XY ( i -- i ) 1023 AND DUP C/L /MOD 3 2 D+ AT-XY ;
-    head(STOREXY,!XY,docolon)
+    head_editor(STOREXY,!XY,docolon)
         dw lit,1023,AND,DUP,C_L,SLASHMOD,lit,3,lit,1,DPLUS,AT_XY
         dw EXIT
 
 ;: !CH ( c i -- c i ) 2DUP SCR @ BLOCK + C! UPDATE OVER EMIT ;
-    head(STORECH,!CH,docolon)
+    head_editor(STORECH,!CH,docolon)
         dw TWODUP,SCR,FETCH,BLOCK,PLUS,CSTORE,UPDATE
         dw OVER,EMIT
         dw EXIT
@@ -177,7 +182,7 @@ RULER1:
 ;    OVER 25 = IF cut_line THEN ( cut line, shift up ^y ) ;
 ;    OVER 15 = IF insert_line THEN ( shift down, empty line ^o ) ;
 ;    OVER 16 = IF paste_line THEN ( shift down, paste line ^p ) ;
-    head(QCH,?CH,docolon)
+    head_editor(QCH,?CH,docolon)
         dw OVER,BL,MINUS,lit,95,ULESS,qbranch,QCH1
         dw STORECH,ONEPLUS
 QCH1:
@@ -213,7 +218,7 @@ QCH8:
 
 ;: EDIT ( n -- ) CLS 0 DUP AT-XY LIST 0
 ;    BEGIN !XY KEY SWAP ?CH SWAP 27 = UNTIL DROP L ;
-    head(EDIT,EDIT,docolon)
+    head_editor(EDIT,EDIT,docolon)
         DW S
         dw lit,0
 EDIT1:
