@@ -493,3 +493,15 @@ INDEX1:
         dw BUFFER,lit,1024,BLANKS
         dw UPDATE
         dw EXIT
+
+;: MARKER  ( "name" -- )
+;    CREATE LATEST @ NFA>LFA FETCH ,
+;    DOES> @ LATEST !  ;
+    head(MARKER,MARKER,docolon)
+        DW CREATE,LATEST,FETCH
+        DW NFATOLFA,FETCH,COMMA
+
+        DW XDOES
+        call dodoes
+        DW FETCH,LATEST,STORE
+        dw EXIT
