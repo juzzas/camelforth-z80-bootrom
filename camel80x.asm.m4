@@ -495,15 +495,21 @@ INDEX1:
         dw EXIT
 
 ;: MARKER  ( "name" -- )
+;    HERE >R
 ;    CREATE LATEST @ NFA>LFA FETCH ,
-;    DOES> @ LATEST !  ;
+;    R> ,
+;    DOES> DUP  @ LATEST !
+;            CELL+  @ DP ! ;
     head(MARKER,MARKER,docolon)
+        DW HERE,TOR
         DW CREATE,LATEST,FETCH
         DW NFATOLFA,FETCH,COMMA
+        DW RFROM,COMMA
 
         DW XDOES
         call dodoes
-        DW FETCH,LATEST,STORE
+        DW DUP,FETCH,LATEST,STORE
+        DW CELLPLUS,FETCH,DP,STORE
         dw EXIT
 
 ; (BSAVE) ( c-addr u -- )  save block to file
