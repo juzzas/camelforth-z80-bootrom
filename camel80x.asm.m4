@@ -505,3 +505,118 @@ INDEX1:
         call dodoes
         DW FETCH,LATEST,STORE
         dw EXIT
+
+; (BSAVE) ( c-addr u -- )  save block to file
+;    BLK @ BUFFER                               ( c-addr u buffer )
+;    SWAP MOVE
+;    UPDATE  ;
+    head(XBSAVE,(BSAVE),docolon)
+        dw BLK,FETCH,BUFFER
+        dw SWOP,MOVE
+        dw UPDATE
+        dw EXIT
+
+;: BSAVE   ( c-addr u blk -- )
+;    BUFFER DROP    ( c-addr u -- ; blk in BLK)
+;
+;    B/BLK /MOD    ( c-addr rem #blks )
+;    SWAP   >R      (c-addr #blks ; rem )
+;    ?DUP IF
+;      0 DO                  ( c-addr ; rem )
+;        DUP B/BLK (BSAVE)   ( c-addr ; rem )
+;        B/BLK +             ( c-addr' ; rem )
+;        1 BLK +!            ( c-addr' ; rem )
+;      LOOP
+;    THEN           ( c-addr ; rem )
+;
+;    R> (BSAVE) ( c-addr rem )
+;    FLUSH  ;
+    head(BSAVE,BSAVE,docolon)
+        dw BUFFER,DROP
+        dw B_BLK,SLASHMOD
+        dw SWOP,TOR
+        dw QDUP,qbranch,BSAVE1
+        dw lit,0,xdo
+BSAVE2:
+        dw DUP,B_BLK,XBSAVE
+        dw B_BLK,PLUS
+        dw lit,1,BLK,PLUSSTORE
+        dw xloop,BSAVE2
+BSAVE1:
+        dw RFROM,XBSAVE
+        dw FLUSH
+        dw EXIT
+
+; (BLOAD) ( c-addr u -- )  save block to file
+;    BLK @ BLOCK                            ( c-addr u buffer )
+;    ROT ROT MOVE    ;
+    head(XBLOAD,(BLOAD),docolon)
+        dw BLK,FETCH,BLOCK
+        dw ROT,ROT,MOVE
+        dw EXIT
+
+;: BLOAD   ( blk c-addr u -- )
+;    ROT BLOCK DROP    ( c-addr u -- ; blk in BLK)
+;
+;    B/BLK /MOD    ( c-addr rem #blks )
+;    SWAP   >R      (c-addr #blks ; rem )
+;    ?DUP IF
+;      0 DO                  ( c-addr ; rem )
+;        DUP B/BLK (BLOAD)   ( c-addr ; rem )
+;        B/BLK +             ( c-addr' ; rem )
+;        1 BLK +!            ( c-addr' ; rem )
+;      LOOP
+;    THEN           ( c-addr ; rem )
+;
+;    R> (BLOAD) ( c-addr rem )     ;
+    head(BLOAD,BLOAD,docolon)
+        dw ROT,BLOCK,DROP
+        dw B_BLK,SLASHMOD
+        dw SWOP,TOR
+        dw QDUP,qbranch,BLOAD1
+        dw lit,0,xdo
+BLOAD2:
+        dw DUP,B_BLK,XBLOAD
+        dw B_BLK,PLUS
+        dw lit,1,BLK,PLUSSTORE
+        dw xloop,BLOAD2
+BLOAD1:
+        dw RFROM,XBLOAD
+        dw FLUSH
+        dw EXIT
+
+;: SAVE   ( blk -- )
+; --------------------------------------------------------------
+; Header
+;    size of header
+;    size of data
+;    LATEST 2 bytes. last word in dict
+;    DP 2 bytes. dictionary pointer
+;    VOCLNK 2 bytes.
+;    CONTEXT 2 bytes (for number of items on wordlist stack)
+;         followed by n items of stack.
+; --------------------------------------------------------------
+;    Setup header
+;    BUFFER     ( c-addr u buffer -- ; blk in BLK)
+;      DUP 64 0 FILL
+;      64 OVER !                 ( store header size )
+;      CELL+ 2DUP !              ( store data size )
+;      CELL+ LATEST @ OVER !     ( store LATEST )
+;      CELL+ DP @ OVER !         ( store DP )
+;
+;
+;    B/BLK /MOD    ( c-addr rem #blks )
+;    SWAP   >R      (c-addr #blks ; rem )
+;    ?DUP IF
+;      0 DO                  ( c-addr ; rem )
+;        DUP B/BLK (BSAVE)   ( c-addr ; rem )
+;        B/BLK +             ( c-addr' ; rem )
+;        1 BLK +!            ( c-addr' ; rem )
+;      LOOP
+;    THEN           ( c-addr ; rem )
+;
+;    R> (BSAVE) ( c-addr rem )
+;    FLUSH  ;
+
+;: RESTORE   ( blk -- )
+;    ;
