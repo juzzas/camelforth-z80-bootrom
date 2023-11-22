@@ -591,7 +591,11 @@ BLOAD1:
         dw FLUSH
         dw EXIT
 
-;: SAVE   ( blk -- )
+
+defc BLK_HEADER_SIZE = 64
+defc BLK_DATA_SIZE   = 960
+
+; (SAVEHDR)            ( c-addr u buffer -- c-addr' u' )
 ; --------------------------------------------------------------
 ; Header
 ;    size of header
@@ -604,15 +608,52 @@ BLOAD1:
 ; --------------------------------------------------------------
 ;    Setup header
 ;    BUFFER     ( c-addr u buffer -- ; blk in BLK)
-;      DUP 64 0 FILL
-;      64 OVER !                 ( store header size )
+;      DUP BLK_HEADER_SIZE ERASE
+;      BLK_HEADER_SIZE OVER !    ( store header size )
 ;      CELL+ 2DUP !              ( store data size )
 ;      CELL+ LATEST @ OVER !     ( store LATEST )
 ;      CELL+ DP @ OVER !         ( store DP )
+;      DROP                      ( c-addr u )
 ;
+;    BUFFER BLK_HDR_SIZE +    ( c-addr u buffer' )
+;    OVER BLK_DATA_SIZE > IF
+;      >R OVER R> BLK_DATA_SIZE MOVE UPDATE  ( c-addr u )
+;      SWAP BLK_DATA_SIZE +                  ( u c-addr' )
+;      SWAP BLK_DATA_SIZE -                  ( c-addr' u' )
+;    ELSE                     ( c-addr u buffer' )
+;      >R 2DUP R>             ( c-addr u c-addr u buffer' )
+;       SWAP MOVE UPDATE      ( c-addr u )
+;       + 0                   ( c-addr' 0 )
+;    THEN   ;
+    head(XSAVEHDR,(SAVEHDR),docolon)
+        dw DUP,lit,BLK_HEADER_SIZE,ERASE
+        dw lit,BLK_HEADER_SIZE,OVER,STORE
+        dw CELLPLUS,TWODUP,STORE
+        dw CELLPLUS,LATEST,FETCH,OVER,STORE
+        dw CELLPLUS,DP,FETCH,OVER,STORE
+        dw DROP
+
+        dw BLK,FETCH,BUFFER,lit,BLK_HEADER_SIZE,PLUS
+        dw OVER,lit,BLK_HEADER_SIZE,GREATER,qbranch,XSAVEHDR1
+        dw TOR,OVER,RFROM,lit,BLK_DATA_SIZE,MOVE,UPDATE
+        dw SWOP,lit,BLK_DATA_SIZE,PLUS
+        dw SWOP,lit,BLK_DATA_SIZE,MINUS
+        dw branch,XSAVEHDR2
+XSAVEHDR1:
+        dw TOR,TWODUP,RFROM
+        dw SWOP,MOVE,UPDATE
+        dw PLUS,lit,0
+XSAVEHDR2:
+        dw EXIT
+
+;: SAVE   ( blk -- )
+;    enddict   DP @ enddict -    ( blk c-addr u )
+;    ROT BUFFER                  ( c-addr u buffer -- ; blk in BLK)
+;    (BSAVEHDR)                  ( c-addr' u' )
 ;
 ;    B/BLK /MOD    ( c-addr rem #blks )
 ;    SWAP   >R      (c-addr #blks ; rem )
+;
 ;    ?DUP IF
 ;      0 DO                  ( c-addr ; rem )
 ;        DUP B/BLK (BSAVE)   ( c-addr ; rem )
@@ -621,8 +662,35 @@ BLOAD1:
 ;      LOOP
 ;    THEN           ( c-addr ; rem )
 ;
-;    R> (BSAVE) ( c-addr rem )
-;    FLUSH  ;
+;    R>
+;    DUP  IF (BSAVE) THEN    (  )
+;    FLUSH   ;
+    head(SAVE,SAVE,docolon)
+        dw lit,enddict,DP,FETCH,lit,enddict,MINUS  ;  ( block c-addr u )
+        dw ROT,BUFFER                              ;  ( c-addr u buffer )
+        dw XSAVEHDR
+
+        dw B_BLK,SLASHMOD
+        dw SWOP,TOR
+
+        dw QDUP,qbranch,SAVE2
+        dw lit,0,xdo
+SAVE1:
+        dw DUP,B_BLK,XBSAVE
+        dw B_BLK,PLUS
+        dw lit,1,BLK,PLUSSTORE
+        dw xloop,SAVE1
+SAVE2:
+        dw RFROM
+        dw DUP,qbranch,SAVE3
+        dw XBSAVE
+SAVE3:
+        dw FLUSH
+        dw EXIT
+
+
+
+
 
 ;: RESTORE   ( blk -- )
 ;    ;
