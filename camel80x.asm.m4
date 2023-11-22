@@ -588,7 +588,6 @@ BLOAD2:
         dw xloop,BLOAD2
 BLOAD1:
         dw RFROM,XBLOAD
-        dw FLUSH
         dw EXIT
 
 
