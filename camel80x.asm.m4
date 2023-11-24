@@ -566,6 +566,11 @@ SECTION code_user_16k
             dw lit,EDITOR_WORDLIST_WID
             dw EXIT
 
+;: VOCAB-WORDLIST ( -- wid )
+        head(VOCAB_WORDLIST,VOCAB-WORDLIST,docolon)
+            dw lit,VOCAB_WORDLIST_WID
+            dw EXIT
+
 ;: GET-ORDER  ( -- wid1 .. widn n )
         head(GET_ORDER,GET-ORDER,docolon)
             dw lit,STACK_WORDLISTS,STACKGET
@@ -671,13 +676,13 @@ FIND1:
 ;  ;
 
 ;CREATE FORTH  FORTH-WORDLIST , DO-VOCABULARY
-    head(FORTH,FORTH,docolon)
+    head_vocab(FORTH,FORTH,docolon)
         dw FORTH_WORDLIST
         dw lit,STACK_WORDLISTS,STACKSTORE
         dw EXIT
 
 ;CREATE EDITOR  EDITOR-WORDLIST , DO-VOCABULARY
-    head(EDITOR,EDITOR,docolon)
+    head_vocab(EDITOR,EDITOR,docolon)
         dw EDITOR_WORDLIST
         dw lit,STACK_WORDLISTS,STACKSTORE
         dw EXIT
@@ -702,8 +707,27 @@ FIND1:
 
 ;: ONLY ( -- )  FORTH-WORDLIST 1 SET-ORDER ;
     head(ONLY,ONLY,docolon)
-        dw FORTH_WORDLIST,lit,1,SET_ORDER
+        dw VOCAB_WORDLIST,FORTH_WORDLIST,lit,2,SET_ORDER
         dw EXIT
+
+;: VOCS  ( -- )      list all vocabularies in dict
+;   VOCLINK @ BEGIN
+;       DUP COUNT
+;           ( ignore zero-length names, AKA :NONAME )
+;       ?DUP 0= IF DROP ELSE TYPE SPACE THEN
+;       NFA>LFA @
+;   DUP 0= UNTIL
+;   DROP ;
+    head(VOCS,VOCS,docolon)
+        DW VOCLINK,FETCH
+VOCS1:  DW DUP,COUNT
+        DW QDUP,ZEROEQUAL,qbranch,VOCS2
+        DW DROP
+        DW branch,VOCS3
+VOCS2:  DW TYPE,SPACE
+VOCS3:  DW NFATOLFA,FETCH
+        DW DUP,ZEROEQUAL,qbranch,VOCS1
+        DW DROP,EXIT
 
 
 ; BLOCK implementation ==========================

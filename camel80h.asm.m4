@@ -147,9 +147,9 @@
         head(CURRENT,CURRENT,douser)
             dw 40
 
-    ;Z VOC-LINK      -- a-addr   context for CURRENT
+    ;Z VOCLINK      -- a-addr   context for CURRENT
     ;  32 USER CURRENT
-        head(VOC_LINK,VOC-LINK,douser)
+        head(VOCLINK,VOCLINK,douser)
             dw 42
 
     ;Z CALLSP      -- a-addr   address to set SP during CALL
@@ -203,7 +203,7 @@
             DW 42           ; SEED
             DW 0            ; CONTEXT
             DW 0            ; CURRENT
-            DW 0            ; VOC-LINK
+            DW vocab_lastword            ; VOC-LINK
             DW 0            ; CALLSP
             DW 0            ; INTVEC
             DW 0            ; RST30VEC
@@ -1210,6 +1210,7 @@ COLD1:  DW lit,lastword8k,LATEST,STORE
 COLD2:  DW TYPE,CR
         DW lit,lastword,lit,FORTH_WORDLIST_WID,STORE
         DW lit,editor_lastword,lit,EDITOR_WORDLIST_WID,STORE
+        DW lit,vocab_lastword,lit,VOCAB_WORDLIST_WID,STORE
         DW FORTH_WORDLIST,lit,1,SET_ORDER
         DW ABORT       ; ABORT never returns
 
@@ -1223,6 +1224,7 @@ COLD2:  DW TYPE,CR
         DW TYPE
         DW lit,lastword,lit,FORTH_WORDLIST_WID,STORE
         DW lit,editor_lastword,lit,EDITOR_WORDLIST_WID,STORE
+        DW lit,vocab_lastword,lit,VOCAB_WORDLIST_WID,STORE
         DW FORTH_WORDLIST,lit,1,SET_ORDER
         DW ABORT       ; ABORT never returns
 
