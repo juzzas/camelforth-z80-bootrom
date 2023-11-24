@@ -623,7 +623,7 @@ defc BLK_DATA_SIZE   = 960
 ;      >R 2DUP R>             ( c-addr u c-addr u buffer' )
 ;       SWAP MOVE UPDATE      ( c-addr u )
 ;       + 0                   ( c-addr' 0 )
-;    THEN   ;
+;    THEN   FLUSH  ;
     head(XSAVEHDR,(SAVEHDR),docolon)
         dw DUP,lit,BLK_HEADER_SIZE,ERASE
         dw lit,BLK_HEADER_SIZE,OVER,STORE
@@ -643,6 +643,7 @@ XSAVEHDR1:
         dw SWOP,MOVE,UPDATE
         dw PLUS,lit,0
 XSAVEHDR2:
+        dw FLUSH
         dw EXIT
 
 ;: SAVE   ( blk -- )
@@ -652,22 +653,25 @@ XSAVEHDR2:
 ;
 ;    B/BLK /MOD    ( c-addr rem #blks )
 ;    SWAP   >R      (c-addr #blks ; rem )
+
+;    BLK @ 1+ BUFFER DROP
 ;
 ;    ?DUP IF
 ;      0 DO                  ( c-addr ; rem )
 ;        DUP B/BLK (BSAVE)   ( c-addr ; rem )
 ;        B/BLK +             ( c-addr' ; rem )
-;        1 BLK +!            ( c-addr' ; rem )
+;        BLK @ 1+ BUFFER DROP            ( c-addr' ; rem )
 ;      LOOP
 ;    THEN           ( c-addr ; rem )
 ;
 ;    R>
-;    DUP  IF (BSAVE) THEN    (  )
+;    QDUP  IF (BSAVE) ELSE DROP THEN    (  )
 ;    FLUSH   ;
     head(SAVE,SAVE,docolon)
         dw lit,enddict,DP,FETCH,lit,enddict,MINUS  ;  ( block c-addr u )
         dw ROT,BUFFER                              ;  ( c-addr u buffer )
         dw XSAVEHDR
+        dw BLK,FETCH,ONEPLUS,BUFFER,DROP
 
         dw B_BLK,SLASHMOD
         dw SWOP,TOR
@@ -677,19 +681,97 @@ XSAVEHDR2:
 SAVE1:
         dw DUP,B_BLK,XBSAVE
         dw B_BLK,PLUS
-        dw lit,1,BLK,PLUSSTORE
+        dw BLK,FETCH,ONEPLUS,BUFFER,DROP
         dw xloop,SAVE1
 SAVE2:
         dw RFROM
-        dw DUP,qbranch,SAVE3
+        dw QDUP,qbranch,SAVE3
         dw XBSAVE
+        dw branch,SAVE4
 SAVE3:
+        dw DROP
+SAVE4:
         dw FLUSH
         dw EXIT
 
-
-
-
-
 ;: RESTORE   ( blk -- )
-;    ;
+;    BLOCK                       ( buffer -- ; blk in BLK)
+;    DUP @                       ( buffer hdr_size )
+;    OVER +                      ( buffer buffer' )
+;    SWAP CELL+ DUP @            ( buffer' buffer data_size )
+;    SWAP CELL+ DUP @ LATEST !   ( buffer' data_size buffer )
+;    CELL+ DUP @ DP !            ( buffer' data_size buffer )
+;
+;    DROP SWAP enddict ROT       ( buffer' enddict u)
+;
+;    DUP BLK_DATA_SIZE > IF   ( buffer' c-addr u )
+;      >R 2DUP BLK_DATA_SIZE MOVE NIP R>     ( c-addr u )
+;      SWAP BLK_DATA_SIZE +                  ( u c-addr' )
+;      SWAP BLK_DATA_SIZE -                  ( c-addr' u' )
+;    ELSE                     ( buffer' c-addr u )
+;      >R 2DUP R@             ( buffer' c-addr buffer' c-addr u )
+;       MOVE NIP R>           ( c-addr u )
+;       + 0                   ( c-addr' 0 )
+;    THEN
+;
+;    lastword enddict !          ( patch link address )
+;
+;    BLK @ 1+ BLOCK DROP
+;
+;    B/BLK /MOD    ( c-addr rem #blks )
+;    SWAP   >R      (c-addr #blks ; rem )
+;    ?DUP IF
+;      0 DO                  ( c-addr ; rem )
+;        DUP B/BLK (BLOAD)   ( c-addr ; rem )
+;        B/BLK +             ( c-addr' ; rem )
+;        BLK @ 1+ BLOCK DROP ( c-addr' ; rem )
+;      LOOP
+;    THEN           ( c-addr ; rem )
+;    R>       ( c-addr rem )
+;
+;    QDUP  IF (BLOAD) ELSE DROP THEN  ;  (  )
+    head(RESTORE,RESTORE,docolon)
+        dw BLOCK
+        dw DUP,FETCH               ; header size
+        dw OVER,PLUS
+        dw SWOP,CELLPLUS,DUP,FETCH
+        dw SWOP,CELLPLUS,DUP,FETCH,LATEST,STORE
+        dw CELLPLUS,DUP,FETCH,DP,STORE
+
+        dw DROP,SWOP,lit,enddict,ROT
+
+        dw DUP,lit,BLK_DATA_SIZE,GREATER,qbranch,RESTORE1
+        dw TOR,TWODUP,lit,BLK_DATA_SIZE,MOVE,NIP,RFROM
+        dw SWOP,lit,BLK_DATA_SIZE,PLUS
+        dw SWOP,lit,BLK_DATA_SIZE,MINUS
+        dw branch,RESTORE2
+RESTORE1:
+        dw TOR,TWODUP,RFETCH
+        dw MOVE,NIP,RFROM
+        dw PLUS,lit,0
+
+RESTORE2:
+        dw lit,lastword,lit,enddict,STORE
+        dw BLK,FETCH,ONEPLUS,BLOCK,DROP
+
+        dw B_BLK,SLASHMOD
+        dw SWOP,TOR
+
+        dw QDUP,qbranch,RESTORE4
+        dw lit,0,xdo
+RESTORE3:
+        dw DUP,B_BLK,XBLOAD
+        dw B_BLK,PLUS
+        dw BLK,FETCH,ONEPLUS,BLOCK,DROP
+        dw xloop,RESTORE3
+RESTORE4:
+        dw RFROM
+        dw QDUP,qbranch,RESTORE5
+        dw XBLOAD
+        dw branch,RESTORE6
+RESTORE5:
+        dw DROP
+
+RESTORE6:
+        dw EXIT
+
