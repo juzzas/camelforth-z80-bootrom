@@ -711,23 +711,9 @@ FIND1:
         dw EXIT
 
 ;: VOCS  ( -- )      list all vocabularies in dict
-;   VOCLINK @ BEGIN
-;       DUP COUNT
-;           ( ignore zero-length names, AKA :NONAME )
-;       ?DUP 0= IF DROP ELSE TYPE SPACE THEN
-;       NFA>LFA @
-;   DUP 0= UNTIL
-;   DROP ;
+;   VOCLINK (WORDS) ;
     head(VOCS,VOCS,docolon)
-        DW VOCLINK,FETCH
-VOCS1:  DW DUP,COUNT
-        DW QDUP,ZEROEQUAL,qbranch,VOCS2
-        DW DROP
-        DW branch,VOCS3
-VOCS2:  DW TYPE,SPACE
-VOCS3:  DW NFATOLFA,FETCH
-        DW DUP,ZEROEQUAL,qbranch,VOCS1
-        DW DROP,EXIT
+        DW VOCLINK,XWORDS,EXIT
 
 
 ; BLOCK implementation ==========================

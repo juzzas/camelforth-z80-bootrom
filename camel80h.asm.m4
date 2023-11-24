@@ -1078,16 +1078,16 @@ MOVE2:  DW EXIT
 
 ; UTILITY WORDS AND STARTUP =====================
 
-;X WORDS    --          list all words in dict.
-;   LATEST @ BEGIN
+;X WORDS  wid  --          list all words in wordlist.
+;   @ BEGIN
 ;       DUP COUNT
 ;           ( ignore zero-length names, AKA :NONAME )
 ;       ?DUP 0= IF DROP ELSE TYPE SPACE THEN
 ;       NFA>LFA @
 ;   DUP 0= UNTIL
 ;   DROP ;
-    head(WORDS,WORDS,docolon)
-        DW CONTEXT,FETCH
+    head(XWORDS,(WORDS),docolon)
+        DW FETCH
 WDS1:   DW DUP,COUNT
         DW QDUP,ZEROEQUAL,qbranch,WDS2
         DW DROP
@@ -1096,6 +1096,12 @@ WDS2:   DW TYPE,SPACE
 WDS3:   DW NFATOLFA,FETCH
         DW DUP,ZEROEQUAL,qbranch,WDS1
         DW DROP,EXIT
+
+;X WORDS    --          list all words in current wordlist.
+;   CONTEXT (WORDS) ;
+    head(WORDS,WORDS,docolon)
+        DW CONTEXT,XWORDS
+        DW EXIT
 
 ;X .S      --           print stack contents
 ;   SP@ S0 - IF
