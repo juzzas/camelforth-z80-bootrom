@@ -142,7 +142,7 @@
         head(CONTEXT_OLD,CONTEXT_OLD,douser)
             dw 38
 
-    ;Z CURRENT      -- a-addr   context for CURRENT
+    ;Z CURRENT      -- a-addr   address of CURRENT wid
     ;  32 USER CURRENT
         head(CURRENT,CURRENT,douser)
             dw 40
@@ -833,22 +833,22 @@ QABO1:  DW TWODROP,EXIT
 ; COMPILER ======================================
 
 ;C CREATE   --      create an empty definition
-;   LATEST @ , 0 C,         link & `immed' field
-;   HERE LATEST !           new "latest" link
+;   CURRENT @ @ , 0 C,         link & `immed' field
+;   HERE CURRENT @ !           new "latest" link
 ;   BL WORD C@ 1+ ALLOT         name field
 ;   docreate ,CF                code field
     head(CREATE,CREATE,docolon)
-        DW LATEST,FETCH,COMMA,lit,0,CCOMMA
-        DW HERE,LATEST,STORE
+        DW CURRENT,FETCH,FETCH,COMMA,lit,0,CCOMMA
+        DW HERE,CURRENT,FETCH,STORE
         DW BL,WORD,CFETCH,ONEPLUS,ALLOT
         DW lit,docreate,COMMACF,EXIT
         
 ;Z (DOES>)  --      run-time action of DOES>
 ;   R>              adrs of headless DOES> def'n
-;   LATEST @ NFA>CFA    code field to fix up
+;   CURRENT @ @ NFA>CFA    code field to fix up
 ;   !CF ;
     head(XDOES,(DOES>),docolon)
-        DW RFROM,LATEST,FETCH,NFATOCFA,STORECF
+        DW RFROM,CURRENT,FETCH,FETCH,NFATOCFA,STORECF
         DW EXIT
 
 ;C DOES>    --      change action of latest def'n
@@ -859,9 +859,9 @@ QABO1:  DW TWODROP,EXIT
         DW lit,dodoes,COMMACF,EXIT
 
 ;C RECURSE  --      recurse current definition
-;   LATEST @ NFA>CFA ,XT ; IMMEDIATE
+;   CURRENT @ @ NFA>CFA ,XT ; IMMEDIATE
     immed(RECURSE,RECURSE,docolon)
-        DW LATEST,FETCH,NFATOCFA,COMMAXT,EXIT
+        DW CURRENT,FETCH,FETCH,NFATOCFA,COMMAXT,EXIT
 
 ;C [        --      enter interpretive state
 ;   0 STATE ! ; IMMEDIATE
@@ -874,21 +874,21 @@ QABO1:  DW TWODROP,EXIT
         DW lit,-1,STATE,STORE,EXIT
 
 ;Z HIDE     --      "hide" latest definition
-;   LATEST @ DUP C@ 80 OR SWAP C! ;
+;   CURRENT @ @ DUP C@ 80 OR SWAP C! ;
     head(HIDE,HIDE,docolon)
-        DW LATEST,FETCH,DUP,CFETCH,lit,80H,OR
+        DW CURRENT,FETCH,FETCH,DUP,CFETCH,lit,80H,OR
         DW SWOP,CSTORE,EXIT
 
 ;Z REVEAL   --      "reveal" latest definition
-;   LATEST @ DUP C@ 7F AND SWAP C! ;
+;   CURRENT @ @ DUP C@ 7F AND SWAP C! ;
     head(REVEAL,REVEAL,docolon)
-        DW LATEST,FETCH,DUP,CFETCH,lit,7FH,AND
+        DW CURRENT,FETCH,FETCH,DUP,CFETCH,lit,7FH,AND
         DW SWOP,CSTORE,EXIT
 
 ;C IMMEDIATE   --   make last def'n immediate
-;   1 LATEST @ 1- C! ;   set immediate flag
+;   1 CURRENT @ @ 1- C! ;   set immediate flag
     head(IMMEDIATE,IMMEDIATE,docolon)
-        DW lit,1,LATEST,FETCH,ONEMINUS,CSTORE
+        DW lit,1,CURRENT,FETCH,FETCH,ONEMINUS,CSTORE
         DW EXIT
 
 ;C :        --      begin a colon definition
@@ -1210,7 +1210,7 @@ tdiv1:
         DW XSQUOTE
         DB 10," - 16K ROM"
         DW branch,COLD2
-COLD1:  DW lit,lastword8k,LATEST,STORE
+COLD1:  DW lit,lastword8k,CURRENT,FETCH,STORE
         DW XSQUOTE
         DB 9," - 8K ROM"
 COLD2:  DW TYPE,CR
@@ -1218,6 +1218,7 @@ COLD2:  DW TYPE,CR
         DW lit,editor_lastword,lit,EDITOR_WORDLIST_WID,STORE
         DW lit,vocab_lastword,lit,VOCAB_WORDLIST_WID,STORE
         DW FORTH_WORDLIST,lit,1,SET_ORDER
+        DW lit,FORTH_WORDLIST_WID,CURRENT,STORE
         DW ABORT       ; ABORT never returns
 
 ;Z WARM     --      warm start Forth system
@@ -1232,5 +1233,6 @@ COLD2:  DW TYPE,CR
         DW lit,editor_lastword,lit,EDITOR_WORDLIST_WID,STORE
         DW lit,vocab_lastword,lit,VOCAB_WORDLIST_WID,STORE
         DW FORTH_WORDLIST,lit,1,SET_ORDER
+        DW lit,FORTH_WORDLIST_WID,CURRENT,STORE
         DW ABORT       ; ABORT never returns
 

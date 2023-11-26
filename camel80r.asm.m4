@@ -111,14 +111,14 @@ SECTION code_user
 ; RC2014 EXTENSION misc ======================
 
 dnl ;Z :NONAME       ( -- xt      define anonymous xt )
-dnl ;    LATEST @ , 0 C,    ( last link + immed flag )
-dnl ;    HERE LATEST !      ( new "latest" )
+dnl ;    CURRENT @ @ , 0 C,    ( last link + immed flag )
+dnl ;    HERE CURRENT @ !      ( new "latest" )
 dnl ;    0 C,          ( empty NFA )
 dnl ;    HERE               ( push xt to stack             )
 dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
     head(NONAME,:NONAME,docolon)
-        dw LATEST,FETCH,COMMA,lit,0,CCOMMA
-        dw HERE,LATEST,STORE
+        dw CURRENT,FETCH,FETCH,COMMA,lit,0,CCOMMA
+        dw HERE,CURRENT,FETCH,STORE
         dw lit,0,CCOMMA
         dw HERE
         dw HIDE,RIGHTBRACKET,lit,docolon,COMMACF
