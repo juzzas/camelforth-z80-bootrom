@@ -715,6 +715,11 @@ FIND1:
     head(VOCS,VOCS,docolon)
         DW VOCLINK,XWORDS,EXIT
 
+;: VLIST  ( -- )      list all words in search order
+;   (WORDS) STACK_WORDLISTS STACK.FOREACH ;
+    head(VLIST,VLIST,docolon)
+        DW lit,XWORDS,lit,STACK_WORDLISTS,STACKFOREACH
+        DW EXIT
 
 ; BLOCK implementation ==========================
 
