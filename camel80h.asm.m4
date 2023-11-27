@@ -147,7 +147,7 @@
         head(CURRENT,CURRENT,douser)
             dw 40
 
-    ;Z VOCLINK      -- a-addr   context for CURRENT
+    ;Z VOCLINK      -- a-addr   address for VOCLINK wid
     ;  32 USER CURRENT
         head(VOCLINK,VOCLINK,douser)
             dw 42
@@ -1222,6 +1222,7 @@ COLD2:  DW TYPE,CR
         DW lit,vocab_lastword,lit,VOCAB_WORDLIST_WID,STORE
         DW FORTH_WORDLIST,lit,1,SET_ORDER
         DW lit,FORTH_WORDLIST_WID,CURRENT,STORE
+        DW lit,VOCAB_WORDLIST_WID,VOCLINK,STORE
         DW ABORT       ; ABORT never returns
 
 ;Z WARM     --      warm start Forth system
@@ -1237,5 +1238,6 @@ COLD2:  DW TYPE,CR
         DW lit,vocab_lastword,lit,VOCAB_WORDLIST_WID,STORE
         DW FORTH_WORDLIST,lit,1,SET_ORDER
         DW lit,FORTH_WORDLIST_WID,CURRENT,STORE
+        DW lit,VOCAB_WORDLIST_WID,VOCLINK,STORE
         DW ABORT       ; ABORT never returns
 

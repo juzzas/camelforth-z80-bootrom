@@ -581,6 +581,11 @@ SECTION code_user_16k
             dw lit,STACK_WORDLISTS,STACKSET
             dw EXIT
 
+;: >ORDER  ( wid1 .. widn n -- )
+        head(TOORDER,>ORDER,docolon)
+            dw lit,STACK_WORDLISTS,TOSTACK
+            dw EXIT
+
 ;: SET-CURRENT  ( wid -- )
 ;    CURRENT !  ;
         head(SET_CURRENT,SET-CURRENT,docolon)
@@ -687,7 +692,32 @@ FIND1:
         dw lit,STACK_WORDLISTS,STACKSTORE
         dw EXIT
 
-;: VOCABULARY  ( name -- )  WORDLIST CREATE ,  DO-VOCABULARY ;
+
+;: VOCABULARY  ( name -- )  WORDLIST CREATE ,
+;   VOC-LINK @ @ , 0 C,         link & `immed' field
+;   HERE VOC-LINK @ !           new "latest" link
+;   BL WORD C@ 1+ ALLOT         name field
+;   docreate ,CF                code field
+;   WORDLIST ,
+;
+;    DOES>  @ STACK_WORDLISTS,TOSTACK
+;  ;
+    head(VOCABULARY,VOCABULARY,docolon)
+        dw VOCLINK,FETCH,FETCH,COMMA,lit,0,CCOMMA
+        dw HERE,VOCLINK,FETCH,STORE
+        dw BL,WORD,CFETCH,ONEPLUS,ALLOT
+        dw lit,docreate,COMMACF
+        dw WORDLIST,COMMA
+
+        dw XVOCDOES
+        call dodoes
+        DW lit,STACK_WORDLISTS,STACKSTORE
+        dw EXIT
+
+; patch latest entry on VOCLINK with code from VOCDOES
+    head(XVOCDOES,(VOCDOES>),docolon)
+        DW RFROM,VOCLINK,FETCH,FETCH,NFATOCFA,STORECF
+        DW EXIT
 
 ;: ALSO  ( -- )  STACK_WORDLISTS DUP STACK@ >STACK ;
     head(ALSO,ALSO,docolon)
@@ -711,9 +741,9 @@ FIND1:
         dw EXIT
 
 ;: VOCS  ( -- )      list all vocabularies in dict
-;   VOCLINK (WORDS) ;
+;   VOCLINK @ (WORDS) ;
     head(VOCS,VOCS,docolon)
-        DW VOCLINK,XWORDS,EXIT
+        DW VOCLINK,FETCH,XWORDS,EXIT
 
 ;: VLIST  ( -- )      list all words in search order
 ;   (WORDS) STACK_WORDLISTS STACK.FOREACH ;
