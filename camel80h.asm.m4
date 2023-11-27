@@ -1080,21 +1080,24 @@ MOVE2:  DW EXIT
 
 ;X WORDS  wid  --          list all words in wordlist.
 ;   @ BEGIN
-;       DUP COUNT
-;           ( ignore zero-length names, AKA :NONAME )
-;       ?DUP 0= IF DROP ELSE TYPE SPACE THEN
-;       NFA>LFA @
-;   DUP 0= UNTIL
+;       DUP WHILE
+;          DUP COUNT
+;              ( ignore zero-length names, AKA :NONAME )
+;          ?DUP 0= IF DROP ELSE TYPE SPACE THEN
+;          NFA>LFA @
+;       REPEAT
 ;   DROP ;
     head(XWORDS,(WORDS),docolon)
         DW FETCH
-WDS1:   DW DUP,COUNT
+WDS1:   DW DUP,qbranch,WDS4
+        DW DUP,COUNT
         DW QDUP,ZEROEQUAL,qbranch,WDS2
         DW DROP
         DW branch,WDS3
 WDS2:   DW TYPE,SPACE
 WDS3:   DW NFATOLFA,FETCH
-        DW DUP,ZEROEQUAL,qbranch,WDS1
+        DW branch,WDS1
+WDS4:
         DW DROP,EXIT
 
 ;X WORDS    --          list all words in current wordlist.
