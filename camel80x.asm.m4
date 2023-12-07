@@ -535,6 +535,9 @@ SECTION data_user
 STACK_WORDLISTS:
         ds 34    ; 16 cells + stack top pointer
 
+STACK_RECOGNIZER:
+        ds 18    ; 8 cells + stack top pointer
+
 SECTION code_user_16k
 
 ;WORDLIST ( -- wid )
@@ -645,6 +648,9 @@ FINDIN5:
 ;C FIND-NAME   c-addr len      -- 0   if not found
 ;C                                nt  if found
 ;    ' FIND-NAME-IN STACK_WORDLISTS STACK.UNTIL
+;                         ( c-addr len 0       if not found )
+;                         ( c-addr len nfa     if found )
+;    NIP NIP ;
     head(FIND_NAME,FIND-NAME,docolon)
         DW lit,FIND_NAME_IN,lit,STACK_WORDLISTS,STACKUNTIL
         DW NIP,NIP
@@ -1191,4 +1197,88 @@ RESTORE5:
 
 RESTORE6:
         dw EXIT
+
+
+
+
+; an alternative implementation of recognizers. It
+; uses a separate stack module, that can be used
+; to implement the search order words independently
+;
+; Based on the RECOGNIZER by Author: Matthias Trute
+; License: Public Domain
+
+; 4 STACK VALUE FORTH-RECOGNIZER
+
+; define a recognizer with three actions. Suggesting RECTYPE-* names
+;: RECTYPE: ( XT-INTERPRET XT-COMPILE XT-POSTPONE "<spaces>name" -- )
+;  CREATE SWAP ROT , , ,
+;    ;
+    head(RECTYPECOLON,RECTYPE:,docolon)
+        DW CREATE,SWOP,ROT,COMMA,COMMA,COMMA
+        DW EXIT
+
+;: RECTYPE>POST ( RECTYPE-TOKEN -- XT-POSTPONE ) CELL+ CELL+ @ ;
+    head(RECTYPETOPOST,RECTYPE>POST,docolon)
+        DW CELLPLUS,CELLPLUS,FETCH
+        DW EXIT
+
+;: RECTYPE>COMP ( RECTYPE-TOKEN -- XT-COMPILE  )       CELL+ @ ;
+    head(RECTYPETOCOMP,RECTYPE>COMP,docolon)
+        DW CELLPLUS,FETCH
+        DW EXIT
+
+;: RECTYPE>INT  ( RECTYPE-TOKEN -- XT-INTERPRET)             @ ;
+    head(RECTYPETOINT,RECTYPE>INT,docolon)
+        DW FETCH
+        DW EXIT
+
+; 0 CONSTANT RECTYPE-NULL
+    head(RECTYPE_NULL,RECTYPE-NULL,docon)
+        dw 0
+
+;: (recognize) ( addr len XT -- addr len 0 | i*x RECTYPE-TOKEN -1 )
+;   ROT ROT 2DUP 2>R ROT EXECUTE 2R> ROT
+;   DUP RECTYPE-NULL =          ( -- i*x addr len RECTYPE-TOKEN f )
+;   IF DROP 0 ELSE NIP NIP -1 THEN   ;
+    head(XRECOGNIZE,(RECOGNIZE),docolon)
+        dw ROT,ROT,TWODUP,TOR,TOR,ROT,EXECUTE,RFROM,RFROM,ROT
+        dw DUP,RECTYPE_NULL
+        dw EQUAL,qbranch,XRECOGNIZE1
+        dw DROP,lit,0,branch,XRECOGNIZE2
+XRECOGNIZE1:
+        dw NIP,NIP,lit,-1
+XRECOGNIZE2:
+        dw EXIT
+
+; Example:
+; ' NOOP :NONAME POSTPONE LITERAL ; DUP   RECTYPE: RECTYPE-NUM
+;
+; : REC-CHAR ( addr len -- n RECTYPE-NUM | RECTYPE-NULL )
+;    3 = IF
+;       DUP C@ [CHAR] ' = IF
+;          DUP 2 + C@ [CHAR] ' = IF
+;             1+ C@ RECTYPE-NUM EXIT
+;          THEN
+;       THEN
+;    THEN
+;    DROP RECTYPE-NULL   ;
+;
+; 4 STACK recognizor
+;
+; ' REC-CHAR recognizor >STACK
+;
+; : test S" ' '" recognizor RECOGNIZE  ;
+
+;: RECOGNIZE ( addr len stack-id -- i*x rectype-token | rectype-null )
+;    ['] (recognize) SWAP STACK-UNTIL ( -- i*x rectype-token -1 | addr len 0 )
+;    0= IF                           \ no recognizer did the job, remove addr/len
+;     2DROP RECTYPE-NULL
+;    THEN    ;
+    head(RECOGNIZE,RECOGNIZE,docolon)
+        DW lit,XRECOGNIZE,SWOP,STACKUNTIL
+        DW ZEROEQUAL,qbranch,RECOGNIZE1
+        DW TWODROP,RECTYPE_NULL
+RECOGNIZE1:
+        DW EXIT
 
