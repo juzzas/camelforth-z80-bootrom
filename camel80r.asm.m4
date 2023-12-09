@@ -231,14 +231,18 @@ FROMACC2:
         DW EXIT
 
 ;Z (IHXBYTE)  ( tib-ptr -- u tib-ptr )
+;    BASE @ >R HEX
 ;    >R 0 S>D R> 2
 ;    >NUMBER       ( du tib-ptr u )
 ;    DROP NIP      ( u tib-ptr )
-;    ;
+;    R> BASE !    ;
     head(XIHXBYTE,(IHXBYTE),docolon)
+        DW BASE,FETCH,TOR,HEX
         DW TOR,lit,0,STOD,RFROM,lit,2
         DW TONUMBER
         DW DROP,NIP
+        DW OVER,DOT
+        DW RFROM,BASE,STORE
         DW EXIT
 
 ;Z IHXBYTE  ( tib-ptr -- u tib-ptr )
@@ -353,7 +357,7 @@ IHXREC4:
 ;        ABORT" HEXLOAD ERROR"
 ;    THEN
 ;    RFROM BASE ! EXIT ;
-    head(HEXLOAD,HEXLOAD,docolon)
+    head(HEXLOAD_OLD,HEXLOAD_OLD,docolon)
         DW XSQUOTE
         DB 17,"Waiting for input"
         DW TYPE,CR

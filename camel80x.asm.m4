@@ -1282,3 +1282,106 @@ XRECOGNIZE2:
 RECOGNIZE1:
         DW EXIT
 
+SECTION data_user
+
+ihex_buffer:
+        DEFS 32
+
+ihex_start:
+        DW 0
+
+ihex_length:
+        DW 0
+
+SECTION code_user_16k
+
+;: HEXLOAD
+;    0 IHEX_START !
+;    0 IHEX_LENGTH !   ;
+    head(HEXLOAD,HEXLOAD,docolon)
+        DW lit,0,lit,ihex_start,STORE
+        DW lit,0,lit,ihex_length,STORE
+        DW EXIT
+
+;: :00000001FF     ( -- ihex_start ihex_length )
+;    IHEX_START @
+;    IHEX_LENGTH @   ;
+    head(COLON00000001FF,:00000001FF,docolon)
+        DW lit,ihex_start,FETCH
+        DW lit,ihex_length,FETCH
+        DW EXIT
+
+;  NONAME:    ( src dest len --     xt for rectype-ihex )
+;     IHEX_START @ 0= IF OVER IHEX_START ! THEN
+;     2DUP + IHEX_START @ - IHEX_LENGTH !
+;     MOVE    ;
+XT_IHEX:
+        call docolon
+        DW lit,ihex_start,FETCH,ZEROEQUAL,qbranch,XT_IHEX1
+        DW OVER,lit,ihex_start,STORE
+XT_IHEX1:
+        DW TWODUP,PLUS,lit,ihex_start,FETCH,MINUS,lit,ihex_length,STORE
+        DW MOVE
+        DW EXIT
+
+; RECTYPE: RECTYPE-IHEX ;
+    head(RECTYPE_IHEX,RECTYPE-IHEX,docreate)
+        DW XT_IHEX
+        DW NOOP
+        DW NOOP
+
+
+;: REC-IHEX ( addr len -- src dest n RECTYPE_IHEX   if ok, 0 if not recognised )
+;    DROP
+;    0 IHXCRC !
+;    DUP C@ [CHAR] : <> IF  0  ( no colon ) EXIT  THEN
+;
+;    CHAR+
+;    IHXBYTE   ( count tib-ptr )
+;    OVER HERE CELL+ !
+;    IHXWORD   ( count hex-addr tib-ptr )
+;    SWAP HERE !  ( count tib-ptr )
+;    HERE CELL+ CELL+ SWAP     ( count addr tib-ptr )
+;    IHXBYTE   ( count hex-addr record-type tib-ptr )
+;    SWAP 0=  IF               ( count addr tib-ptr )
+;        IHXREC!               ( addr tib-ptr )
+;        (IHXBYTE)             ( addr crc tib-ptr )
+;        DROP NIP              ( crc )
+;    ELSE
+;        DROP 0 EXIT
+;    THEN
+;
+;    ?IHXCRC IF
+;        HERE CELL+ CELL+        ( src )
+;        HERE @                  ( src dest )
+;        HERE CELL+ @ RECTYPE_IHEX         ( src dest n -1 )
+;    ELSE
+;        0
+;    THEN  ;
+    head(REC_IHEX,REC-IHEX,docolon)
+        DW DROP
+        DW lit,0,IHXCRC,STORE
+        DW DUP,CFETCH,lit,58,NOTEQUAL,qbranch,RECIHEX1
+        DW lit,0,EXIT
+
+RECIHEX1:
+        DW CHARPLUS
+        DW IHXBYTE,OVER,lit,ihex_buffer,CELLPLUS,STORE
+        DW IHXWORD,SWOP,lit,ihex_buffer,STORE
+        DW lit,ihex_buffer,CELLPLUS,CELLPLUS,SWOP
+        DW IHXBYTE
+
+        DW SWOP,ZEROEQUAL,qbranch,RECIHEX2
+        DW IHXRECSTORE,XIHXBYTE,DROP,NIP
+        DW branch,RECIHEX3
+RECIHEX2:
+        DW DROP,lit,0,EXIT
+
+RECIHEX3:
+        DW QIHXCRC,qbranch,RECIHEX4
+        DW lit,ihex_buffer,CELLPLUS,CELLPLUS
+        DW lit,ihex_buffer,FETCH
+        DW lit,ihex_buffer,CELLPLUS,FETCH,RECTYPE_IHEX
+        DW EXIT
+RECIHEX4:
+        DW lit,0,EXIT
