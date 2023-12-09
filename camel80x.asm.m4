@@ -1284,9 +1284,6 @@ RECOGNIZE1:
 
 SECTION data_user
 
-ihex_buffer:
-        DEFS 32
-
 ihex_start:
         DW 0
 
@@ -1338,10 +1335,10 @@ XT_IHEX1:
 ;
 ;    CHAR+
 ;    IHXBYTE   ( count tib-ptr )
-;    OVER HERE CELL+ !
+;    OVER PAD CELL+ !
 ;    IHXWORD   ( count hex-addr tib-ptr )
-;    SWAP HERE !  ( count tib-ptr )
-;    HERE CELL+ CELL+ SWAP     ( count addr tib-ptr )
+;    SWAP PAD !  ( count tib-ptr )
+;    PAD CELL+ CELL+ SWAP     ( count addr tib-ptr )
 ;    IHXBYTE   ( count hex-addr record-type tib-ptr )
 ;    SWAP 0=  IF               ( count addr tib-ptr )
 ;        IHXREC!               ( addr tib-ptr )
@@ -1352,9 +1349,9 @@ XT_IHEX1:
 ;    THEN
 ;
 ;    ?IHXCRC IF
-;        HERE CELL+ CELL+        ( src )
-;        HERE @                  ( src dest )
-;        HERE CELL+ @ RECTYPE_IHEX         ( src dest n -1 )
+;        PAD CELL+ CELL+        ( src )
+;        PAD @                  ( src dest )
+;        PAD CELL+ @ RECTYPE_IHEX         ( src dest n -1 )
 ;    ELSE
 ;        0
 ;    THEN  ;
@@ -1366,9 +1363,9 @@ XT_IHEX1:
 
 RECIHEX1:
         DW CHARPLUS
-        DW IHXBYTE,OVER,lit,ihex_buffer,CELLPLUS,STORE
-        DW IHXWORD,SWOP,lit,ihex_buffer,STORE
-        DW lit,ihex_buffer,CELLPLUS,CELLPLUS,SWOP
+        DW IHXBYTE,OVER,PAD,CELLPLUS,STORE
+        DW IHXWORD,SWOP,PAD,STORE
+        DW PAD,CELLPLUS,CELLPLUS,SWOP
         DW IHXBYTE
 
         DW SWOP,ZEROEQUAL,qbranch,RECIHEX2
@@ -1379,9 +1376,9 @@ RECIHEX2:
 
 RECIHEX3:
         DW QIHXCRC,qbranch,RECIHEX4
-        DW lit,ihex_buffer,CELLPLUS,CELLPLUS
-        DW lit,ihex_buffer,FETCH
-        DW lit,ihex_buffer,CELLPLUS,FETCH,RECTYPE_IHEX
+        DW PAD,CELLPLUS,CELLPLUS
+        DW PAD,FETCH
+        DW PAD,CELLPLUS,FETCH,RECTYPE_IHEX
         DW EXIT
 RECIHEX4:
         DW lit,0,EXIT
