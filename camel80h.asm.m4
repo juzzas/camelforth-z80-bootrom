@@ -363,6 +363,15 @@
             dw TOR,TOR,TWODUP,RFROM,RFROM
             dw TWOSWAP,EXIT
 
+;C 2LITERAL  x1 x2 --    append double numeric literal
+;   STATE @ IF ['] DLIT ,XT , , THEN ; IMMEDIATE
+; This tests STATE so that it can also be used
+; interpretively.  (ANSI doesn't require this.)
+    immed(TWOLITERAL,2LITERAL,docolon)
+        DW STATE,FETCH,qbranch,DLITER1
+        DW lit,dlit,COMMAXT,COMMA,COMMA
+DLITER1: DW EXIT
+
     ; INPUT/OUTPUT ==================================
 
     ;C COUNT   c-addr1 -- c-addr2 u  counted->adr/len

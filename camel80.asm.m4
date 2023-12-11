@@ -200,6 +200,27 @@ main_code_init:
         inc de
         next
 
+;Z dlit      -- d    fetch inline double literal (MS-word, LS-word) to stack
+;                    MS-word on top of stack
+; This is the primtive compiled by LITERAL.
+    head(dlit,DLIT,docode)
+        push bc        ; push old TOS
+        ld a,(de)      ; fetch cell at IP to TOS (MS-word),
+        ld c,a         ;        advancing IP
+        inc de
+        ld a,(de)
+        ld b,a
+        inc de
+
+        ld a,(de)      ; fetch cell at IP to HL,
+        ld l,a         ;        advancing IP
+        inc de
+        ld a,(de)
+        ld h,a
+        inc de
+        push hl        ; Tuck HL under TOS
+        next
+
 ;C EXECUTE   i*x xt -- j*x   execute Forth word
 ;C                           at 'xt'
     head(EXECUTE,EXECUTE,docode)
