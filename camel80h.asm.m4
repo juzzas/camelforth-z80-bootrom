@@ -464,7 +464,20 @@ TYP5:   DW EXIT
         DW SQUOTE
         DW lit,TYPE,COMMAXT
         DW EXIT
-                        
+
+;X SLITERAL    c-addr u --    compile string literal
+;    ['] (S") ,XT
+;    DUP C,     ( store size )
+;    HERE   OVER ALIGNED ALLOT
+;    SWAP MOVE
+;   ; IMMEDIATE
+    immed(SLITERAL,SLITERAL,docolon)
+        DW lit,XSQUOTE,COMMAXT
+        DW DUP,CCOMMA
+        DW HERE,OVER,ALIGNED,ALLOT
+        DW SWOP,MOVE
+        DW EXIT
+
 ; NUMERIC OUTPUT ================================
 ; Numeric conversion is done l.s.digit first, so
 ; the output buffer is built backwards in memory.
