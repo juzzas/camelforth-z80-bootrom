@@ -615,7 +615,7 @@ SIGN1:  DW EXIT
     head(TOCOUNTED,>COUNTED,docolon)
         DW TWODUP,CSTORE,CHARPLUS,SWOP,CMOVE,EXIT
 
-;C WORD   char -- c-addr n   word delim'd by char
+;C WORD   char -- c-addr    word delim'd by char
 ;   DUP  SOURCE >IN @ /STRING   -- c c adr n
 ;   DUP >R   ROT SKIP           -- c adr' n'
 ;   OVER >R  ROT SCAN           -- adr" n"

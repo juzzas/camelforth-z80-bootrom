@@ -104,7 +104,7 @@ UNTIL  adrs --        conditional backward branch
 U.     u --                    display u unsigned
 .      n --                      display n signed
 WHILE  -- adrs              branch for WHILE loop
-WORD   char -- c-addr n  parse word delim by char
+WORD   char -- c-addr    parse word delim by char
 [      --                enter interpretive state
 [CHAR] --               compile character literal
 [']    --          find word & compile as literal
