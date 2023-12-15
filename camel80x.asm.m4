@@ -535,9 +535,6 @@ SECTION data_user
 STACK_WORDLISTS:
         ds 34    ; 16 cells + stack top pointer
 
-STACK_RECOGNIZER:
-        ds 18    ; 8 cells + stack top pointer
-
 SECTION code_user_16k
 
 ;WORDLIST ( -- wid )
@@ -1233,9 +1230,11 @@ RESTORE6:
         DW FETCH
         DW EXIT
 
-; 0 CONSTANT RECTYPE-NULL
-    head(RECTYPE_NULL,RECTYPE-NULL,docon)
-        dw 0
+; ' NOOP ' NOOP ' NOOP  RECTYPE: RECTYPE-NULL
+    head(RECTYPE_NULL,RECTYPE-NULL,docreate)
+        dw NOOP
+        dw NOOP
+        dw NOOP
 
 ;: (recognize) ( addr len XT -- addr len 0 | i*x RECTYPE-TOKEN -1 )
 ;   ROT ROT 2DUP 2>R ROT EXECUTE 2R> ROT
@@ -1282,6 +1281,180 @@ XRECOGNIZE2:
 RECOGNIZE1:
         DW EXIT
 
+
+    head(STACK_RECOGNIZER,STACK-RECOGNIZER,docreate)
+        DW STACK_RECOGNIZER_END
+        DW REC_IHEX
+        DW REC_NUMBER
+        DW REC_FIND
+STACK_RECOGNIZER_END:
+
+;: REC-FIND ( addr len -- XT flags RECTYPE_XT  |  RECTYPE_NULL )
+;    FIND-NAME            ( 0       if not found )
+;                         ( nfa     if found )
+;    ?DUP IF
+;       DUP NFA>CFA            -- nfa xt
+;       SWAP IMMED?            -- xt iflag
+;       0= 1 OR                -- xt 1/-1
+;       RECTYPE-XT
+;    ELSE
+;       RECTYPE-NULL
+;    THEN   ;
+    head(REC_FIND,REC-FIND,docolon)
+        DW FIND_NAME
+        DW QDUP,qbranch,REC_FIND1
+        DW DUP,NFATOCFA
+        DW SWOP,IMMEDQ
+        DW ZEROEQUAL,lit,1,OR
+        DW RECTYPE_XT
+        DW EXIT
+REC_FIND1:
+        DW RECTYPE_NULL
+        DW EXIT
+
+
+
+
+; :NONAME ( i*x XT flags -- j*y )  \ INTERPRET
+;   DROP EXECUTE ;
+REC_FIND_XT:
+        call docolon
+        DW DROP,EXECUTE
+        DW EXIT
+
+; :NONAME ( XT flags -- )          \ COMPILE
+;   0< IF COMPILE, ELSE EXECUTE THEN ;
+REC_FIND_COMP:
+        call docolon
+        DW ZEROLESS,qbranch,REC_FIND_COMP1
+        DW COMMAXT
+        DW branch,REC_FIND_COMP2
+REC_FIND_COMP1:
+        DW EXECUTE
+REC_FIND_COMP2:
+        DW EXIT
+
+
+; :NONAME POSTPONE 2LITERAL  ; ( XT flag -- )
+;    ( stores the XT and flag into definition )
+REC_FIND_POST:
+        call docolon
+        DW TWOLITERAL
+        DW EXIT
+
+;    RECTYPE: RECTYPE-XT
+    head(RECTYPE_XT,RECTYPE-XT,docreate)
+        DW REC_FIND_XT
+        DW REC_FIND_COMP
+        DW REC_FIND_POST
+
+
+
+;: REC-NUMBER ( addr len -- n RECTYPE_NUM  |  RECTYPE_NULL )
+;   0 0 2SWAP               -- ud adr n
+;   ?SIGN >R  >NUMBER       -- ud adr' n'
+;   IF   R> 2DROP 2DROP 0   -- 0   (error)
+;   ELSE 2DROP R>
+;       IF NEGATE THEN  -1  -- n -1   (ok)
+;   THEN
+;    IF
+;       RECTYPE-NUM
+;    ELSE
+;       RECTYPE-NULL
+;    THEN   ;
+    head(REC_NUMBER,REC-NUMBER,docolon)
+        DW lit,0,DUP,TWOSWAP
+        DW QSIGN,TOR,TONUMBER,qbranch,RECNUM1
+        DW RFROM,TWODROP,TWODROP,lit,0
+        DW branch,RECNUM3
+RECNUM1:  DW TWODROP,RFROM,qbranch,RECNUM2,NEGATE
+RECNUM2:  DW lit,-1
+
+RECNUM3:
+        DW qbranch,RECNUM4
+        DW RECTYPE_NUM
+        DW EXIT
+RECNUM4:
+        DW RECTYPE_NULL
+        DW EXIT
+
+
+;    RECTYPE: RECTYPE-NUM
+    head(RECTYPE_NUM,RECTYPE-NUM,docreate)
+        DW NOOP
+        DW LITERAL
+        DW LITERAL
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+; : POSTPONE ( "name" -- )  \ COMPILE
+;   BL WORD  COUNT
+;     STACK_RECOGNIZER RECOGNIZE   ( xt flags RECTYPE_XT | RECTYPE_NULL )
+;     DUP
+;     >R                 ( call POST action )
+;     RECTYPE>POST @ EXECUTE
+;     R>
+;     RECTYPE>COMP @ COMMA   ( add compile action to definition )     ;
+    head(NEWPOSTPONE,NEWPOSTPONE,docolon)
+        DW BL,WORD,COUNT
+        DW STACK_RECOGNIZER,RECOGNIZE
+        DW DUP,TOR
+        DW RECTYPETOPOST,FETCH,EXECUTE
+        DW RFROM,RECTYPETOCOMP,FETCH,COMMA
+        DW EXIT
+
+
+;Z INTERPRET    i*x c-addr u -- j*x
+;Z                      interpret given buffer
+; This is a common factor of EVALUATE and QUIT.
+; ref. dpANS-6, 3.4 The Forth Text Interpreter
+;   'SOURCE 2!  0 >IN !
+;   BEGIN
+;   BL WORD DUP C@ WHILE        -- textadr
+;       DUP >R COUNT            -- c-addr n  ; textadr
+;       STACK_RECOGNIZER RECOGNIZE   ( i*x RECTYPE_XXX | RECTYPE_NULL )
+;       DUP RECTYPE_NULL <> IF  -- i*x RECTYPE_XXX
+;           STATE @ IF
+;             RECTYPE>COMP EXECUTE
+;           ELSE
+;             RECTYPE>INT EXECUTE
+;           THEN
+;           R> DROP
+;       ELSE
+;           DROP R> COUNT TYPE 3F EMIT CR ABORT  err
+;       THEN
+;   REPEAT DROP ;
+    head(NEWINTERPRET,NEWINTERPRET,docolon)
+        DW TICKSOURCE,TWOSTORE,lit,0,TOIN,STORE
+INTRP1: DW BL,WORD,DUP,CFETCH,qbranch,INTRP9
+        DW DUP,TOR,COUNT
+        DW STACK_RECOGNIZER,RECOGNIZE
+        DW DUP,RECTYPE_NULL,NOTEQUAL,qbranch,INTRP2
+        DW STATE,FETCH,qbranch,INTRP3
+        DW RECTYPETOCOMP,EXECUTE
+        DW branch,INTRP4
+INTRP3: DW RECTYPETOINT,EXECUTE
+INTRP4: DW RFROM,DROP,branch,INTRP5
+INTRP2: DW DROP,RFROM,COUNT,TYPE,lit,63,EMIT,CR,ABORT
+INTRP5: DW branch,INTRP1
+INTRP9: DW DROP
+        DW EXIT
+
+
+
+
 SECTION data_user
 
 ihex_start:
@@ -1308,17 +1481,31 @@ SECTION code_user_16k
         DW lit,ihex_length,FETCH
         DW EXIT
 
-;  NONAME:    ( src dest len --     xt for rectype-ihex )
-;     IHEX_START @ 0= IF OVER IHEX_START ! THEN
-;     2DUP + IHEX_START @ - IHEX_LENGTH !
-;     MOVE    ;
-XT_IHEX:
+
+XIHEX:
         call docolon
         DW lit,ihex_start,FETCH,ZEROEQUAL,qbranch,XT_IHEX1
         DW OVER,lit,ihex_start,STORE
 XT_IHEX1:
         DW TWODUP,PLUS,lit,ihex_start,FETCH,MINUS,lit,ihex_length,STORE
         DW MOVE
+        DW EXIT
+
+;  NONAME:    ( src dest len --     xt for rectype-ihex )
+;     IHEX_START @ 0= IF OVER IHEX_START ! THEN
+;     2DUP + IHEX_START @ - IHEX_LENGTH !
+;     MOVE    ;
+XT_IHEX:
+        call docolon
+        DW XIHEX
+        DW EXIT
+
+;  NONAME:    ( src dest len --     compile action for rectype-ihex )
+;     SWAP LITERAL SLITERAL
+;     ['] XT_IHEX ,  ;
+XT_COMP:
+        call docolon
+        DW lit,0,COMMACF
         DW EXIT
 
 ; RECTYPE: RECTYPE-IHEX ;
@@ -1328,10 +1515,10 @@ XT_IHEX1:
         DW NOOP
 
 
-;: REC-IHEX ( addr len -- src dest n RECTYPE_IHEX   if ok, 0 if not recognised )
+;: REC-IHEX ( addr len -- src dest n RECTYPE_IHEX   if ok, RECTYPE_NULL if not recognised )
 ;    DROP
 ;    0 IHXCRC !
-;    DUP C@ [CHAR] : <> IF  0  ( no colon ) EXIT  THEN
+;    DUP C@ [CHAR] : <> IF DROP RECTYPE_NULL  ( no colon ) EXIT  THEN
 ;
 ;    CHAR+
 ;    IHXBYTE   ( count tib-ptr )
@@ -1345,7 +1532,7 @@ XT_IHEX1:
 ;        (IHXBYTE)             ( addr crc tib-ptr )
 ;        DROP NIP              ( crc )
 ;    ELSE
-;        DROP 0 EXIT
+;        DROP RECTYPE_NULL EXIT
 ;    THEN
 ;
 ;    ?IHXCRC IF
@@ -1353,13 +1540,13 @@ XT_IHEX1:
 ;        PAD @                  ( src dest )
 ;        PAD CELL+ @ RECTYPE_IHEX         ( src dest n -1 )
 ;    ELSE
-;        0
+;        RECTYPE_NULL
 ;    THEN  ;
     head(REC_IHEX,REC-IHEX,docolon)
         DW DROP
         DW lit,0,IHXCRC,STORE
         DW DUP,CFETCH,lit,58,NOTEQUAL,qbranch,RECIHEX1
-        DW lit,0,EXIT
+        DW DROP,RECTYPE_NULL,EXIT
 
 RECIHEX1:
         DW CHARPLUS
@@ -1372,7 +1559,7 @@ RECIHEX1:
         DW IHXRECSTORE,XIHXBYTE,DROP,NIP
         DW branch,RECIHEX3
 RECIHEX2:
-        DW DROP,lit,0,EXIT
+        DW DROP,RECTYPE_NULL,EXIT
 
 RECIHEX3:
         DW QIHXCRC,qbranch,RECIHEX4
@@ -1381,4 +1568,4 @@ RECIHEX3:
         DW PAD,CELLPLUS,FETCH,RECTYPE_IHEX
         DW EXIT
 RECIHEX4:
-        DW lit,0,EXIT
+        DW RECTYPE_NULL,EXIT
