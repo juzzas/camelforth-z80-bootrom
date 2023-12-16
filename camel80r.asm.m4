@@ -241,7 +241,6 @@ FROMACC2:
         DW TOR,lit,0,STOD,RFROM,lit,2
         DW TONUMBER
         DW DROP,NIP
-        DW OVER,DOT
         DW RFROM,BASE,STORE
         DW EXIT
 
