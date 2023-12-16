@@ -137,9 +137,9 @@
         head(SEED,SEED,douser)
             dw 36
 
-    ;Z RECOGNIZER      -- a-addr   stack id for RECOGNIZE
-    ;  32 USER RECOGNIZER
-        head(RECOGNIZER,RECOGNIZER,douser)
+    ;Z REC-USERVEC      -- xt    if set, use XT as user vector for RECOGNIZER
+    ;  32 USER REC-USERVEC
+        head(REC_USERVEC,REC-USERVEC,douser)
             dw 38
 
     ;Z CURRENT      -- a-addr   address of CURRENT wid
@@ -201,7 +201,7 @@
             DW 0            ; SCR
             DW 0            ; IHXCRC
             DW 42           ; SEED
-            DW 0            ; RECOGNIZER
+            DW 0            ; REC-USERVEC
             DW 0            ; CURRENT
             DW vocab_lastword            ; VOC-LINK
             DW 0            ; CALLSP

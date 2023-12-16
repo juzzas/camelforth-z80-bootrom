@@ -1286,6 +1286,7 @@ RECOGNIZE1:
         DW STACK_RECOGNIZER_END
         DW REC_IHEX
         DW REC_NUMBER
+        DW REC_USER
         DW REC_FIND
 STACK_RECOGNIZER_END:
 
@@ -1569,3 +1570,17 @@ RECIHEX3:
         DW EXIT
 RECIHEX4:
         DW RECTYPE_NULL,EXIT
+
+;: REC-USER ( addr len -- j*x RECTYPE_xxx   if ok, RECTYPE_NULL if not recognised )
+;     REC-USERVEC @ ?DUP IF
+;         EXECUTE
+;     ELSE
+;         2DROP RECTYPE_NULL
+;     THEN ;
+    head(REC_USER,REC-USER,docolon)
+        DW REC_USERVEC,FETCH,QDUP,qbranch,RECUSER1
+        DW EXECUTE
+        DW EXIT
+RECUSER1:
+        DW TWODROP,RECTYPE_NULL
+        DW EXIT
