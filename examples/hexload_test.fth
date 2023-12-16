@@ -1,3 +1,10 @@
+( This is a test C file compiled to 0xA000                   )
+( HEX 9000 CALL                                              )
+
+: TEST ." Hi!" CR ;
+
+TEST
+
 HEXLOAD
 :10A00000ED7373A83100FC216FA80104001E00CD80
 :10A0100056A72123A8343421FFFF390175A8B7EDD5
