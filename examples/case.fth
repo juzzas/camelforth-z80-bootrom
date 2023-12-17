@@ -8,9 +8,6 @@
     BEGIN ?DUP WHILE POSTPONE THEN REPEAT ; IMMEDIATE
 
 
-
-
-
 : test1  ( n -- )
     CASE
         1 OF ." ONE" ENDOF
