@@ -1,0 +1,21 @@
+: CASE ( -- 0 ) 0 ; IMMEDIATE
+: OF ( -- )
+    POSTPONE OVER POSTPONE =
+    POSTPONE IF POSTPONE DROP ; IMMEDIATE
+: ENDOF ( -- ) POSTPONE ELSE ; IMMEDIATE
+: ENDCASE ( -- )
+    POSTPONE DROP
+    BEGIN ?DUP WHILE POSTPONE THEN REPEAT ; IMMEDIATE
+
+
+
+
+
+: test1  ( n -- )
+    CASE
+        1 OF ." ONE" ENDOF
+        2 OF ." TWO" ENDOF
+        3 OF ." THREE" ENDOF
+        ." DEFAULT"
+    ENDCASE
+    CR ;
