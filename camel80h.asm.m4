@@ -949,14 +949,14 @@ dnl ; be put on the stack.  (All xt's are one cell.)
 ;       ['] ,XT ,XT         to current definition
 ;   ELSE  ,XT      `immed': compile into cur. def'n
 ;   THEN ; IMMEDIATE
-    immed(POSTPONE,POSTPONE,docolon)
-        DW BL,WORD,FIND,DUP,ZEROEQUAL,XSQUOTE
-        DB 1,"?"
-        DW QABORT,ZEROLESS,qbranch,POST1
-        DW lit,lit,COMMAXT,COMMA
-        DW lit,COMMAXT,COMMAXT,branch,POST2
-POST1:  DW COMMAXT
-POST2:  DW EXIT
+dnl ;    immed(POSTPONE,POSTPONE,docolon)
+;         DW BL,WORD,FIND,DUP,ZEROEQUAL,XSQUOTE
+;         DB 1,"?"
+;         DW QABORT,ZEROLESS,qbranch,POST1
+;         DW lit,lit,COMMAXT,COMMA
+;         DW lit,COMMAXT,COMMAXT,branch,POST2
+; POST1:  DW COMMAXT
+; POST2:  DW EXIT
                
 ;Z COMPILE   --   append inline execution token
 ;   R> DUP CELL+ >R @ ,XT ;

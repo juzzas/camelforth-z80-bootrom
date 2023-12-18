@@ -1405,15 +1405,15 @@ RECNUM4:
 ;     STACK_RECOGNIZER RECOGNIZE   ( xt flags RECTYPE_XT | RECTYPE_NULL )
 ;     DUP
 ;     >R                 ( call POST action )
-;     RECTYPE>POST @ EXECUTE
+;     RECTYPE>POST EXECUTE
 ;     R>
-;     RECTYPE>COMP @ COMMA   ( add compile action to definition )     ;
-    head(NEWPOSTPONE,NEWPOSTPONE,docolon)
+;     RECTYPE>COMP COMMA   ( add compile action to definition )     ;
+    immed(POSTPONE,POSTPONE,docolon)
         DW BL,WORD,COUNT
         DW STACK_RECOGNIZER,RECOGNIZE
         DW DUP,TOR
-        DW RECTYPETOPOST,FETCH,EXECUTE
-        DW RFROM,RECTYPETOCOMP,FETCH,COMMA
+        DW RECTYPETOPOST,EXECUTE
+        DW RFROM,RECTYPETOCOMP,COMMA
         DW EXIT
 
 
