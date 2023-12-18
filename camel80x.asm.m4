@@ -1230,11 +1230,18 @@ RESTORE6:
         DW FETCH
         DW EXIT
 
+; :NONAME  ABORT" ?"  ;
+REC_NULL_XT:
+        call docolon
+        DW XSQUOTE
+        DB 1,"?"
+        DW QABORT
+
 ; ' NOOP ' NOOP ' NOOP  RECTYPE: RECTYPE-NULL
     head(RECTYPE_NULL,RECTYPE-NULL,docreate)
-        dw NOOP
-        dw NOOP
-        dw NOOP
+        dw REC_NULL_XT
+        dw REC_NULL_XT
+        dw REC_NULL_XT
 
 ;: (recognize) ( addr len XT -- addr len 0 | i*x RECTYPE-TOKEN -1 )
 ;   ROT ROT 2DUP 2>R ROT EXECUTE 2R> ROT
