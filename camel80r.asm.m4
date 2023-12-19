@@ -196,28 +196,6 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
 
 ; HEXLOAD implementation ==========================
 
-; 0 CONSTANT IHXOK
-; 1 CONSTANT IHXEND
-; 2 CONSTANT IHXERROR
-
-;Z <ACCEPT  ( c-addr +n -- +n'   get line from term.; no echo )
-;    OVER + 1- OVER      \ sa ea a
-;    BEGIN KEY           \ sa ea a c
-;    DUP 13 <> WHILE
-;        OVER C! 1+ OVER UMIN
-;    REPEAT              \ sa ea a c
-;    DROP NIP SWAP - ;
-    head(FROMACCEPT,<ACCEPT,docolon)
-        DW OVER,PLUS,ONEMINUS,OVER
-
-FROMACC1:
-        DW KEY,DUP,lit,0DH,NOTEQUAL,qbranch,FROMACC2
-        DW OVER,CSTORE,ONEPLUS,OVER,UMIN
-        DW branch,FROMACC1
-
-FROMACC2:
-        DW DROP,NIP,SWOP,MINUS,EXIT
-
 ;Z IHXCRC+  ( c -- )
 ;    IHXCRC @ + FF AND IHXCRC ! ;
     head(IHXCRCPLUS,IHXCRC+,docolon)
@@ -285,105 +263,6 @@ IHXRECSTORE1:
         DW ONEPLUS
         DW RFROM
         DW xloop,IHXRECSTORE1
-        DW EXIT
-
-;: IHXREC ( c-addr -- 0 if ok, 1 if end, 2 if error  parse hex record )
-;    0 IHXCRC !
-;    DUP C@ [CHAR] : <> IF  IHXERROR  ( no colon ) EXIT  THEN
-;
-;    CHAR+
-;    IHXBYTE   ( count tib-ptr )
-;    IHXWORD   ( count hex-addr tib-ptr )
-;    IHXBYTE   ( count hex-addr record-type tib-ptr )
-;    SWAP 0=  IF               ( count hex-addr tib-ptr )
-;        IHXREC!               ( hex-addr tib-ptr )
-;        (IHXBYTE)             ( hex-addr crc tib-ptr )
-;        DROP NIP              ( crc )
-;        ?IHXCRC IF IHX-OK ELSE IHX-ERROR THEN
-;    ELSE
-;        DROP DROP DROP
-;        IHX-END
-;    THEN  ;
-    head(IHXREC,IHXREC,docolon)
-        DW lit,0,IHXCRC,STORE
-        DW DUP,CFETCH,lit,58,NOTEQUAL,qbranch,IHXREC1
-        DW lit,2,EXIT
-
-IHXREC1:
-        DW CHARPLUS
-        DW IHXBYTE,IHXWORD,IHXBYTE
-
-        DW SWOP,ZEROEQUAL,qbranch,IHXREC3
-        DW IHXRECSTORE,XIHXBYTE,DROP,NIP
-
-        DW QIHXCRC,qbranch,IHXREC2
-        DW lit,0              ; IHXOK
-        DW branch,IHXREC4
-
-IHXREC2:
-        DW lit,2              ; IHXERROR
-        DW branch,IHXREC4
-
-IHXREC3:
-        DW DROP,DROP,DROP
-        DW lit,1              ; IHXEND
-IHXREC4:
-        DW EXIT
-
-; \ :07F00000EF7A535F1CE7C922
-; \ :00000001FF
-
-; \ :06F00000EF78414FE7C963
-
-;: HEXLOAD
-;    ." Waiting for input" CR
-;    BASE @ >R HEX
-;    [CHAR] : EMIT
-;
-;    BEGIN
-;
-;        TIB DUP TIBSIZE ACCEPT
-;        DROP                             ( drop count )
-;        IHXREC
-;
-;        DUP IHX-OK = IF
-;            [CHAR] # EMIT
-;        THEN
-;
-;    ?DUP IHX-OK <> UNTIL
-;
-;    IHX-ERROR = IF
-;        ABORT" HEXLOAD ERROR"
-;    THEN
-;    RFROM BASE ! EXIT ;
-    head(HEXLOAD_OLD,HEXLOAD_OLD,docolon)
-        DW XSQUOTE
-        DB 17,"Waiting for input"
-        DW TYPE,CR
-        DW BASE,FETCH,TOR,HEX
-        DW lit,58,EMIT
-
-HEXLOAD1:
-        DW TIB,DUP,TIBSIZE,FROMACCEPT
-        DW DROP
-        DW IHXREC
-
-HEXLOAD2:
-        DW DUP,lit,0,EQUAL,qbranch,HEXLOAD3
-        DW lit,35,EMIT
-
-HEXLOAD3:
-        DW QDUP,lit,0,NOTEQUAL,qbranch,HEXLOAD1
-
-HEXLOAD4:
-        DW lit,2,EQUAL,qbranch,HEXLOAD5
-        DW XSQUOTE
-        DB 13,"HEXLOAD ERROR"
-        DW TYPE
-        DW ABORT
-
-HEXLOAD5:
-        DW RFROM,BASE,STORE
         DW EXIT
 
 
