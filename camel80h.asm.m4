@@ -167,6 +167,21 @@
         head(RST30VEC,RST30VEC,douser)
             dw 48
 
+    ;Z EMITVEC      -- xt     if set, use XT as EMIT destination
+    ;  50 USER EMITVEC
+        head(EMITVEC,EMITVEC,douser)
+            dw 50
+
+    ;Z REFILLVEC      -- xt    if set, use XT as REFILL source
+    ;  52 USER REFILLVEC
+        head(REFILLVEC,REFILLVEC,douser)
+            dw 52
+
+    ;Z HANDLER      -- xt    if set, use XT as REFILL source
+    ;  54 USER HANDLER
+        head(HANDLER,HANDLER,douser)
+            dw 54
+
     ;Z s0       -- a-addr     end of parameter stack
         head(S0,S0,douser)
             dw 100h
@@ -188,30 +203,33 @@
         head(UINIT,UINIT,docreate)
             DW 0,0,10,0     ; reserved,>IN,BASE,STATE
             DW enddict      ; DP
-            DW 0,0          ; SOURCE init'd elsewhere
+            DW 0,0          ; SOURCE init'd elsewhere    10
             DW lastword     ; LATEST
             DW 0            ; HP init'd elsewhere
             DW 0            ; LP init'd elsewhere
-            DW 65535        ; BLK
+            DW 65535        ; BLK                        20
             DW 1            ; DSK
             DW 0x8800       ; BLKBUFFER
             DW 0            ; BLKUPDATE
             DW 0            ; BLKREADVEC
-            DW 0            ; BLKWRITEVEC
+            DW 0            ; BLKWRITEVEC                30
             DW 0            ; SCR
             DW 0            ; IHXCRC
             DW 42           ; SEED
             DW 0            ; REC-USERVEC
-            DW 0            ; CURRENT
+            DW 0            ; CURRENT                    40
             DW vocab_lastword            ; VOC-LINK
             DW 0            ; CALLSP
             DW 0            ; INTVEC
             DW 0            ; RST30VEC
+            DW 0            ; EMITVEC                    50
+            DW 0            ; REFILLVEC
+            DW 0            ; HANDLER
 
 
     ;Z #init    -- n    #bytes of user area init data
         head(NINIT,``#INIT'',docon)
-            DW 50
+            DW 56
 
     ; ARITHMETIC OPERATORS ==========================
 
@@ -790,23 +808,89 @@ dnl ;    head(INTERPRET,INTERPRET,docolon)
         DW RFROM,TOIN,STORE,RFROM,RFROM
         DW TICKSOURCE,TWOSTORE,EXIT
 
+;C CATCH   xt --          ( exception# | 0 ; r: return addr on stack)
+;     SP@ >R             ( xt )       \ save data stack pointer
+;     HANDLER @ >R       ( xt )       \ and previous handler
+;     RP@ HANDLER !      ( xt )       \ set current handler
+;     EXECUTE            ( )          \ execute returns if no THROW
+;     R> HANDLER !       ( )          \ restore previous handler
+;     R> DROP            ( )          \ discard saved stack ptr
+;     0   ;              ( 0 )        \ normal completion
+    head(CATCH,CATCH,docolon)
+        DW SPFETCH,TOR
+        DW HANDLER,FETCH,TOR
+        DW RPFETCH,HANDLER,STORE
+        DW EXECUTE
+        DW RFROM,HANDLER,STORE
+        DW RFROM,DROP,lit,0,EXIT
+
+
+;C THROW ( ??? exception# -- ??? exception# )
+;    ?DUP IF          ( exc# )     \ 0 THROW is no-op
+;      HANDLER @ RP!   ( exc# )     \ restore prev return stack
+;      R> HANDLER !    ( exc# )     \ restore prev handler
+;      R> SWAP >R      ( saved-sp ) \ exc# on return stack
+;      SP! DROP R>     ( exc# )     \ restore stack
+;      \ Return to the caller of CATCH because return
+;      \ stack is restored to the state that existed
+;       \ when CATCH began execution
+;    THEN   ;
+    head(THROW,THROW,docolon)
+        DW QDUP,qbranch,THROW1
+        DW HANDLER,FETCH,RPSTORE
+        DW RFROM,HANDLER,STORE
+        DW RFROM,SWOP,TOR
+        DW SPSTORE,DROP,RFROM
+THROW1: DW EXIT
+
+
+
 ;C QUIT     --    R: i*x --    interpret from kbd
-;   L0 LP !  R0 RP!   0 STATE !
+;   L0 LP !  R0 RP!   0 STATE ! 0 HANDLER !
 ;   BEGIN
 ;       TIB DUP TIBSIZE ACCEPT  SPACE
-;       INTERPRET
-;       STATE @ 0= IF ."  OK" CR THEN
+;       ['] INTERPRET CATCH
+;       CASE
+;          0 OF STATE @ 0= IF ."  OK" THEN CR ENDOF
+;         -1 OF ."  ABORT" CR ENDOF
+;         -2 OF ( abort message given ) CR ENDOF
+;       DUP ." EXCEPTION" . CR
+;       ENDCASE
 ;   AGAIN ;
     head(QUIT,QUIT,docolon)
         DW L0,LP,STORE
         DW R0,RPSTORE,lit,0,STATE,STORE
+        DW lit,0,HANDLER,STORE
 QUIT1:  DW TIB,DUP,TIBSIZE,ACCEPT,SPACE
-        DW INTERPRET
-        DW STATE,FETCH,ZEROEQUAL,qbranch,QUIT2
+        DW lit,INTERPRET,CATCH
+
+        ; case 0
+        DW DUP,lit,0,EQUAL,qbranch,QUIT2
+        DW STATE,FETCH,ZEROEQUAL,qbranch,QUIT1a
         DW XSQUOTE
         DB 3," OK"
+        DW TYPE
+QUIT1a: DW CR
+        DW branch,QUIT1
+
+        ; case -1
+QUIT2:  DW DUP,lit,65535,EQUAL,qbranch,QUIT3
+        DW XSQUOTE
+        DB 6," ABORT"
         DW TYPE,CR
-QUIT2:  DW branch,QUIT1
+        DW branch,QUIT1
+
+        ; case -2
+QUIT3:  DW DUP,lit,65534,EQUAL,qbranch,QUIT4
+        DW CR
+        DW branch,QUIT1
+
+        ; default
+QUIT4:  DW DUP
+        DW XSQUOTE
+        DB 10," EXCEPTION"
+        DW TYPE,DOT,CR
+        DW branch,QUIT1
 
 ;C ABORT    i*x --   R: j*x --   clear stk & QUIT
 ;   S0 SP!  QUIT ;
