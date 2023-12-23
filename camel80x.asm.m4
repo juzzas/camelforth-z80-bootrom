@@ -932,82 +932,93 @@ INDEX1:
         DW CELLPLUS,FETCH,DP,STORE
         dw EXIT
 
-; (BSAVE) ( c-addr u -- )  save block to file
-;    BLK @ BUFFER                               ( c-addr u buffer )
+; (BSAVE) ( c-addr u blk -- )  save block to file
+;    BUFFER                               ( c-addr u buffer )
 ;    SWAP MOVE
 ;    UPDATE  ;
     head(XBSAVE,(BSAVE),docolon)
-        dw BLK,FETCH,BUFFER
+        dw CR,DOTS
+        dw BUFFER
         dw SWOP,MOVE
         dw UPDATE
         dw EXIT
 
 ;: BSAVE   ( c-addr u blk -- )
-;    BUFFER DROP    ( c-addr u -- ; blk in BLK)
-;
-;    B/BLK /MOD    ( c-addr rem #blks )
-;    SWAP   >R      (c-addr #blks ; rem )
+;    SWAP B/BLK /MOD    ( c-addr blk rem #blks )
+;    SWAP   >R      (c-addr blk #blks ; rem )
 ;    ?DUP IF
-;      0 DO                  ( c-addr ; rem )
-;        DUP B/BLK (BSAVE)   ( c-addr ; rem )
-;        B/BLK +             ( c-addr' ; rem )
-;        1 BLK +!            ( c-addr' ; rem )
+;      0 DO                  ( c-addr blk ; rem )
+;        2DUP B/BLK SWAP (BSAVE)  ( c-addr blk ; rem )
+;        SWAP B/BLK +             ( blk c-addr' ; rem )
+;        SWAP 1+                  ( c-addr' blk' ; rem )
 ;      LOOP
-;    THEN           ( c-addr ; rem )
+;    THEN           ( c-addr blk ; rem )
 ;
-;    R> (BSAVE) ( c-addr rem )
+;    R> SWAP        ( c-addr rem blk )
+;    OVER IF (BSAVE) ELSE 2DROP DROP THEN  ( c-addr rem )
 ;    FLUSH  ;
     head(BSAVE,BSAVE,docolon)
-        dw BUFFER,DROP
-        dw B_BLK,SLASHMOD
+        dw SWOP,B_BLK,SLASHMOD
         dw SWOP,TOR
         dw QDUP,qbranch,BSAVE1
         dw lit,0,xdo
 BSAVE2:
-        dw DUP,B_BLK,XBSAVE
-        dw B_BLK,PLUS
-        dw lit,1,BLK,PLUSSTORE
+        dw TWODUP,B_BLK,SWOP,XBSAVE
+        dw SWOP,B_BLK,PLUS
+        dw SWOP,ONEPLUS
         dw xloop,BSAVE2
 BSAVE1:
-        dw RFROM,XBSAVE
+        dw RFROM,SWOP
+        dw OVER,qbranch,BSAVE3
+        dw XBSAVE
+        dw branch,BSAVE4
+BSAVE3:
+        dw TWODROP,DROP
+BSAVE4:
         dw FLUSH
         dw EXIT
 
-; (BLOAD) ( c-addr u -- )  save block to file
-;    BLK @ BLOCK                            ( c-addr u buffer )
+; (BLOAD) ( c-addr u blk -- )  save block to file
+;    BLOCK                            ( c-addr u buffer )
 ;    ROT ROT MOVE    ;
     head(XBLOAD,(BLOAD),docolon)
-        dw BLK,FETCH,BLOCK
+        dw CR,DOTS
+        dw BLOCK
         dw ROT,ROT,MOVE
         dw EXIT
 
-;: BLOAD   ( blk c-addr u -- )
-;    ROT BLOCK DROP    ( c-addr u -- ; blk in BLK)
-;
-;    B/BLK /MOD    ( c-addr rem #blks )
-;    SWAP   >R      (c-addr #blks ; rem )
+;: BLOAD   ( c-addr u blk -- )
+;    SWAP B/BLK /MOD    ( c-addr blk rem #blks )
+;    SWAP   >R      (c-addr blk #blks ; rem )
 ;    ?DUP IF
-;      0 DO                  ( c-addr ; rem )
-;        DUP B/BLK (BLOAD)   ( c-addr ; rem )
-;        B/BLK +             ( c-addr' ; rem )
-;        1 BLK +!            ( c-addr' ; rem )
+;      0 DO                  ( c-addr blk ; rem )
+;        2DUP B/BLK SWAP (BLOAD)   ( c-addr blk ; rem )
+;        SWAP B/BLK +              ( blk c-addr' ; rem )
+;        SWAP 1+                   ( c-addr' blk' ; rem )
 ;      LOOP
-;    THEN           ( c-addr ; rem )
+;    THEN           ( c-addr blk ; rem )
 ;
-;    R> (BLOAD) ( c-addr rem )     ;
+;    R> SWAP        ( c-addr rem blk )
+;    OVER IF (BLOAD) ELSE 2DROP DROP THEN  ( c-addr rem )
+;     ;
     head(BLOAD,BLOAD,docolon)
-        dw ROT,BLOCK,DROP
-        dw B_BLK,SLASHMOD
+        dw SWOP,B_BLK,SLASHMOD
         dw SWOP,TOR
         dw QDUP,qbranch,BLOAD1
         dw lit,0,xdo
 BLOAD2:
-        dw DUP,B_BLK,XBLOAD
-        dw B_BLK,PLUS
-        dw lit,1,BLK,PLUSSTORE
+        dw TWODUP,B_BLK,SWOP,XBLOAD
+        dw SWOP,B_BLK,PLUS
+        dw SWOP,ONEPLUS
         dw xloop,BLOAD2
 BLOAD1:
-        dw RFROM,XBLOAD
+        dw RFROM,SWOP
+        dw OVER,qbranch,BLOAD3
+        dw XBLOAD
+        dw branch,BLOAD4
+BLOAD3:
+        dw TWODROP,DROP
+BLOAD4:
         dw EXIT
 
 
