@@ -866,7 +866,7 @@ QUIT1:  DW TIB,DUP,TIBSIZE,ACCEPT,SPACE
 
         ; case 0
         DW DUP,lit,0,EQUAL,qbranch,QUIT2
-        DW STATE,FETCH,ZEROEQUAL,qbranch,QUIT1a
+        DW DROP,STATE,FETCH,ZEROEQUAL,qbranch,QUIT1a
         DW XSQUOTE
         DB 3," OK"
         DW TYPE
@@ -875,20 +875,20 @@ QUIT1a: DW CR
 
         ; case -1
 QUIT2:  DW DUP,lit,65535,EQUAL,qbranch,QUIT3
-        DW XSQUOTE
+        DW DROP,XSQUOTE
         DB 6," ABORT"
         DW TYPE,CR
         DW branch,QUIT1
 
         ; case -2
 QUIT3:  DW DUP,lit,65534,EQUAL,qbranch,QUIT4
-        DW CR
+        DW DROP,CR
         DW branch,QUIT1
 
         ; default
-QUIT4:  DW DUP
+QUIT4:
         DW XSQUOTE
-        DB 10," EXCEPTION"
+        DB 11," EXCEPTION "
         DW TYPE,DOT,CR
         DW branch,QUIT1
 
