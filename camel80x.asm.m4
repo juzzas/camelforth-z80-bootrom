@@ -1254,6 +1254,12 @@ REC_NULL_XT:
         dw REC_NULL_XT
         dw REC_NULL_XT
 
+; ' NOOP ' NOOP ' NOOP  RECTYPE: RECTYPE-NOOP
+    head(RECTYPE_NOOP,RECTYPE-NOOP,docreate)
+        dw NOOP
+        dw NOOP
+        dw NOOP
+
 ;: (recognize) ( addr len XT -- addr len 0 | i*x RECTYPE-TOKEN -1 )
 ;   ROT ROT 2DUP 2>R ROT EXECUTE 2R> ROT
 ;   DUP RECTYPE-NULL =          ( -- i*x addr len RECTYPE-TOKEN f )
@@ -1492,20 +1498,21 @@ SECTION code_user_16k
         DW lit,0,lit,ihex_length,STORE
         DW EXIT
 
-;: :00000001FF     ( -- ihex_start ihex_length )
+;: ;HEXLOAD     ( -- ihex_start ihex_length )
 ;    IHEX_START @
 ;    IHEX_LENGTH @   ;
-    head(COLON00000001FF,:00000001FF,docolon)
+    head(SEMIHEXLOAD,;HEXLOAD,docolon)
         DW lit,ihex_start,FETCH
         DW lit,ihex_length,FETCH
         DW EXIT
 
 
+; (IHEX)                   ( src dest len -- runtime action )
 XIHEX:
         call docolon
-        DW lit,ihex_start,FETCH,ZEROEQUAL,qbranch,XT_IHEX1
+        DW lit,ihex_start,FETCH,ZEROEQUAL,qbranch,XIHEX1
         DW OVER,lit,ihex_start,STORE
-XT_IHEX1:
+XIHEX1:
         DW TWODUP,PLUS,lit,ihex_start,FETCH,MINUS,lit,ihex_length,STORE
         DW MOVE
         DW EXIT
@@ -1514,23 +1521,26 @@ XT_IHEX1:
 ;     IHEX_START @ 0= IF OVER IHEX_START ! THEN
 ;     2DUP + IHEX_START @ - IHEX_LENGTH !
 ;     MOVE    ;
-XT_IHEX:
+REC_IHEX_XT:
         call docolon
         DW XIHEX
         DW EXIT
 
 ;  NONAME:    ( src dest len --     compile action for rectype-ihex )
 ;     SWAP LITERAL SLITERAL
-;     ['] XT_IHEX ,  ;
-XT_COMP:
+;     ['] (IHEX) ,  ;
+REC_IHEX_COMP:
         call docolon
-        DW lit,0,COMMACF
+        DW SWOP,LITERAL,SLITERAL
+        DW lit,ROT,COMMA
+        DW lit,SWOP,COMMA
+        DW lit,XIHEX,COMMA
         DW EXIT
 
 ; RECTYPE: RECTYPE-IHEX ;
     head(RECTYPE_IHEX,RECTYPE-IHEX,docreate)
-        DW XT_IHEX
-        DW NOOP
+        DW REC_IHEX_XT
+        DW REC_IHEX_COMP
         DW NOOP
 
 
@@ -1546,12 +1556,18 @@ XT_COMP:
 ;    SWAP PAD !  ( count tib-ptr )
 ;    PAD CELL+ CELL+ SWAP     ( count addr tib-ptr )
 ;    IHXBYTE   ( count hex-addr record-type tib-ptr )
-;    SWAP 0=  IF               ( count addr tib-ptr )
+;
+;    OVER 0=  IF NIP           ( count addr tib-ptr )
 ;        IHXREC!               ( addr tib-ptr )
 ;        (IHXBYTE)             ( addr crc tib-ptr )
 ;        DROP NIP              ( crc )
-;    ELSE
-;        DROP RECTYPE_NULL EXIT
+;    ELSE      ( count hex-addr record-type tib-ptr )
+;        DROP NIP NIP
+;        1 = IF      ( end of hex record? )
+;           RECTYPE_NOOP EXIT
+;        ELSE
+;           RECTYPE_NULL EXIT
+;        THEN
 ;    THEN
 ;
 ;    ?IHXCRC IF
@@ -1574,11 +1590,15 @@ RECIHEX1:
         DW PAD,CELLPLUS,CELLPLUS,SWOP
         DW IHXBYTE
 
-        DW SWOP,ZEROEQUAL,qbranch,RECIHEX2
-        DW IHXRECSTORE,XIHXBYTE,DROP,NIP
+        DW OVER,ZEROEQUAL,qbranch,RECIHEX2
+        DW NIP,IHXRECSTORE,XIHXBYTE,DROP,NIP
         DW branch,RECIHEX3
 RECIHEX2:
-        DW DROP,RECTYPE_NULL,EXIT
+        DW DROP,NIP,NIP
+        DW lit,1,EQUAL,qbranch,RECIHEX2a
+        DW RECTYPE_NOOP,EXIT
+RECIHEX2a:
+        DW RECTYPE_NULL,EXIT
 
 RECIHEX3:
         DW QIHXCRC,qbranch,RECIHEX4
