@@ -1184,8 +1184,9 @@ MOVE2:  DW EXIT
 
 ; UTILITY WORDS AND STARTUP =====================
 
-;X WORDS  wid  --          list all words in wordlist.
-;   @ BEGIN
+;X (WORDS)  wid  --          list all words in wordlist.
+;   @ DUP 0= IF DROP EXIT THEN
+;   BEGIN
 ;       DUP WHILE
 ;          DUP COUNT
 ;              ( ignore zero-length names, AKA :NONAME )
@@ -1195,6 +1196,8 @@ MOVE2:  DW EXIT
 ;   DROP ;
     head(XWORDS,(WORDS),docolon)
         DW FETCH
+        DW DUP,ZEROEQUAL,qbranch,WDS1
+        DW DROP,EXIT
 WDS1:   DW DUP,qbranch,WDS4
         DW DUP,COUNT
         DW QDUP,ZEROEQUAL,qbranch,WDS2

@@ -606,8 +606,9 @@ SECTION code_user_16k
 
 
 ;C FIND-NAME-IN   c-addr len wid   --  c-addr len 0       if not found
-;C                                     c-addr len nfa     if found
-;   @ BEGIN                    -- a len nfa
+;                                      c-addr len nfa     if found
+;   @ DUP 0= IF DROP 0 EXIT THEN
+;   BEGIN                      -- a len nfa
 ;       2DUP                   -- a len nfa len nfa
 ;       C@  =                   -- a len nfa f
 ;       IF                     -- a len nfa
@@ -625,6 +626,8 @@ SECTION code_user_16k
 ;      ;
     head(FIND_NAME_IN,FIND-NAME-IN,docolon)
         DW FETCH
+        DW DUP,ZEROEQUAL,qbranch,FINDIN1
+        DW DROP,lit,0,EXIT
 FINDIN1:
         DW TWODUP,CFETCH,EQUAL
         DW qbranch,FINDIN2
