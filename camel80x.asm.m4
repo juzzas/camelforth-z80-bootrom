@@ -763,27 +763,61 @@ FIND1:
     head(BLKFIRST,BLKFIRST,docon)
         dw 0x8800
 
-;Z BLOCK-READ  ( -- f )   Compact Flash read block  BLK and DSK
+;Z BLOCK-READ  ( -- )   Compact Flash read block  BLK and DSK
 ; Reads the block from the Compact Flash card into memory
 ; address found at 'adrs'. 'dks' and 'blk' are the disk
 ; and block numbers respectively
     head(BLOCK_READ,BLOCK-READ,docolon)
-        dw DSK,FETCH,BLK,FETCH,BLKBUFFER,FETCH
+        dw DSK,FETCH,lit,0x7fff,AND,BLK,FETCH,BLKBUFFER,FETCH
+
+        dw DSK,FETCH,lit,0x8000,AND,qbranch,BLOCK_READ1
+
+        dw BLKREADVEC,FETCH,DUP,qbranch,BLOCK_READ2
+        dw EXECUTE
+        dw branch,BLOCK_READ3
+
+BLOCK_READ1:
         dw lit,cflash_read_block,CALL
+        dw branch,BLOCK_WRITE3
+
+BLOCK_READ2:
         dw INVERT,XSQUOTE
-        db 10,"DISK ERROR"
+        db 9,"NO DRIVER"
         dw QABORT,EXIT
 
-;Z BLOCK-WRITE  ( -- f )  Compact Flash read write BLK and DSK
+BLOCK_READ3:
+        dw INVERT,XSQUOTE
+        db 10,"READ ERROR"
+        dw QABORT
+        dw EXIT
+
+;Z BLOCK-WRITE  ( -- )  Compact Flash read write BLK and DSK
 ; Reads the block from the Compact Flash card into memory
 ; address found at 'adrs'. 'dks' and 'blk' are the disk
 ; and block numbers respectively
     head(BLOCK_WRITE,BLOCK-WRITE,docolon)
-        dw DSK,FETCH,BLK,FETCH,BLKBUFFER,FETCH
+        dw DSK,FETCH,lit,0x7fff,AND,BLK,FETCH,BLKBUFFER,FETCH
+
+        dw DSK,FETCH,lit,0x8000,AND,qbranch,BLOCK_WRITE1
+
+        dw BLKWRITEVEC,FETCH,DUP,qbranch,BLOCK_WRITE2
+        dw EXECUTE
+        dw branch,BLOCK_WRITE3
+
+BLOCK_WRITE1:
         dw lit,cflash_write_block,CALL
+        dw branch,BLOCK_WRITE3
+
+BLOCK_WRITE2:
         dw INVERT,XSQUOTE
-        db 10,"DISK ERROR"
+        db 9,"NO DRIVER"
         dw QABORT,EXIT
+
+BLOCK_WRITE3:
+        dw INVERT,XSQUOTE
+        db 11,"WRITE ERROR"
+        dw QABORT
+        dw EXIT
 
 ;C BUFFER        n -- addr         push buffer address
 ;     FLUSH
