@@ -537,17 +537,34 @@ STACK_WORDLISTS:
 
 SECTION code_user_16k
 
-;WORDLIST ( -- wid )
+;: WORDLIST ( -- wid )
 ; Create a new empty word list, returning its word list identifier wid.
 ; The new word list may be returned from a pool of preallocated word lists
 ; or may be dynamically allocated in data space. A system shall allow the
 ; creation of at least 8 new word lists in addition to any provided as part
 ; of the system.
-;     HERE >R  0 ,  R> ;
+;       WORDLISTS @ 1+ DUP 8 > IF
+;           ABORT" ERROR:WID"
+;       ELSE
+;           DUP WORDLISTS !
+;       THEN ;
         head(WORDLIST,WORDLIST,docolon)
-            dw HERE,TOR,lit,0,COMMA,RFROM,EXIT
+            dw WORDLISTS,FETCH,PLUS,ONEPLUS,lit,8,GREATER,qbranch,WORDLIST1
+            dw XSQUOTE
+            db 9,"ERROR:WID"
+            dw COUNT,TYPE,ABORT
+WORDLIST1:
+            dw DUP,WORDLISTS,STORE
+            dw EXIT
 
-;SEARCH-WORDLIST ( c-addr u wid -- 0 | xt 1 | xt -1 )
+;: WID>NFA ( wid -- nfa )
+; Return the address of the first name field in the word list identified by wid.
+;       WORDLISTS DUP @ + @    ;
+        head(WIDTONFA,WID>NFA,docolon)
+            dw CELLS,WORDLISTS,PLUS,FETCH
+            dw EXIT
+
+;: SEARCH-WORDLIST ( c-addr u wid -- 0 | xt 1 | xt -1 )
 ; Find the definition identified by the string c-addr u in the word list
 ; identified by wid. If the definition is not found, return zero. If the
 ; definition is found, return its execution token xt and one (1) if the
@@ -607,7 +624,7 @@ SECTION code_user_16k
 
 ;C FIND-NAME-IN   c-addr len wid   --  c-addr len 0       if not found
 ;                                      c-addr len nfa     if found
-;   @ DUP 0= IF DROP 0 EXIT THEN
+;   WID>NFA DUP 0= IF DROP 0 EXIT THEN
 ;   BEGIN                      -- a len nfa
 ;       2DUP                   -- a len nfa len nfa
 ;       C@  =                   -- a len nfa f
@@ -625,7 +642,7 @@ SECTION code_user_16k
 ;   0= UNTIL                   -- a len nfa  OR  a len 0
 ;      ;
     head(FIND_NAME_IN,FIND-NAME-IN,docolon)
-        DW FETCH
+        DW WIDTONFA
         DW DUP,ZEROEQUAL,qbranch,FINDIN1
         DW DROP,lit,0,EXIT
 FINDIN1:

@@ -34,11 +34,6 @@
 
 EXTERN _hexload
 
-SECTION data_user
-
-EDITOR_WORDLIST_WID:
-        dw editor_lastword
-
 SECTION code_user_16k
 
 ;  RC2014 simple editor =========================

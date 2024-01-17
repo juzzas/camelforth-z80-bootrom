@@ -185,7 +185,12 @@
     ;Z SOURCE-ID      -- addr   current source ID for interpreter
     ;  56 USER SOURCE-ID
         head(SOURCE_ID,SOURCE-ID,douser)
-            dw 56
+
+    ;Z WORDLISTS      -- addr    address of WORDLIST list
+    ; one cell for count, then 8 cells for LFA's of wordlists
+    ;  56 USER WORDLISTS
+        head(WORDLISTS,WORDLISTS,douser)
+            dw 58
 
     ;Z s0       -- a-addr     end of parameter stack
         head(S0,S0,douser)
@@ -231,11 +236,15 @@
             DW 0            ; REFILLVEC
             DW 0            ; HANDLER
             DW 0            ; SOURCE-ID
+            DW 3            ; number of wordlists
+            DW lastword     ; LFA of FORTH wordlist
+            DW editor_lastword   ; LFA of EDITOR wordlist
+            DW vocab_lastword    ; LFA of VOCS wordlist
 
 
     ;Z #init    -- n    #bytes of user area init data
         head(NINIT,``#INIT'',docon)
-            DW 58
+            DW 66
 
     ; ARITHMETIC OPERATORS ==========================
 
@@ -948,22 +957,22 @@ QABO1:  DW TWODROP,EXIT
 ; COMPILER ======================================
 
 ;C CREATE   --      create an empty definition
-;   CURRENT @ @ , 0 C,         link & `immed' field
+;   CURRENT @ WID>NFA , 0 C,         link & `immed' field
 ;   HERE CURRENT @ !           new "latest" link
 ;   BL WORD C@ 1+ ALLOT         name field
 ;   docreate ,CF                code field
     head(CREATE,CREATE,docolon)
-        DW CURRENT,FETCH,FETCH,COMMA,lit,0,CCOMMA
+        DW CURRENT,FETCH,WIDTONFA,COMMA,lit,0,CCOMMA
         DW HERE,CURRENT,FETCH,STORE
         DW BL,WORD,CFETCH,ONEPLUS,ALLOT
         DW lit,docreate,COMMACF,EXIT
         
 ;Z (DOES>)  --      run-time action of DOES>
 ;   R>              adrs of headless DOES> def'n
-;   CURRENT @ @ NFA>CFA    code field to fix up
+;   CURRENT @ WID>NFA NFA>CFA    code field to fix up
 ;   !CF ;
     head(XDOES,(DOES>),docolon)
-        DW RFROM,CURRENT,FETCH,FETCH,NFATOCFA,STORECF
+        DW RFROM,CURRENT,FETCH,WIDTONFA,NFATOCFA,STORECF
         DW EXIT
 
 ;C DOES>    --      change action of latest def'n
@@ -974,9 +983,9 @@ QABO1:  DW TWODROP,EXIT
         DW lit,dodoes,COMMACF,EXIT
 
 ;C RECURSE  --      recurse current definition
-;   CURRENT @ @ NFA>CFA ,XT ; IMMEDIATE
+;   CURRENT @ WID>NFA NFA>CFA ,XT ; IMMEDIATE
     immed(RECURSE,RECURSE,docolon)
-        DW CURRENT,FETCH,FETCH,NFATOCFA,COMMAXT,EXIT
+        DW CURRENT,FETCH,WIDTONFA,NFATOCFA,COMMAXT,EXIT
 
 ;C [        --      enter interpretive state
 ;   0 STATE ! ; IMMEDIATE
@@ -989,21 +998,21 @@ QABO1:  DW TWODROP,EXIT
         DW lit,-1,STATE,STORE,EXIT
 
 ;Z HIDE     --      "hide" latest definition
-;   CURRENT @ @ DUP C@ 80 OR SWAP C! ;
+;   CURRENT @ WID>NFA DUP C@ 80 OR SWAP C! ;
     head(HIDE,HIDE,docolon)
-        DW CURRENT,FETCH,FETCH,DUP,CFETCH,lit,80H,OR
+        DW CURRENT,FETCH,WIDTONFA,DUP,CFETCH,lit,80H,OR
         DW SWOP,CSTORE,EXIT
 
 ;Z REVEAL   --      "reveal" latest definition
-;   CURRENT @ @ DUP C@ 7F AND SWAP C! ;
+;   CURRENT @ WID>NFA DUP C@ 7F AND SWAP C! ;
     head(REVEAL,REVEAL,docolon)
-        DW CURRENT,FETCH,FETCH,DUP,CFETCH,lit,7FH,AND
+        DW CURRENT,FETCH,WIDTONFA,DUP,CFETCH,lit,7FH,AND
         DW SWOP,CSTORE,EXIT
 
 ;C IMMEDIATE   --   make last def'n immediate
-;   1 CURRENT @ @ 1- C! ;   set immediate flag
+;   1 CURRENT @ WID>NFA 1- C! ;   set immediate flag
     head(IMMEDIATE,IMMEDIATE,docolon)
-        DW lit,1,CURRENT,FETCH,FETCH,ONEMINUS,CSTORE
+        DW lit,1,CURRENT,FETCH,WIDTONFA,ONEMINUS,CSTORE
         DW EXIT
 
 ;C :        --      begin a colon definition
@@ -1194,7 +1203,7 @@ MOVE2:  DW EXIT
 ; UTILITY WORDS AND STARTUP =====================
 
 ;X (WORDS)  wid  --          list all words in wordlist.
-;   @ DUP 0= IF DROP EXIT THEN
+;   WID>NFA DUP 0= IF DROP EXIT THEN
 ;   BEGIN
 ;       DUP WHILE
 ;          DUP COUNT
@@ -1204,7 +1213,7 @@ MOVE2:  DW EXIT
 ;       REPEAT
 ;   DROP ;
     head(XWORDS,(WORDS),docolon)
-        DW FETCH
+        DW WIDTONFA
         DW DUP,ZEROEQUAL,qbranch,WDS1
         DW DROP,EXIT
 WDS1:   DW DUP,qbranch,WDS4
@@ -1335,12 +1344,12 @@ COLD1:  DW lit,lastword8k,CURRENT,FETCH,STORE
         DW XSQUOTE
         DB 9," - 8K ROM"
 COLD2:  DW TYPE,CR
-        DW lit,lastword,lit,FORTH_WORDLIST_WID,STORE
-        DW lit,editor_lastword,lit,EDITOR_WORDLIST_WID,STORE
-        DW lit,vocab_lastword,lit,VOCAB_WORDLIST_WID,STORE
-        DW FORTH_WORDLIST,lit,1,SET_ORDER
+        DW lit,VOCAB_WORDLIST_WID,lit,FORTH_WORDLIST_WID,lit,2,SET_ORDER
         DW lit,FORTH_WORDLIST_WID,CURRENT,STORE
         DW lit,VOCAB_WORDLIST_WID,VOCLINK,STORE
+        DW WORDLISTS,lit,32,MEMDUMP   ; debug
+        DW lit,STACK_WORDLISTS,lit,32,MEMDUMP   ; debug
+        DW HEX,lit,1,WIDTONFA,UDOT ; debug
         DW ABORT       ; ABORT never returns
 
 ;Z WARM     --      warm start Forth system
@@ -1351,9 +1360,6 @@ COLD2:  DW TYPE,CR
         DB 47,"Z80 CamelForth v1.02  25 Jan 1995 (warmstart)"
         DB 0dh,0ah
         DW TYPE
-        DW lit,lastword,lit,FORTH_WORDLIST_WID,STORE
-        DW lit,editor_lastword,lit,EDITOR_WORDLIST_WID,STORE
-        DW lit,vocab_lastword,lit,VOCAB_WORDLIST_WID,STORE
         DW FORTH_WORDLIST,lit,1,SET_ORDER
         DW lit,FORTH_WORDLIST_WID,CURRENT,STORE
         DW lit,VOCAB_WORDLIST_WID,VOCLINK,STORE

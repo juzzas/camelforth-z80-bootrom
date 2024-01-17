@@ -1120,10 +1120,6 @@ include(camel80u.asm.m4)   ; RC2014 Utilities
         defc vocab_lastword=link_vocab    ; nfa of last word in VOCAB wordlist.
         defc enddict=0x8C00 ;WRKSPC       ; user's code starts here
 
-SECTION data_user
-
-VOCAB_WORDLIST_WID:
-        dw vocab_lastword
-
-FORTH_WORDLIST_WID:
-        dw lastword
+        defc FORTH_WORDLIST_WID=1
+        defc EDITOR_WORDLIST_WID=2
+        defc VOCAB_WORDLIST_WID=3
