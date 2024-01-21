@@ -54,6 +54,8 @@ DOES>       ( addr1 -- addr2 ; calculate address of field )
     CREATE OVER , +    ( store offset, add the size to find new offset )
     DOFIELD ;          ( set the action of the newly created field )
 
+: .(
+    [CHAR] ) WORD COUNT TYPE  ; IMMEDIATE
 
 0
 1 CHARS FIELD DCB.DEV         ( uint8_t device; )
@@ -80,8 +82,12 @@ CONSTANT #FUJINET_DCB
 : NEW_DCB        ( "name"   -- dcb   create a new FujiNet DCB )
    CREATE #FUJINET_DCB CHARS ALLOT   ;
 
-: CLEAR_DCB      ( dcb   --   clear a FujiNet DCB )
-   #FUJINET_DCB ERASE   ;
+: /FNDCB      ( dev cmd dcb   --   initialise a FujiNet DCB )
+   DUP >R #FUJINET_DCB ERASE
+   R@ DCB.CMD C!
+   R@ DCB.DEV C!
+   400 R> DCB.TIMEOUT !
+   ;
 
 NEW_DCB dcb
 
@@ -96,6 +102,9 @@ CREATE HOSTS_BUF #HOSTS_BUF ALLOT
 24 CONSTANT #FILENAME 
 8 CONSTANT #DEVS
 
+200 CONSTANT #FNBUFFER
+CREATE FNBUFFER #FNBUFFER ALLOT
+
 0
 1 CHARS FIELD DEVSLOT.HOSTSLOT            ( uint8_t hostSlot )
 1 CHARS FIELD DEVSLOT.MODE                ( uint8_t aux1; )
@@ -106,79 +115,70 @@ CONSTANT #DEVSLOT
 CREATE DEVS_BUF #DEVS_BUF ALLOT
 
 : FNRESET
-   dcb CLEAR_DCB
-   DEVICEID_FUJINET dcb DCB.DEV C!
-   FF dcb DCB.CMD C!
-   400 dcb DCB.TIMEOUT !
+   DEVICEID_FUJINET FF dcb /FNDCB
    dcb FUJINET_DCB   ;
 
 : FNHOSTS@
-   dcb CLEAR_DCB
-   DEVICEID_FUJINET dcb DCB.DEV C!
-   F4 dcb DCB.CMD C!
+   DEVICEID_FUJINET F4 dcb /FNDCB
    HOSTS_BUF dcb DCB.RESPONSE !
    #HOSTS_BUF dcb DCB.#RESPONSE !
-   400 dcb DCB.TIMEOUT !
    dcb FUJINET_DCB   ;
 
 : FNDEVS@
-   dcb CLEAR_DCB
-   DEVICEID_FUJINET dcb DCB.DEV C!
-   F2 dcb DCB.CMD C!
+   DEVICEID_FUJINET F2 dcb /FNDCB
    DEVS_BUF dcb DCB.RESPONSE !
    #DEVS_BUF dcb DCB.#RESPONSE !
-   400 dcb DCB.TIMEOUT !
    dcb FUJINET_DCB   ;
 
 1 CONSTANT FNMODE_READ
 2 CONSTANT FNMODE_WRITE
 
 : FNDISK-MOUNT    ( disk-slot mode -- rc )
-   dcb CLEAR_DCB
-   DEVICEID_FUJINET dcb DCB.DEV C!
-   F8 dcb DCB.CMD C!
+   DEVICEID_FUJINET F8 dcb /FNDCB
    dcb DCB.AUX2 C!
    dcb DCB.AUX1 C!
-   400 dcb DCB.TIMEOUT !
    dcb FUJINET_DCB   ;
 
 : FNDISK-MOUNTALL    ( -- rc )
-   dcb CLEAR_DCB
-   DEVICEID_FUJINET dcb DCB.DEV C!
-   D7 dcb DCB.CMD C!
-   400 dcb DCB.TIMEOUT !
-   dcb FUJINET_DCB   ;
+   DEVICEID_FUJINET D7 dcb /FNDCB
+   dcb FUJINET_DCB
+   ." return from FNDISK-MOUNTALL: " .S CR
+   ;
 
 : FNDISK-UMOUNT    ( disk-slot -- rc )
-   dcb CLEAR_DCB
-   DEVICEID_FUJINET dcb DCB.DEV C!
-   E9 dcb DCB.CMD C!
+   DEVICEID_FUJINET E9 dcb /FNDCB
    dcb DCB.AUX1 !
-   400 dcb DCB.TIMEOUT !
    dcb FUJINET_DCB   ;
 
 : FNDISK-READ    ( disk-slot sector buffer -- rc )
-   dcb CLEAR_DCB
-   ROT DEVICEID_DISK + dcb DCB.DEV C!
-   [CHAR] R dcb DCB.CMD C!
+   ROT DEVICEID_DISK + [CHAR] R dcb /FNDCB
    SWAP DUP FF AND dcb DCB.AUX1 C!
    8 RSHIFT FF AND dcb DCB.AUX2 C!
    dcb DCB.RESPONSE !
    200 dcb DCB.#RESPONSE !
-   400 dcb DCB.TIMEOUT !
    dcb FUJINET_DCB   ;
 
 : FNDISK-WRITE    ( disk-slot sector buffer -- rc )
-   dcb CLEAR_DCB
-   ROT DEVICEID_DISK + dcb DCB.DEV C!
-   [CHAR] W dcb DCB.CMD C!
+   ROT DEVICEID_DISK + [CHAR] W dcb /FNDCB
    SWAP DUP FF AND dcb DCB.AUX1 C!
    8 RSHIFT FF AND dcb DCB.AUX2 C!
    dcb DCB.BUFFER !
    200 dcb DCB.#BUFFER !
-   400 dcb DCB.TIMEOUT !
    dcb FUJINET_DCB   ;
 
+: FNDISK-SIZE    ( disk-slot -- ud rc )
+   DEVICEID_DISK + [CHAR] Z dcb /FNDCB
+   FNBUFFER dcb DCB.RESPONSE !
+   4 dcb DCB.#RESPONSE !
+   dcb FUJINET_DCB
+   ." return from FNDISK-SIZE: " .S CR
+   DUP 0= IF
+   ." return from FNDISK-SIZE(2a): " .S CR
+     FNBUFFER @
+     FNBUFFER CELL+ @
+   ." return from FNDISK-SIZE(2b): " .S CR
+     ROT
+   THEN   ;
 
 : FNBLOCK-READ   ( dsk blk buffer -- f )
     ROT DUP >R
@@ -208,9 +208,11 @@ CREATE DEVS_BUF #DEVS_BUF ALLOT
 
 
 /FUJINET
-FNDISK-MOUNTALL
+FNDISK-MOUNTALL    DROP
 ' FNBLOCK-READ  BLKREADVEC  !
 ' FNBLOCK-WRITE BLKWRITEVEC !
 
-8000 DSK !
-1 BLOCK
+( 8000 DSK ! )
+( 1 BLOCK )
+.S
+1 FNDISK-SIZE .S
