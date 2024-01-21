@@ -182,6 +182,11 @@
         head(HANDLER,HANDLER,douser)
             dw 54
 
+    ;Z SOURCE-ID      -- addr   current source ID for interpreter
+    ;  56 USER SOURCE-ID
+        head(SOURCE_ID,SOURCE-ID,douser)
+            dw 56
+
     ;Z s0       -- a-addr     end of parameter stack
         head(S0,S0,douser)
             dw 100h
@@ -225,11 +230,12 @@
             DW 0            ; EMITVEC                    50
             DW 0            ; REFILLVEC
             DW 0            ; HANDLER
+            DW 0            ; SOURCE-ID
 
 
     ;Z #init    -- n    #bytes of user area init data
         head(NINIT,``#INIT'',docon)
-            DW 56
+            DW 58
 
     ; ARITHMETIC OPERATORS ==========================
 
@@ -799,14 +805,17 @@ dnl ;    head(INTERPRET,INTERPRET,docolon)
 ;INTER9: DW DROP,EXIT
 
 ;C EVALUATE  i*x c-addr u -- j*x  interprt string
-;   'SOURCE 2@ >R >R  >IN @ >R
+;   SOURCE-ID @ R> 'SOURCE 2@ >R >R  >IN @ >R
 ;   INTERPRET
-;   R> >IN !  R> R> 'SOURCE 2! ;
+;   R> >IN !  R> R> 'SOURCE 2! R> SOURCE-ID !;
     head(EVALUATE,EVALUATE,docolon)
+        DW SOURCE_ID,FETCH,TOR
+        DW lit,65535,SOURCE_ID,STORE
         DW TICKSOURCE,TWOFETCH,TOR,TOR
         DW TOIN,FETCH,TOR,INTERPRET
         DW RFROM,TOIN,STORE,RFROM,RFROM
-        DW TICKSOURCE,TWOSTORE,EXIT
+        DW TICKSOURCE,TWOSTORE
+        DW RFROM,SOURCE_ID,STORE,EXIT
 
 ;C CATCH   xt --          ( exception# | 0 ; r: return addr on stack)
 ;     SP@ >R             ( xt )       \ save data stack pointer
