@@ -549,7 +549,7 @@ SECTION code_user_16k
 ;           DUP WORDLISTS !
 ;       THEN ;
         head(WORDLIST,WORDLIST,docolon)
-            dw WORDLISTS,FETCH,PLUS,ONEPLUS,lit,8,GREATER,qbranch,WORDLIST1
+            dw WORDLISTS,FETCH,ONEPLUS,DUP,lit,8,GREATER,qbranch,WORDLIST1
             dw XSQUOTE
             db 9,"ERROR:WID"
             dw COUNT,TYPE,ABORT
