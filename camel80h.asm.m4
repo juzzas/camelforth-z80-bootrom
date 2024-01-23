@@ -958,12 +958,12 @@ QABO1:  DW TWODROP,EXIT
 
 ;C CREATE   --      create an empty definition
 ;   CURRENT @ WID>NFA , 0 C,         link & `immed' field
-;   HERE CURRENT @ !           new "latest" link
+;   HERE CURRENT @ WID>NFA !           new "latest" link
 ;   BL WORD C@ 1+ ALLOT         name field
 ;   docreate ,CF                code field
     head(CREATE,CREATE,docolon)
         DW CURRENT,FETCH,WIDTONFA,COMMA,lit,0,CCOMMA
-        DW HERE,CURRENT,FETCH,STORE
+        DW HERE,CURRENT,FETCH,WIDTONFASTORE
         DW BL,WORD,CFETCH,ONEPLUS,ALLOT
         DW lit,docreate,COMMACF,EXIT
         

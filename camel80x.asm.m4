@@ -564,6 +564,13 @@ WORDLIST1:
             dw CELLS,WORDLISTS,PLUS,FETCH
             dw EXIT
 
+;: WID>NFA! ( nfa wid -- )
+; Return the address of the first name field in the word list identified by wid.
+;       WORDLISTS DUP @ + @    ;
+        head(WIDTONFASTORE,WID>NFA!,docolon)
+            dw CELLS,WORDLISTS,PLUS,STORE
+            dw EXIT
+
 ;: SEARCH-WORDLIST ( c-addr u wid -- 0 | xt 1 | xt -1 )
 ; Find the definition identified by the string c-addr u in the word list
 ; identified by wid. If the definition is not found, return zero. If the
