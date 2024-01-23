@@ -547,6 +547,7 @@ SECTION code_user_16k
 ;           ABORT" ERROR:WID"
 ;       ELSE
 ;           DUP WORDLISTS !
+;           DUP 0 SWAP WID>NFA!
 ;       THEN ;
         head(WORDLIST,WORDLIST,docolon)
             dw WORDLISTS,FETCH,ONEPLUS,DUP,lit,8,GREATER,qbranch,WORDLIST1
@@ -555,6 +556,7 @@ SECTION code_user_16k
             dw COUNT,TYPE,ABORT
 WORDLIST1:
             dw DUP,WORDLISTS,STORE
+            dw DUP,lit,0,SWOP,WIDTONFASTORE
             dw EXIT
 
 ;: WID>NFA ( wid -- nfa )
@@ -565,8 +567,8 @@ WORDLIST1:
             dw EXIT
 
 ;: WID>NFA! ( nfa wid -- )
-; Return the address of the first name field in the word list identified by wid.
-;       WORDLISTS DUP @ + @    ;
+; Store the address of the first name field in the word list identified by wid.
+;       CELLS,WORDLISTS DUP @ CELLS + !    ;
         head(WIDTONFASTORE,WID>NFA!,docolon)
             dw CELLS,WORDLISTS,PLUS,STORE
             dw EXIT
@@ -724,29 +726,29 @@ FIND1:
 
 
 ;: VOCABULARY  ( name -- )  WORDLIST CREATE ,
-;   VOC-LINK @ @ , 0 C,         link & `immed' field
-;   HERE VOC-LINK @ !           new "latest" link
+;   VOC-LINK @ WID>NFA , 0 C,         link & `immed' field
+;   HERE VOC-LINK @ WID>NFA!           new "latest" link
 ;   BL WORD C@ 1+ ALLOT         name field
 ;   docreate ,CF                code field
 ;   WORDLIST ,
 ;
-;    DOES>  @ STACK_WORDLISTS,TOSTACK
+;    DOES>  @ STACK_WORDLISTS TOSTACK
 ;  ;
     head(VOCABULARY,VOCABULARY,docolon)
-        dw VOCLINK,FETCH,FETCH,COMMA,lit,0,CCOMMA
-        dw HERE,VOCLINK,FETCH,STORE
+        dw VOCLINK,FETCH,WIDTONFA,COMMA,lit,0,CCOMMA
+        dw HERE,VOCLINK,FETCH,WIDTONFASTORE
         dw BL,WORD,CFETCH,ONEPLUS,ALLOT
         dw lit,docreate,COMMACF
         dw WORDLIST,COMMA
 
         dw XVOCDOES
         call dodoes
-        DW lit,STACK_WORDLISTS,STACKSTORE
+        DW FETCH,lit,STACK_WORDLISTS,STACKSTORE
         dw EXIT
 
 ; patch latest entry on VOCLINK with code from VOCDOES
     head(XVOCDOES,(VOCDOES>),docolon)
-        DW RFROM,VOCLINK,FETCH,FETCH,NFATOCFA,STORECF
+        DW RFROM,VOCLINK,FETCH,WIDTONFA,NFATOCFA,STORECF
         DW EXIT
 
 ;: ALSO  ( -- )  STACK_WORDLISTS DUP STACK@ >STACK ;
