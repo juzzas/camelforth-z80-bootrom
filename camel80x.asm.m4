@@ -607,6 +607,52 @@ WORDLIST1:
             dw lit,STACK_WORDLISTS,STACKSET
             dw EXIT
 
+
+;: SAVE-ORDER       (addr -- )
+;     >R GET-ORDER R>
+;     2DUP !
+;     SWAP DUP IF  ( n1..nx addr )
+;         0 DO
+;             CELL+ DUP >R ! R>
+;         LOOP
+;     ELSE  !·
+;     THEN  DROP ;
+        head(SAVE_ORDER,SAVE-ORDER,docolon)
+            dw TOR,GET_ORDER,RFROM
+            dw TWODUP,STORE
+            dw SWOP,DUP,qbranch,SAVEORDER1
+            dw lit,0,xdo
+SAVEORDER2:
+            dw CELLPLUS,DUP,TOR,STORE,RFROM
+            dw xloop,SAVEORDER2
+            dw branch,SAVEORDER3
+SAVEORDER1:
+            dw STORE
+SAVEORDER3:
+            dw DROP
+            dw EXIT
+
+;: RESTORE-ORDER    ( addr --  )
+;     DUP @ DUP >R                              ( addr #n ; r: #n )
+;     SWAP OVER CELLS + SWAP                    ( addr' #n ; r: #n )
+;     DUP       IF
+;         0 DO                                  ( addr' ; r: #n )
+;             DUP >R @ R> 1 CELLS -
+;         LOOP
+;     THEN  DROP R>  SET-ORDER  ;
+        head(RESTORE_ORDER,RESTORE-ORDER,docolon)
+            dw DUP,FETCH,DUP,TOR
+            dw SWOP,OVER,CELLS,PLUS,SWOP
+            dw DUP,qbranch,RESTOREORDER1
+            dw lit,0,xdo
+RESTOREORDER2:
+            dw DUP,TOR,FETCH,RFROM,lit,1,CELLS,MINUS
+            dw xloop,RESTOREORDER2
+RESTOREORDER1:
+            dw DROP,RFROM,SET_ORDER
+            dw EXIT
+
+
 ;: >ORDER  ( wid1 .. widn n -- )
         head(TOORDER,>ORDER,docolon)
             dw lit,STACK_WORDLISTS,TOSTACK
