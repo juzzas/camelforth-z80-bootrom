@@ -7,18 +7,19 @@ DECIMAL
 1.1FIXED 2* 24 / CONSTANT YINC
 : *F ( F G -- F*G ) 1FIXED */ ;
 : SQ ( F -- F F*F ) OVER DUP *F ;
+: C$ S" .,'~!^:;[/<&?oxOX#  " DROP ;
 : MANDEL
   1.1FIXED DUP NEGATE DO
     1FIXED DUP 2* NEGATE DO
-      I J 30                 ( INITIAL POINT X,Y AND MAX ITERATION COUNT )
+      I J 20                 ( INITIAL POINT X,Y AND MAX ITERATION COUNT )
       BEGIN  1- ?DUP
       WHILE  ROT ROT SQ SQ
              2DUP + 4FIXED <
       WHILE  - I +
              ROT ROT *F 2* J + ROT
-      REPEAT 2DROP DROP          \ EXIT FROM SECOND WHILE
-             SPACE
-      ELSE   ." *"               \ EXIT FROM FIRST WHILE
+      REPEAT 2DROP DROP         ( EXIT FROM SECOND WHILE )
+             OVER C$ + C@ EMIT
+      ELSE   SPACE              ( EXIT FROM FIRST WHILE )
       THEN 2DROP
     XINC +LOOP
     CR
