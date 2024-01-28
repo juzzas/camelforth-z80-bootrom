@@ -1023,22 +1023,92 @@ INDEX1:
         dw UPDATE
         dw EXIT
 
+; snapshots
+;    offset | field
+;    0000   | copy of USER area (128 bytes)
+;    0080   | copy of Wordlist ROM NFA links (16 bytes)
+;              these are NFAs of User words that have their
+;              LFAs point to ROM. They need to be patched in
+;              the likely case that the ROM is updated.
+;              Currently, the ROM'd wordlists are
+;              FORTH, EDITOR, VOCS.
+;              If zero, then the matching wordlist hasn't been
+;              extended by the user.
+;    0090   | copy of Wordlist order (34 bytes)
+
+;: #SNAPSHOT
+;    128 CONSTANT #SNAPSHOT
+    head(NUMSNAPSHOT,``#SNAPSHOT'',docon)
+        dw 128+16+34
+
+;: SNAPSHOT.USER   ( snapaddr -- addr     ptr to user area in snapshot )
+    head(SNAPSHOTDOTUSER,SNAPSHOT.USER,docolon)
+        dw EXIT
+
+;: SNAPSHOT.LINKS   ( snapaddr -- addr     ptr to wordlists ROM links in snapshot )
+    head(SNAPSHOTDOTLINKS,SNAPSHOT.ORDER,docolon)
+        dw lit,0x80,PLUS,EXIT
+
+;: SNAPSHOT.ORDER   ( snapaddr -- addr     ptr to wordlist order in snapshot )
+    head(SNAPSHOTDOTORDER,SNAPSHOT.ORDER,docolon)
+        dw lit,0x90,PLUS,EXIT
+
+;: SAVE-LINKS  ( addr -- )
+    head(SAVE_LINKS,SAVE-LINKS,docolon)
+        dw EXIT
+
+;: RESTORE-LINKS  ( addr -- )
+    head(RESTORE_LINKS,RESTORE-LINKS,docolon)
+        dw EXIT
+
+;: >SNAPSHOT  ( snapaddr  -- )
+;        DUP #SNAPSHOT ERASE
+;        DUP SNAPSHOT.USER U0 SWAP 128 MOVE
+;        DUP SNAPSHOT.ORDER SAVE-ORDER
+;        DUP SNAPSHOT.LINKS SAVE-LINKS
+;        DROP   ;
+    head(TOSNAPSHOT,>SNAPSHOT,docolon)
+        dw DUP,NUMSNAPSHOT,ERASE
+        dw DUP,SNAPSHOTDOTUSER,U0,SWOP,lit,128,MOVE
+        dw DUP,SNAPSHOTDOTORDER,SAVE_ORDER
+        dw DUP,SNAPSHOTDOTLINKS,SAVE_LINKS
+        dw DROP
+        dw EXIT
+
+; USER space index to restore
+defc SNAPSHOT_RST_START = 24
+defc SNAPSHOT_RST_LEN = 128-24
+
+;: SNAPSHOT>  ( snapaddr  --   restore snapshot )
+;        DUP SNAPSHOT.USER SNAPSHOT_RST_START +
+;           U0 SNAPSHOT_RST_START +   SNAPSHOT_RST_LEN MOVE
+;        DUP SNAPSHOT.ORDER RESTORE-ORDER
+;        DUP SNAPSHOT.LINKS RESTORE-LINKS
+;        DROP   ;
+    head(SNAPSHOTFROM,SNAPSHOT>,docolon)
+        dw DUP,SNAPSHOTDOTUSER,lit,SNAPSHOT_RST_START,PLUS
+        dw U0,lit,SNAPSHOT_RST_START,PLUS,lit,SNAPSHOT_RST_LEN,MOVE
+        dw DUP,SNAPSHOTDOTORDER,RESTORE_ORDER
+        dw DUP,SNAPSHOTDOTLINKS,RESTORE_LINKS
+        dw DROP
+        dw EXIT
+
 ;: MARKER  ( "name" -- )
-;    HERE >R
-;    CREATE LATEST @ NFA>LFA FETCH ,
-;    R> ,
-;    DOES> DUP  @ LATEST !
-;            CELL+  @ DP ! ;
+;    HERE 32 + DUP R> >SNAPSHOT  ( temp copy ; save snapshot pointer )
+;    CREATE
+;        R> HERE #SNAPSHOT MOVE
+;        #SNAPSHOT CHARS ALLOC
+;    DOES>
+;       SNAPSHOT> ;
     head(MARKER,MARKER,docolon)
-        DW HERE,TOR
-        DW CREATE,LATEST,FETCH
-        DW NFATOLFA,FETCH,COMMA
-        DW RFROM,COMMA
+        DW U0,HERE,lit,32,PLUS,DUP,TOR,TOSNAPSHOT
+        DW CREATE
+        DW RFROM,HERE,NUMSNAPSHOT,MOVE
+        DW NUMSNAPSHOT,CHARS,ALLOT
 
         DW XDOES
         call dodoes
-        DW DUP,FETCH,LATEST,STORE
-        DW CELLPLUS,FETCH,DP,STORE
+        DW SNAPSHOTFROM
         dw EXIT
 
 ; (BSAVE) ( c-addr u blk -- )  save block to file
@@ -1131,27 +1201,22 @@ BLOAD4:
         dw EXIT
 
 
-defc BLK_HEADER_SIZE = 64
-defc BLK_DATA_SIZE   = 960
+defc BLK_HEADER_SIZE = 256
+defc BLK_DATA_SIZE   = 1024-BLK_HEADER_SIZE
 
 ; (SAVEHDR)            ( c-addr u buffer -- c-addr' u' )
 ; --------------------------------------------------------------
 ; Header
 ;    size of header
 ;    size of data
-;    LATEST 2 bytes. last word in dict
-;    DP 2 bytes. dictionary pointer
-;    VOCLNK 2 bytes.
-;    CONTEXT 2 bytes (for number of items on wordlist stack)
-;         followed by n items of stack.
+;    snapshot
 ; --------------------------------------------------------------
 ;    Setup header
 ;    BUFFER     ( c-addr u buffer -- ; blk in BLK)
 ;      DUP BLK_HEADER_SIZE ERASE
 ;      BLK_HEADER_SIZE OVER !    ( store header size )
 ;      CELL+ 2DUP !              ( store data size )
-;      CELL+ LATEST @ OVER !     ( store LATEST )
-;      CELL+ DP @ OVER !         ( store DP )
+;      CELL+ >SNAPSHOT           ( store SNAPSHOT )
 ;      DROP                      ( c-addr u )
 ;
 ;    BUFFER BLK_HDR_SIZE +    ( c-addr u buffer' )
@@ -1168,8 +1233,7 @@ defc BLK_DATA_SIZE   = 960
         dw DUP,lit,BLK_HEADER_SIZE,ERASE
         dw lit,BLK_HEADER_SIZE,OVER,STORE
         dw CELLPLUS,TWODUP,STORE
-        dw CELLPLUS,LATEST,FETCH,OVER,STORE
-        dw CELLPLUS,DP,FETCH,OVER,STORE
+        dw CELLPLUS,TOSNAPSHOT
         dw DROP
 
         dw BLK,FETCH,BUFFER,lit,BLK_HEADER_SIZE,PLUS
@@ -1239,8 +1303,7 @@ SAVE4:
 ;    DUP @                       ( buffer hdr_size )
 ;    OVER +                      ( buffer buffer' )
 ;    SWAP CELL+ DUP @            ( buffer' buffer data_size )
-;    SWAP CELL+ DUP @ LATEST !   ( buffer' data_size buffer )
-;    CELL+ DUP @ DP !            ( buffer' data_size buffer )
+;    SWAP CELL+ DUP SNAPSHOT>    ( buffer' data_size buffer )
 ;
 ;    DROP SWAP enddict ROT       ( buffer' enddict u)
 ;
@@ -1275,8 +1338,7 @@ SAVE4:
         dw DUP,FETCH               ; header size
         dw OVER,PLUS
         dw SWOP,CELLPLUS,DUP,FETCH
-        dw SWOP,CELLPLUS,DUP,FETCH,LATEST,STORE
-        dw CELLPLUS,DUP,FETCH,DP,STORE
+        dw SWOP,CELLPLUS,DUP,SNAPSHOTFROM
 
         dw DROP,SWOP,lit,enddict,ROT
 
