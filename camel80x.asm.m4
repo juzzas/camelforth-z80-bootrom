@@ -607,7 +607,6 @@ WORDLIST1:
             dw lit,STACK_WORDLISTS,STACKSET
             dw EXIT
 
-
 ;: SAVE-ORDER       (addr -- )
 ;     >R GET-ORDER R>
 ;     2DUP !
@@ -1053,25 +1052,15 @@ INDEX1:
     head(SNAPSHOTDOTORDER,SNAPSHOT.ORDER,docolon)
         dw lit,0x90,PLUS,EXIT
 
-;: SAVE-LINKS  ( addr -- )
-    head(SAVE_LINKS,SAVE-LINKS,docolon)
-        dw EXIT
-
-;: RESTORE-LINKS  ( addr -- )
-    head(RESTORE_LINKS,RESTORE-LINKS,docolon)
-        dw EXIT
-
 ;: >SNAPSHOT  ( snapaddr  -- )
 ;        DUP #SNAPSHOT ERASE
 ;        DUP SNAPSHOT.USER U0 SWAP 128 MOVE
 ;        DUP SNAPSHOT.ORDER SAVE-ORDER
-;        DUP SNAPSHOT.LINKS SAVE-LINKS
 ;        DROP   ;
     head(TOSNAPSHOT,>SNAPSHOT,docolon)
         dw DUP,NUMSNAPSHOT,ERASE
         dw DUP,SNAPSHOTDOTUSER,U0,SWOP,lit,128,MOVE
         dw DUP,SNAPSHOTDOTORDER,SAVE_ORDER
-        dw DUP,SNAPSHOTDOTLINKS,SAVE_LINKS
         dw DROP
         dw EXIT
 
@@ -1083,13 +1072,13 @@ defc SNAPSHOT_RST_LEN = 128-24
 ;        DUP SNAPSHOT.USER SNAPSHOT_RST_START +
 ;           U0 SNAPSHOT_RST_START +   SNAPSHOT_RST_LEN MOVE
 ;        DUP SNAPSHOT.ORDER RESTORE-ORDER
-;        DUP SNAPSHOT.LINKS RESTORE-LINKS
+;        DUP SNAPSHOT.USER 8 + @ DP !
 ;        DROP   ;
     head(SNAPSHOTFROM,SNAPSHOT>,docolon)
         dw DUP,SNAPSHOTDOTUSER,lit,SNAPSHOT_RST_START,PLUS
         dw U0,lit,SNAPSHOT_RST_START,PLUS,lit,SNAPSHOT_RST_LEN,MOVE
         dw DUP,SNAPSHOTDOTORDER,RESTORE_ORDER
-        dw DUP,SNAPSHOTDOTLINKS,RESTORE_LINKS
+        dw DUP,SNAPSHOTDOTUSER,lit,8,PLUS,FETCH,DP,STORE
         dw DROP
         dw EXIT
 
@@ -1101,7 +1090,7 @@ defc SNAPSHOT_RST_LEN = 128-24
 ;    DOES>
 ;       SNAPSHOT> ;
     head(MARKER,MARKER,docolon)
-        DW U0,HERE,lit,32,PLUS,DUP,TOR,TOSNAPSHOT
+        DW HERE,lit,32,PLUS,DUP,TOR,TOSNAPSHOT
         DW CREATE
         DW RFROM,HERE,NUMSNAPSHOT,MOVE
         DW NUMSNAPSHOT,CHARS,ALLOT
@@ -1116,7 +1105,6 @@ defc SNAPSHOT_RST_LEN = 128-24
 ;    SWAP MOVE
 ;    UPDATE  ;
     head(XBSAVE,(BSAVE),docolon)
-        dw CR,DOTS
         dw BUFFER
         dw SWOP,MOVE
         dw UPDATE
@@ -1134,7 +1122,7 @@ defc SNAPSHOT_RST_LEN = 128-24
 ;    THEN           ( c-addr blk ; rem )
 ;
 ;    R> SWAP        ( c-addr rem blk )
-;    OVER IF (BSAVE) ELSE 2DROP DROP THEN  ( c-addr rem )
+;    OVER IF (BSAVE) ELSE 2DROP DROP THEN
 ;    FLUSH  ;
     head(BSAVE,BSAVE,docolon)
         dw SWOP,B_BLK,SLASHMOD
@@ -1157,11 +1145,10 @@ BSAVE4:
         dw FLUSH
         dw EXIT
 
-; (BLOAD) ( c-addr u blk -- )  save block to file
+; (BLOAD) ( c-addr u blk -- )  load block from disks
 ;    BLOCK                            ( c-addr u buffer )
 ;    ROT ROT MOVE    ;
     head(XBLOAD,(BLOAD),docolon)
-        dw CR,DOTS
         dw BLOCK
         dw ROT,ROT,MOVE
         dw EXIT
@@ -1178,7 +1165,7 @@ BSAVE4:
 ;    THEN           ( c-addr blk ; rem )
 ;
 ;    R> SWAP        ( c-addr rem blk )
-;    OVER IF (BLOAD) ELSE 2DROP DROP THEN  ( c-addr rem )
+;    OVER IF (BLOAD) ELSE 2DROP DROP THEN
 ;     ;
     head(BLOAD,BLOAD,docolon)
         dw SWOP,B_BLK,SLASHMOD
@@ -1213,11 +1200,10 @@ defc BLK_DATA_SIZE   = 1024-BLK_HEADER_SIZE
 ; --------------------------------------------------------------
 ;    Setup header
 ;    BUFFER     ( c-addr u buffer -- ; blk in BLK)
-;      DUP BLK_HEADER_SIZE ERASE
-;      BLK_HEADER_SIZE OVER !    ( store header size )
-;      CELL+ 2DUP !              ( store data size )
-;      CELL+ >SNAPSHOT           ( store SNAPSHOT )
-;      DROP                      ( c-addr u )
+;      DUP BLK_HEADER_SIZE ERASE ( c-addr u buffer ; erase header at buffer )
+;      BLK_HEADER_SIZE OVER !    ( c-addr u buffer ; store header size at buffer+0 )
+;      CELL+ 2DUP !              ( c-addr u buffer+2 ; store data size at buffer+2 )
+;      CELL+ >SNAPSHOT           ( c-addr u ; store SNAPSHOT )
 ;
 ;    BUFFER BLK_HDR_SIZE +    ( c-addr u buffer' )
 ;    OVER BLK_DATA_SIZE > IF
@@ -1234,7 +1220,6 @@ defc BLK_DATA_SIZE   = 1024-BLK_HEADER_SIZE
         dw lit,BLK_HEADER_SIZE,OVER,STORE
         dw CELLPLUS,TWODUP,STORE
         dw CELLPLUS,TOSNAPSHOT
-        dw DROP
 
         dw BLK,FETCH,BUFFER,lit,BLK_HEADER_SIZE,PLUS
         dw OVER,lit,BLK_HEADER_SIZE,GREATER,qbranch,XSAVEHDR1
@@ -1251,51 +1236,28 @@ XSAVEHDR2:
         dw EXIT
 
 ;: SAVE   ( blk -- )
+;    DUP WIPE
 ;    enddict   DP @ enddict -    ( blk c-addr u )
 ;    ROT BUFFER                  ( c-addr u buffer -- ; blk in BLK)
 ;    (BSAVEHDR)                  ( c-addr' u' )
 ;
-;    B/BLK /MOD    ( c-addr rem #blks )
-;    SWAP   >R      (c-addr #blks ; rem )
-
-;    BLK @ 1+ BUFFER DROP
-;
-;    ?DUP IF
-;      0 DO                  ( c-addr ; rem )
-;        DUP B/BLK (BSAVE)   ( c-addr ; rem )
-;        B/BLK +             ( c-addr' ; rem )
-;        BLK @ 1+ BUFFER DROP            ( c-addr' ; rem )
-;      LOOP
-;    THEN           ( c-addr ; rem )
-;
-;    R>
-;    QDUP  IF (BSAVE) ELSE DROP THEN    (  )
-;    FLUSH   ;
+;    DUP IF
+;      BLK @ 1+ BSAVE
+;    ELSE
+;      2DROP
+;    THEN   ;
     head(SAVE,SAVE,docolon)
+        dw DUP,WIPE
         dw lit,enddict,DP,FETCH,lit,enddict,MINUS  ;  ( block c-addr u )
         dw ROT,BUFFER                              ;  ( c-addr u buffer )
         dw XSAVEHDR
-        dw BLK,FETCH,ONEPLUS,BUFFER,DROP
 
-        dw B_BLK,SLASHMOD
-        dw SWOP,TOR
-
-        dw QDUP,qbranch,SAVE2
-        dw lit,0,xdo
+        dw DUP,qbranch,SAVE1
+        dw BLK,FETCH,ONEPLUS,BSAVE
+        dw branch,SAVE2
 SAVE1:
-        dw DUP,B_BLK,XBSAVE
-        dw B_BLK,PLUS
-        dw BLK,FETCH,ONEPLUS,BUFFER,DROP
-        dw xloop,SAVE1
+        dw TWODROP
 SAVE2:
-        dw RFROM
-        dw QDUP,qbranch,SAVE3
-        dw XBSAVE
-        dw branch,SAVE4
-SAVE3:
-        dw DROP
-SAVE4:
-        dw FLUSH
         dw EXIT
 
 ;: RESTORE   ( blk -- )
@@ -1303,9 +1265,9 @@ SAVE4:
 ;    DUP @                       ( buffer hdr_size )
 ;    OVER +                      ( buffer buffer' )
 ;    SWAP CELL+ DUP @            ( buffer' buffer data_size )
-;    SWAP CELL+ DUP SNAPSHOT>    ( buffer' data_size buffer )
+;    SWAP CELL+ SNAPSHOT>    ( buffer' data_size )
 ;
-;    DROP SWAP enddict ROT       ( buffer' enddict u)
+;    SWAP enddict ROT       ( buffer' enddict u)
 ;
 ;    DUP BLK_DATA_SIZE > IF   ( buffer' c-addr u )
 ;      >R 2DUP BLK_DATA_SIZE MOVE NIP R>     ( c-addr u )
@@ -1317,30 +1279,20 @@ SAVE4:
 ;       + 0                   ( c-addr' 0 )
 ;    THEN
 ;
-;    lastword enddict !          ( patch link address )
-;
-;    BLK @ 1+ BLOCK DROP
-;
-;    B/BLK /MOD    ( c-addr rem #blks )
-;    SWAP   >R      (c-addr #blks ; rem )
-;    ?DUP IF
-;      0 DO                  ( c-addr ; rem )
-;        DUP B/BLK (BLOAD)   ( c-addr ; rem )
-;        B/BLK +             ( c-addr' ; rem )
-;        BLK @ 1+ BLOCK DROP ( c-addr' ; rem )
-;      LOOP
-;    THEN           ( c-addr ; rem )
-;    R>       ( c-addr rem )
-;
-;    QDUP  IF (BLOAD) ELSE DROP THEN  ;  (  )
+;    DUP IF    ( c-addr' u' )
+;      BLK @ 1+ BLOAD
+;    ELSE
+;      2DROP
+;    THEN    ;
     head(RESTORE,RESTORE,docolon)
         dw BLOCK
         dw DUP,FETCH               ; header size
         dw OVER,PLUS
         dw SWOP,CELLPLUS,DUP,FETCH
-        dw SWOP,CELLPLUS,DUP,SNAPSHOTFROM
+        dw SWOP,CELLPLUS
+        dw SNAPSHOTFROM
 
-        dw DROP,SWOP,lit,enddict,ROT
+        dw SWOP,lit,enddict,ROT
 
         dw DUP,lit,BLK_DATA_SIZE,GREATER,qbranch,RESTORE1
         dw TOR,TWODUP,lit,BLK_DATA_SIZE,MOVE,NIP,RFROM
@@ -1353,28 +1305,12 @@ RESTORE1:
         dw PLUS,lit,0
 
 RESTORE2:
-        dw lit,lastword,lit,enddict,STORE
-        dw BLK,FETCH,ONEPLUS,BLOCK,DROP
-
-        dw B_BLK,SLASHMOD
-        dw SWOP,TOR
-
-        dw QDUP,qbranch,RESTORE4
-        dw lit,0,xdo
+        dw DUP,qbranch,RESTORE3
+        dw BLK,FETCH,ONEPLUS,BLOAD
+        dw branch,RESTORE4
 RESTORE3:
-        dw DUP,B_BLK,XBLOAD
-        dw B_BLK,PLUS
-        dw BLK,FETCH,ONEPLUS,BLOCK,DROP
-        dw xloop,RESTORE3
+        dw TWODROP
 RESTORE4:
-        dw RFROM
-        dw QDUP,qbranch,RESTORE5
-        dw XBLOAD
-        dw branch,RESTORE6
-RESTORE5:
-        dw DROP
-
-RESTORE6:
         dw EXIT
 
 
@@ -1476,7 +1412,6 @@ XRECOGNIZE2:
 RECOGNIZE1:
         DW EXIT
 
-
     head(STACK_RECOGNIZER,STACK-RECOGNIZER,docreate)
         DW STACK_RECOGNIZER_END
         DW REC_IHEX
@@ -1508,9 +1443,6 @@ REC_FIND1:
         DW RECTYPE_NULL
         DW EXIT
 
-
-
-
 ; :NONAME ( i*x XT flags -- j*y )  \ INTERPRET
 ;   DROP EXECUTE ;
 REC_FIND_XT:
@@ -1530,7 +1462,6 @@ REC_FIND_COMP1:
 REC_FIND_COMP2:
         DW EXIT
 
-
 ; :NONAME POSTPONE 2LITERAL  ; ( XT flag -- )
 ;    ( stores the XT and flag into definition )
 REC_FIND_POST:
@@ -1543,8 +1474,6 @@ REC_FIND_POST:
         DW REC_FIND_XT
         DW REC_FIND_COMP
         DW REC_FIND_POST
-
-
 
 ;: REC-NUMBER ( addr len -- n RECTYPE_NUM  |  RECTYPE_NULL )
 ;   0 0 2SWAP               -- ud adr n
@@ -1580,20 +1509,6 @@ RECNUM4:
         DW NOOP
         DW LITERAL
         DW LITERAL
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ; : POSTPONE ( "name" -- )  \ COMPILE
 ;   BL WORD  COUNT

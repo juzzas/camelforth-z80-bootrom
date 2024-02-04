@@ -212,7 +212,7 @@
     ;Z uinit    -- addr  initial values for user area
         head(UINIT,UINIT,docreate)
             DW 0,0,10,0     ; reserved,>IN,BASE,STATE
-            DW enddict      ; DP
+            DW enddict      ; DP                         8
             DW 0,0          ; SOURCE init'd elsewhere    10
             DW lastword     ; LATEST
             DW 0            ; HP init'd elsewhere
@@ -1347,9 +1347,6 @@ COLD2:  DW TYPE,CR
         DW lit,VOCAB_WORDLIST_WID,lit,FORTH_WORDLIST_WID,lit,2,SET_ORDER
         DW lit,FORTH_WORDLIST_WID,CURRENT,STORE
         DW lit,VOCAB_WORDLIST_WID,VOCLINK,STORE
-        DW WORDLISTS,lit,32,MEMDUMP   ; debug
-        DW lit,STACK_WORDLISTS,lit,32,MEMDUMP   ; debug
-        DW HEX,lit,1,WIDTONFA,UDOT ; debug
         DW ABORT       ; ABORT never returns
 
 ;Z WARM     --      warm start Forth system
