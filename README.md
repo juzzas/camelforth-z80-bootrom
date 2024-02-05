@@ -47,9 +47,10 @@ If you're new to Forth, then a good introductory is the "Starting Forth" book by
 | 0000-1FFF | CamelForth ROM           |
 | 2000-7FFF | Empty on RC2014 Mini     |
 | 8000-87FF | CamelForth ROM Workspace |
-| 8800-FFFF | USER RAM                 |
+| 8800-8BFF | BLOCK buffer space       |
+| 8C00-FFFF | USER RAM                 |
 
-User Word definitions start at 0x8800.
+User Word definitions start at 0x8C00.
 
 The Workspace is used by CamelForth, and should be used with caution.
 
@@ -127,12 +128,7 @@ This is a simple example of how to load an Intel HEX file into CamelForth. By de
 # TODO
 
 - More examples
-- incorporate (hand-compile) the words in rc2014.fth into the ROM, for convenience.
-- new RSTxx hooks to allow machine code routines to PUSH and POP the Forth parameter stack (Similar to how Jupiter ACE
-  works).
-- Protect the Forth parameter stack a bit better, when using CALL, by setting the SP register to the end of memory before calling.
-- change HEXLOAD to use the CALL word.
-- fix annoying embedded HEXLOAD-in-a-file-not-on-first-line bug.
+- More ANS-Forth compatibility
 
 # Reference
 
