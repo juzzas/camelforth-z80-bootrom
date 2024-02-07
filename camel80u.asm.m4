@@ -224,16 +224,13 @@ EDIT1:
 
 ;  RC2014 Memdump =========================
 
-;Z (MEMDUMP)  ( addr u --    memory dump lin )
+;Z (MEMDUMP)  ( addr u --    memory dump line )
 ;     DUP >R
 ;     OVER 4 .W ." : "
 ;     0 DO DUP I + C@ 2 .W LOOP
 ;     DROP R>
-;     SPACE
-;     0 DO DUP I + C@
-;         DUP PRINTABLE? INVERT IF DROP [CHAR] . THEN EMIT
-;     LOOP
-;     DROP ;
+;     SPACE     ( addr u )
+;     TYPE$  ;
     head(XMEMDUMP,(MEMDUMP),docolon)
         dw DUP,TOR
         dw OVER,lit,4,UDOTW,XSQUOTE
@@ -244,15 +241,7 @@ XMEMDUMP1:
         dw DUP,II,PLUS,CFETCH,lit,2,DOTW
         dw xloop,XMEMDUMP1
         dw DROP,RFROM,SPACE
-        dw lit,0,xdo
-XMEMDUMP2:
-        dw DUP,II,PLUS,CFETCH
-        dw DUP,PRINTABLEQ,INVERT,qbranch,XMEMDUMP3
-        dw DROP,lit,46
-XMEMDUMP3:
-        dw EMIT
-        dw xloop,XMEMDUMP2
-        dw DROP,EXIT
+        dw TYPESTRING,EXIT
 
 
 ;Z MEMDUMP  ( addr u --    memory dump utility )

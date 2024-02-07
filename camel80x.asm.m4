@@ -514,7 +514,7 @@ XDDOTW2:
         dw XUDOTW,TYPE,SPACE
         dw EXIT
 
-;Z PRINTABLE?         ( n - flag  is characte printable? )
+;Z PRINTABLE?         ( n - flag  is character printable? )
 ;    20 7F WITHIN ;
     head(PRINTABLEQ,PRINTABLE?,docolon)
         dw lit,0x20,lit,0x7f,WITHIN
@@ -980,10 +980,30 @@ THRU1:
         dw C_L,STAR,XBLOCK,PLUS
         dw EXIT
 
+;C TYPE$    c-addr +n --     type line of printable characters to term'l
+;   ?DUP IF
+;     OVER + SWAP DO I C@
+;       DUP PRINTABLE? INVERT IF DROP [CHAR] . THEN EMIT
+;     LOOP
+;   ELSE DROP THEN ;
+    head(TYPESTRING,TYPE$,docolon)
+        DW QDUP,qbranch,TYPS4
+        DW OVER,PLUS,SWOP,xdo
+TYPS3:  DW II,CFETCH
+
+        DW DUP,PRINTABLEQ,INVERT,qbranch,TYPS2
+        dw DROP,lit,46
+TYPS2:  DW EMIT
+
+        DW xloop,TYPS3
+        DW branch,TYPS5
+TYPS4:  DW DROP
+TYPS5:  DW EXIT
+
 ;Z LL               line# --      List Line
 ;     (LINE) C/L TYPE CR ;
     head(LL,LL,docolon)
-        dw XLINE,C_L,TYPE,CR
+        dw XLINE,C_L,TYPESTRING,CR
         dw EXIT
 
 
