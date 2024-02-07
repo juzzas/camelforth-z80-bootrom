@@ -160,8 +160,8 @@ main_code_init:
 
 ; Memory map:
 ;   8000h       ACIA buffers
-;   8200h       ACIA buffers
-;   8400h       Terminal Input Buffer, 128 bytes
+;   8200h       Camelforth workspace
+;   EM-300h     Terminal Input Buffer, 128 bytes
 ;   EM-200h     User area, 128 bytes
 ;   EM-180h     Parameter stack, 128B, grows down
 ;   EM-100h     HOLD area, 40 bytes, grows down

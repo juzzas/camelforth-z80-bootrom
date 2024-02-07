@@ -54,15 +54,18 @@ User Word definitions start at 0x8C00.
 
 The Workspace is used by CamelForth, and should be used with caution.
 
-| Address   | Description                    |
-|-----------|--------------------------------|
-| 8000-81FF | ACIA driver buffers and data   |
-| 8200-83FF | CamelForth workspace           |
-| 8400-84FF | Terminal Input Buffer (TIB)    |
-| 8500-857F | User area (128 bytes)     [IY] |
-| 8580-85FF | HOLD/PAD area                  |
-| 8600-86FF | Param stack               [SP] |
-| 8700-87FF | Return stack              [IX] |
+| Address   | Description                   |
+|-----------|-------------------------------|
+| 8000-81FF | ACIA driver buffers and data  |
+| 8200-83FF | CamelForth workspace          |
+| 8400-84FF | reserved                      |
+| 8500-85FF | Terminal Input Buffer (TIB)   |
+| 8600-867F | User area (128 bytes)    [IY] |
+| 8680-86FF | HOLD/PAD area                 |
+| 8700-877F | Param stack              [SP] |
+| 8780-87FF | Return stack             [IX] |
+|           | Leave stack starts at 8780    |
+|           | and grows up                  |
 
 Note: The PAD area is version is 88 bytes long.
 

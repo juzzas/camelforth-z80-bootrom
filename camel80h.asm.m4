@@ -39,13 +39,12 @@
 
 ;Z tibsize  -- n         size of TIB
     head(TIBSIZE,TIBSIZE,docon)
-        dw 252          ; 2 chars safety zone
+        dw 254          ; 2 chars safety zone
 
 ;X tib     -- a-addr     Terminal Input Buffer
-;  HEX 82 CONSTANT TIB   CP/M systems: 126 bytes
-    ;  HEX -80 USER TIB      others: below user area
+    ;  HEX -80 USER TIB      128bytes below user area
         head(TIB,TIB,docon)
-            dw $8400
+            dw $8500
 
     ;Z u0      -- a-addr       current user area adrs
     ;  0 USER U0
@@ -157,12 +156,12 @@
         head(CALLSP,CALLSP,douser)
             dw 44
 
-    ;Z INTVEC      -- a-addr   interrupt vector
+    ;Z INTVEC      -- a-addr   pointer to address holding interrupt vector
     ;  32 USER INTVEC
         head(INTVEC,INTVEC,douser)
             dw 46
 
-    ;Z RST30VEC     -- a-addr   RST30 vector
+    ;Z RST30VEC     -- a-addr   pointer to address holding RST30 vector
     ;  32 USER RST30VEC
         head(RST30VEC,RST30VEC,douser)
             dw 48
@@ -1138,23 +1137,23 @@ dnl ;    immed(POSTPONE,POSTPONE,docolon)
 ;   0 >L ; IMMEDIATE           marker for LEAVEs
     immed(DO,DO,docolon)
         DW lit,xdo,COMMAXT,HERE
-        DW lit,0,TOL,EXIT
+            DW lit,0,TOL,EXIT
 
-;Z ENDLOOP   adrs xt --   L: 0 a1 a2 .. aN --
-;   ,BRANCH  ,DEST                backward loop
-;   BEGIN L> ?DUP WHILE POSTPONE THEN REPEAT ;
-;                                 resolve LEAVEs
-; This is a common factor of LOOP and +LOOP.
-    head(ENDLOOP,ENDLOOP,docolon)
-        DW COMMABRANCH,COMMADEST
-LOOP1:  DW LFROM,QDUP,qbranch,LOOP2
-        DW THEN,branch,LOOP1
-LOOP2:  DW EXIT
+    ;Z ENDLOOP   adrs xt --   L: 0 a1 a2 .. aN --
+    ;   ,BRANCH  ,DEST                backward loop
+    ;   BEGIN L> ?DUP WHILE POSTPONE THEN REPEAT ;
+    ;                                 resolve LEAVEs
+    ; This is a common factor of LOOP and +LOOP.
+        head(ENDLOOP,ENDLOOP,docolon)
+            DW COMMABRANCH,COMMADEST
+    LOOP1:  DW LFROM,QDUP,qbranch,LOOP2
+            DW THEN,branch,LOOP1
+    LOOP2:  DW EXIT
 
-;C LOOP    adrs --   L: 0 a1 a2 .. aN --
-;   ['] xloop ENDLOOP ;  IMMEDIATE
-    immed(LOOP,LOOP,docolon)
-        DW lit,xloop,ENDLOOP,EXIT
+    ;C LOOP    adrs --   L: 0 a1 a2 .. aN --
+    ;   ['] xloop ENDLOOP ;  IMMEDIATE
+        immed(LOOP,LOOP,docolon)
+            DW lit,xloop,ENDLOOP,EXIT
 
 ;C +LOOP   adrs --   L: 0 a1 a2 .. aN --
 ;   ['] xplusloop ENDLOOP ;  IMMEDIATE
