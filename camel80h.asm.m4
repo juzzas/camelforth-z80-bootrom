@@ -811,11 +811,10 @@ QNUM1:  DW TWODROP,NIP,RFROM,qbranch,QNUM2,NEGATE
 QNUM2:  DW lit,-1
 QNUM3:  DW EXIT
 
-;Z INTERPRET    i*x c-addr u -- j*x
-;Z                      interpret given buffer
+;Z INTERPRET    i*x  -- j*x
+;Z                   interpret buffer at 'SOURCE
 ; This is a common factor of EVALUATE and QUIT.
 ; ref. dpANS-6, 3.4 The Forth Text Interpreter
-;   'SOURCE 2!  0 >IN !
 ;   BEGIN
 ;   BL WORD DUP C@ WHILE        -- textadr
 ;       FIND                    -- a 0/1/-1
@@ -830,7 +829,6 @@ QNUM3:  DW EXIT
 ;       THEN
 ;   REPEAT DROP ;
 dnl ;    head(INTERPRET,INTERPRET,docolon)
-;        DW TICKSOURCE,TWOSTORE,lit,0,TOIN,STORE
 ;INTER1: DW BL,WORD,DUP,CFETCH,qbranch,INTER9
 ;        DW FIND,QDUP,qbranch,INTER4
 ;        DW ONEPLUS,STATE,FETCH,ZEROEQUAL,OR
@@ -845,15 +843,33 @@ dnl ;    head(INTERPRET,INTERPRET,docolon)
 ;INTER8: DW branch,INTER1
 ;INTER9: DW DROP,EXIT
 
-;C EVALUATE  i*x c-addr u -- j*x  interprt string
+;X REFILL      -- f  refill input buffer
+;   SOURCE-ID @ 0= IF
+;     TIB DUP TIBSIZE ACCEPT 'SOURCE 2! 0 >IN ! SPACE -1
+;   ELSE  0   THEN   ;
+    head(REFILL,REFILL,docolon)
+        DW SOURCE_ID,FETCH,ZEROEQUAL,qbranch,REFILL1
+        DW TIB,DUP,TIBSIZE,ACCEPT,TICKSOURCE,TWOSTORE
+        DW lit,0,TOIN,STORE,SPACE,lit,-1,EXIT
+
+REFILL1:
+        DW lit,0
+        DW EXIT
+
+
+
+;C EVALUATE  i*x c-addr u -- j*x  interpret string
 ;   SOURCE-ID @ R> 'SOURCE 2@ >R >R  >IN @ >R
+;   'SOURCE 2! 0 >IN !
 ;   INTERPRET
 ;   R> >IN !  R> R> 'SOURCE 2! R> SOURCE-ID !;
     head(EVALUATE,EVALUATE,docolon)
         DW SOURCE_ID,FETCH,TOR
         DW lit,65535,SOURCE_ID,STORE
         DW TICKSOURCE,TWOFETCH,TOR,TOR
-        DW TOIN,FETCH,TOR,INTERPRET
+        DW TOIN,FETCH,TOR
+        DW TICKSOURCE,TWOSTORE,lit,0,TOIN,STORE
+        DW INTERPRET
         DW RFROM,TOIN,STORE,RFROM,RFROM
         DW TICKSOURCE,TWOSTORE
         DW RFROM,SOURCE_ID,STORE,EXIT
@@ -896,9 +912,9 @@ THROW1: DW EXIT
 
 
 ;C QUIT     --    R: i*x --    interpret from kbd
-;   L0 LP !  R0 RP!   0 STATE ! 0 HANDLER !
+;   L0 LP !  R0 RP!   0 STATE ! 0 HANDLER !  0 SOURCE-ID !
 ;   BEGIN
-;       TIB DUP TIBSIZE ACCEPT  SPACE
+;     REFILL  IF
 ;       ['] INTERPRET CATCH
 ;       CASE
 ;          0 OF STATE @ 0= IF ."  OK" THEN CR ENDOF
@@ -906,12 +922,17 @@ THROW1: DW EXIT
 ;         -2 OF ( abort message given ) CR ENDOF
 ;       DUP ." EXCEPTION" . CR
 ;       ENDCASE
+;     THEN
 ;   AGAIN ;
     head(QUIT,QUIT,docolon)
         DW L0,LP,STORE
         DW R0,RPSTORE,lit,0,STATE,STORE
         DW lit,0,HANDLER,STORE
-QUIT1:  DW TIB,DUP,TIBSIZE,ACCEPT,SPACE
+        DW lit,0,SOURCE_ID,STORE
+
+QUIT1:  DW REFILL
+
+        DW qbranch,QUIT1
         DW lit,INTERPRET,CATCH
 
         ; case 0

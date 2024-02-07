@@ -1547,11 +1547,10 @@ RECNUM4:
         DW EXIT
 
 
-;Z INTERPRET    i*x c-addr u -- j*x
+;Z INTERPRET    i*x c- -- j*x
 ;Z                      interpret given buffer
 ; This is a common factor of EVALUATE and QUIT.
 ; ref. dpANS-6, 3.4 The Forth Text Interpreter
-;   'SOURCE 2!  0 >IN !
 ;   BEGIN
 ;   BL WORD DUP C@ WHILE        -- textadr
 ;       DUP >R COUNT            -- c-addr n  ; textadr
@@ -1568,7 +1567,6 @@ RECNUM4:
 ;       THEN
 ;   REPEAT DROP ;
     head(INTERPRET,INTERPRET,docolon)
-        DW TICKSOURCE,TWOSTORE,lit,0,TOIN,STORE
 INTRP1: DW BL,WORD,DUP,CFETCH,qbranch,INTRP9
         DW DUP,TOR,COUNT
         DW STACK_RECOGNIZER,RECOGNIZE
