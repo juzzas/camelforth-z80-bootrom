@@ -112,84 +112,60 @@
             dw 26
 
     ;Z BLKREADVEC   -- a-addr  1024byte block buffer
-    ;  24 USER BLKREADVEC
+    ;  28 USER BLKREADVEC
         head(BLKREADVEC,BLKREADVEC,douser)
             dw 28
 
     ;Z BLKWRITEVEC   -- a-addr  1024byte block buffer
-    ;  24 USER BLKWRITEVEC
+    ;  30 USER BLKWRITEVEC
         head(BLKWRITEVEC,BLKWRITEVEC,douser)
             dw 30
 
     ;Z SCR          -- a-addr  last edited screen number
-    ;  28 USER SCR
+    ;  32 USER SCR
         head(SCR,SCR,douser)
             dw 32
 
-    ;Z IHXCRC       -- a-addr  location for current HEXLOAD CRC
-    ;  30 USER IHXCRC
-        head(IHXCRC,IHXCRC,douser)
+    ;Z REC-USERVEC      -- xt    if set, use XT as user vector for RECOGNIZER
+    ;  34 USER REC-USERVEC
+        head(REC_USERVEC,REC-USERVEC,douser)
             dw 34
 
-    ;Z SEED        -- a-addr   seed for random number generator
-    ;  32 USER SEED
-        head(SEED,SEED,douser)
+    ;Z CURRENT      -- a-addr   address of CURRENT wid
+    ;  36 USER CURRENT
+        head(CURRENT,CURRENT,douser)
             dw 36
 
-    ;Z REC-USERVEC      -- xt    if set, use XT as user vector for RECOGNIZER
-    ;  32 USER REC-USERVEC
-        head(REC_USERVEC,REC-USERVEC,douser)
+    ;Z VOCLINK      -- a-addr   address for VOCLINK wid
+    ;  38 USER CURRENT
+        head(VOCLINK,VOCLINK,douser)
             dw 38
 
-    ;Z CURRENT      -- a-addr   address of CURRENT wid
-    ;  32 USER CURRENT
-        head(CURRENT,CURRENT,douser)
+    ;Z EMITVEC      -- xt     if set, use XT as EMIT destination
+    ;  40 USER EMITVEC
+        head(EMITVEC,EMITVEC,douser)
             dw 40
 
-    ;Z VOCLINK      -- a-addr   address for VOCLINK wid
-    ;  32 USER CURRENT
-        head(VOCLINK,VOCLINK,douser)
+    ;Z REFILLVEC      -- xt    if set, use XT as REFILL source
+    ;  42 USER REFILLVEC
+        head(REFILLVEC,REFILLVEC,douser)
             dw 42
 
-    ;Z CALLSP      -- a-addr   address to set SP during CALL
-    ;  32 USER CALLSP
-        head(CALLSP,CALLSP,douser)
+    ;Z HANDLER      -- xt    if set, use XT as REFILL source
+    ;  44 USER HANDLER
+        head(HANDLER,HANDLER,douser)
             dw 44
 
-    ;Z INTVEC      -- a-addr   pointer to address holding interrupt vector
-    ;  32 USER INTVEC
-        head(INTVEC,INTVEC,douser)
-            dw 46
-
-    ;Z RST30VEC     -- a-addr   pointer to address holding RST30 vector
-    ;  32 USER RST30VEC
-        head(RST30VEC,RST30VEC,douser)
-            dw 48
-
-    ;Z EMITVEC      -- xt     if set, use XT as EMIT destination
-    ;  50 USER EMITVEC
-        head(EMITVEC,EMITVEC,douser)
-            dw 50
-
-    ;Z REFILLVEC      -- xt    if set, use XT as REFILL source
-    ;  52 USER REFILLVEC
-        head(REFILLVEC,REFILLVEC,douser)
-            dw 52
-
-    ;Z HANDLER      -- xt    if set, use XT as REFILL source
-    ;  54 USER HANDLER
-        head(HANDLER,HANDLER,douser)
-            dw 54
-
     ;Z SOURCE-ID      -- addr   current source ID for interpreter
-    ;  56 USER SOURCE-ID
+    ;  46 USER SOURCE-ID
         head(SOURCE_ID,SOURCE-ID,douser)
+            dw 46
 
     ;Z WORDLISTS      -- addr    address of WORDLIST list
     ; one cell for count, then 8 cells for LFA's of wordlists
-    ;  56 USER WORDLISTS
+    ;  48 USER WORDLISTS
         head(WORDLISTS,WORDLISTS,douser)
-            dw 58
+            dw 48
 
     ;Z s0       -- a-addr     end of parameter stack
         head(S0,S0,douser)
@@ -223,19 +199,14 @@
             DW 0            ; BLKREADVEC
             DW 0            ; BLKWRITEVEC                30
             DW 0            ; SCR
-            DW 0            ; IHXCRC
-            DW 42           ; SEED
             DW 0            ; REC-USERVEC
-            DW 0            ; CURRENT                    40
+            DW 0            ; CURRENT
             DW vocab_lastword            ; VOC-LINK
-            DW 0            ; CALLSP
-            DW 0            ; INTVEC
-            DW 0            ; RST30VEC
-            DW 0            ; EMITVEC                    50
+            DW 0            ; EMITVEC                    40
             DW 0            ; REFILLVEC
             DW 0            ; HANDLER
             DW 0            ; SOURCE-ID
-            DW 3            ; number of wordlists
+            DW 3            ; number of wordlists        48
             DW lastword     ; LFA of FORTH wordlist
             DW editor_lastword   ; LFA of EDITOR wordlist
             DW vocab_lastword    ; LFA of VOCS wordlist
@@ -1389,6 +1360,9 @@ tdiv1:
         DB 35,"Z80 CamelForth v1.02  25 Jan 1995"
         DB 0dh,0ah
         DW TYPE
+        DW lit,65535,RAMTOP,STORE
+        DW lit,0,INTVEC,STORE
+        DW lit,0,RST30VEC,STORE
         DW ROM16KQ,qbranch,COLD1
         DW XSQUOTE
         DB 10," - 16K ROM"
@@ -1400,6 +1374,7 @@ COLD2:  DW TYPE,CR
         DW lit,VOCAB_WORDLIST_WID,lit,FORTH_WORDLIST_WID,lit,2,SET_ORDER
         DW lit,FORTH_WORDLIST_WID,CURRENT,STORE
         DW lit,VOCAB_WORDLIST_WID,VOCLINK,STORE
+        DW lit,42,SEED,STORE
         DW ABORT       ; ABORT never returns
 
 ;Z WARM     --      warm start Forth system

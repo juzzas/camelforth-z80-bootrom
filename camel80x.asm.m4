@@ -402,6 +402,18 @@ SECTION code_user_16k
         DW RND,SWOP,MOD,ABS
         DW EXIT
 
+;Z SEED        -- a-addr   address of seed for random number generator
+;  VARIABLE SEED
+    head(SEED,SEED,docon)
+        dw seed_ptr
+
+SECTION data_user
+
+seed_ptr:
+    DEFW 0
+
+SECTION code_user_16k
+
 ;C NOOP        ( -- )        no operation
 ;    ;
     head(NOOP,NOOP,docolon)
@@ -1726,3 +1738,15 @@ RECIHEX4:
 RECUSER1:
         DW TWODROP,RECTYPE_NULL
         DW EXIT
+
+;Z IHXCRC       -- a-addr  location for current HEXLOAD CRC
+;  ihxcrc_ptr CONSTANT IHXCRC
+    head(IHXCRC,IHXCRC,docon)
+        dw ihxcrc_ptr
+
+SECTION data_user
+
+ihxcrc_ptr:
+        DW 0
+
+SECTION code_user_16k

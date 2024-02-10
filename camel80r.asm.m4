@@ -37,6 +37,35 @@ EXTERN cflash_write_block
 
 EXTERN asm_z80_delay_ms
 
+
+;Z RAMTOP      -- a-addr   address to set SP during CALL
+;  ramtop_ptr CONSTANT RAMTOP
+    head(RAMTOP,RAMTOP,docon)
+        dw ramtop_ptr
+
+;Z INTVEC      -- a-addr   pointer to address holding interrupt vector
+;  intvec_ptr CONSTANT INTVEC
+    head(INTVEC,INTVEC,docon)
+        dw intvec_ptr
+
+;Z RST30VEC     -- a-addr   pointer to address holding RST30 vector
+;  intvec_ptr CONSTANT RST30VEC
+    head(RST30VEC,RST30VEC,docon)
+        dw rst30vec_ptr
+
+SECTION data_user
+ramtop_ptr:
+        DEFW 0
+
+intvec_ptr:
+        DEFW 0
+
+rst30vec_ptr:
+        DEFW 0
+
+SECTION code_user
+
+
 ;Z CALL       a-addr --    call machine code at address
     head(CALL,CALL,docode)
         ; protect against some stack abuse
