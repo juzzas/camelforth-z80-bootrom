@@ -316,57 +316,33 @@ dodoes: ; -- a-addr
 
 ; TERMINAL I/O ==================================
 
-
-        
 ;C EMIT     c --    output character to console
-;   6 BDOS DROP ;
-; warning: if c=0ffh, will read one keypress
     head(EMIT,EMIT,docode)
         ld a,c
         rst 0x08 
-        ;pop hl
         pop bc
         next
 
 ;X KEY?     -- f    return true if char waiting
-;   0FF 6 BDOS DUP SAVEKEY C! ;   rtns 0 or key
-; must use BDOS function 6 to work with KEY
     head(QUERYKEY,KEY?,docode)
         push bc
         rst 0x18
-        ld c,a
-        ld b,0
+        or a
+        jr nz,querykey1
+
+        ld bc, 0
+        jr querykey2
+
+querykey1:
+        ld bc, 0xffff
+
+querykey2:
         next
-        
 
 ;C KEY      -- c    get character from keyboard
-;   BEGIN SAVEKEY C@ 0= WHILE KEY? DROP REPEAT
-;   SAVEKEY C@  0 SAVEKEY C! ;
-; must use CP/M direct console I/O to avoid echo
-; (BDOS function 6, contained within KEY?)
     head(KEY,KEY,docode)
         push bc
-
-KEY_loop:
         rst 0x10
-
-        ; convert DOS and Unix line-endings to CR keypress
-        cp 10
-        jr z, KEY_handle_lf
-        ld (last_key), a
-
-        jr KEY_end
-
-KEY_handle_lf:
-        ld a, (last_key)  ; is DOS line-ending?
-        cp 13
-        jr z, KEY_loop
-
-        ld (last_key), a  ; must be Unix-line-ending
-        ld a, 13
-        jr KEY_end
-
-KEY_end:
         ld c,a
         ld b,0
         next

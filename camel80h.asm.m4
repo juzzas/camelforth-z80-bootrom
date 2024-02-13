@@ -440,9 +440,42 @@ DLITER1: DW EXIT
             DW TWODUP,ULESS,qbranch,UMAX1,SWOP
     UMAX1:  DW DROP,EXIT
 
+; DO_KEY   ( -- char     line ending converted to 13 )
+;   BEGIN
+;    KEY
+;    DUP 10 <> IF
+;        DUP LAST_KEY !    EXIT
+;    ELSE
+;        LAST_KEY @  13 <> IF
+;          DROP  13  EXIT
+;    THEN
+;   AGAIN   ;
+;
+DO_KEY:
+    call docolon
+DO_KEY1:
+    DW KEY
+    DW DUP,lit,10,NOTEQUAL,qbranch,DO_KEY2
+    DW DUP,lit,LAST_KEY,STORE,EXIT
+
+DO_KEY2:
+    DW lit,LAST_KEY,FETCH  ; is DOS Line-ending?
+    DW lit,13,NOTEQUAL,qbranch,DO_KEY3
+    DW DROP,lit,13,EXIT
+
+DO_KEY3:   ; line ending is Unix style
+    DW branch,DO_KEY1
+
+SECTION data_user
+
+LAST_KEY:
+    DW 0
+
+SECTION code_user
+
     ;C ACCEPT  c-addr +n -- +n'  get line from term'l
     ;   OVER + 1- OVER      -- sa ea a
-    ;   BEGIN KEY           -- sa ea a c
+    ;   BEGIN DO_KEY        -- sa ea a c
     ;   DUP 0D <> WHILE
     ;       DUP EMIT        -- sa ea a c
     ;       DUP 8 = IF  BL EMIT 8 EMIT   THEN
