@@ -817,14 +817,14 @@ dnl ;    head(INTERPRET,INTERPRET,docolon)
 ;X REFILL      -- f  refill input buffer
 ;   SOURCE-ID @ 0= IF
 ;     TIB DUP TIBSIZE ACCEPT 'SOURCE 2! 0 >IN ! SPACE -1
-;   ELSE  0   THEN   ;
+;   ELSE  REFILLVEC @ EXECUTE   THEN   ;
     head(REFILL,REFILL,docolon)
         DW SOURCE_ID,FETCH,ZEROEQUAL,qbranch,REFILL1
         DW TIB,DUP,TIBSIZE,ACCEPT,TICKSOURCE,TWOSTORE
         DW lit,0,TOIN,STORE,SPACE,lit,-1,EXIT
 
 REFILL1:
-        DW lit,0
+        DW REFILLVEC,FETCH,EXECUTE
         DW EXIT
 
 
@@ -893,6 +893,8 @@ THROW1: DW EXIT
 ;         -2 OF ( abort message given ) CR ENDOF
 ;       DUP ." EXCEPTION" . CR
 ;       ENDCASE
+;     ELSE
+;       0 SOURCE-ID !
 ;     THEN
 ;   AGAIN ;
     head(QUIT,QUIT,docolon)
@@ -903,7 +905,7 @@ THROW1: DW EXIT
 
 QUIT1:  DW REFILL
 
-        DW qbranch,QUIT1
+        DW qbranch,QUITX
         DW lit,INTERPRET,CATCH
 
         ; case 0
@@ -932,6 +934,10 @@ QUIT4:
         DW XSQUOTE
         DB 11," EXCEPTION "
         DW TYPE,DOT,CR
+        DW branch,QUIT1
+
+QUITX:
+        DW lit,0,SOURCE_ID,STORE
         DW branch,QUIT1
 
 ;C ABORT    i*x --   R: j*x --   clear stk & QUIT
