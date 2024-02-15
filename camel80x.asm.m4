@@ -1750,3 +1750,40 @@ ihxcrc_ptr:
         DW 0
 
 SECTION code_user_16k
+
+
+;Z SAVE-INPUT
+;   SOURCE-ID @ 'SOURCE 2@  >IN @  4 N>R  ;
+    head(SAVE_INPUT,SAVE-INPUT,docolon)
+        DW SOURCE_ID,FETCH
+        DW TICKSOURCE,TWOFETCH
+        DW TOIN,FETCH
+
+        DW lit,4
+
+        DW DUP
+NTOR1:  DW DUP
+        DW qbranch,NTOR2
+        DW ROT,RFROM,SWOP,TOR,TOR
+        DW ONEMINUS
+        DW branch,NTOR1
+NTOR2:
+        DW DROP,RFROM,SWOP,TOR,TOR
+        DW EXIT
+
+;Z RESTORE-INPUT
+;   NR> DROP  >IN !  'SOURCE 2! SOURCE-ID !  ;
+    head(RESTORE_INPUT,RESTORE-INPUT,docolon)
+        DW RFROM,RFROM,SWOP,TOR,DUP
+NR1:    DW DUP
+        DW qbranch,NR2
+        DW RFROM,RFROM,SWOP,TOR,ROT,ROT
+        DW ONEMINUS
+        DW branch,NR1
+NR2:    DW DROP
+
+        DW DROP
+        DW TOIN,STORE
+        DW TICKSOURCE,TWOSTORE
+        DW SOURCE_ID,STORE
+        DW EXIT
