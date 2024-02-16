@@ -38,7 +38,7 @@ EXTERN cflash_write_block
 EXTERN asm_z80_delay_ms
 
 
-;Z RAMTOP      -- a-addr   address to set SP during CALL
+;Z RAMTOP      -- a-addr   address of first USER reserved byte
 ;  ramtop_ptr CONSTANT RAMTOP
     head(RAMTOP,RAMTOP,docon)
         dw ramtop_ptr

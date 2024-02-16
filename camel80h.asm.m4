@@ -494,12 +494,41 @@ TYP5:   DW EXIT
         DW EXIT
 
 ;C S"       --         compile in-line string
+;C S"       -- addr u  interpret in-line string
+;  STATE @ IF
 ;   COMPILE (S")  [ HEX ]
-;   22 WORD C@ 1+ ALIGNED ALLOT ; IMMEDIATE
+;   22 WORD C@ 1+ ALIGNED ALLOT EXIT
+;  ELSE
+;   22 WORD COUNT      ( addr u )
+;   S"COUNT @ 3 AND    ( addr u index )
+;   1+ 7 LSHIFT
+;   RAMTOP @ -         ( addr u addr' )
+;   SWAP 2DUP >R >R    ( addr addr' u   r: u addr )
+;   MOVE R> R>         ( addr u )
+;   S"COUNT DUP @ 1+ SWAP STORE
+;  THEN  ; IMMEDIATE
     immed(SQUOTE,S",docolon)
+        DW STATE,FETCH,qbranch,SQUOTE1
         DW lit,XSQUOTE,COMMAXT
         DW lit,22H,WORD,CFETCH,ONEPLUS
         DW ALIGNED,ALLOT,EXIT
+
+SQUOTE1:
+        DW lit,22H,WORD,COUNT
+        DW lit,squote_count_ptr,FETCH,lit,0x3,AND
+        DW ONEPLUS,lit,7,LSHIFT
+        DW RAMTOP,FETCH,SWOP,MINUS
+        DW SWOP,TWODUP,TOR,TOR
+        DW MOVE,RFROM,RFROM
+        DW lit,squote_count_ptr,DUP,FETCH,ONEPLUS,SWOP,STORE
+        DW EXIT
+
+SECTION data_user
+
+squote_count_ptr:
+        DEFW 0
+
+SECTION code_user
 
 ;C ."       --         compile string to print
 ;   POSTPONE S"  POSTPONE TYPE ; IMMEDIATE
