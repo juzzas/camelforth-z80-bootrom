@@ -316,8 +316,8 @@ dodoes: ; -- a-addr
 
 ; TERMINAL I/O ==================================
 
-;C EMIT     c --    output character to console
-    head(EMIT,EMIT,docode)
+;C TOCONSOLE     c --    output character to console
+    head(TOCONSOLE,>CONSOLE,docode)
         ld a,c
         rst 0x08 
         pop bc

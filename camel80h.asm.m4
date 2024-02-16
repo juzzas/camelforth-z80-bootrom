@@ -202,7 +202,7 @@
             DW 0            ; REC-USERVEC
             DW 0            ; CURRENT
             DW vocab_lastword            ; VOC-LINK
-            DW 0            ; EMITVEC                    40
+            DW TOCONSOLE    ; EMITVEC                    40
             DW 0            ; REFILLVEC
             DW 0            ; HANDLER
             DW 0            ; SOURCE-ID
@@ -376,6 +376,13 @@
 DLITER1: DW EXIT
 
     ; INPUT/OUTPUT ==================================
+
+    ;C EMIT   char --        output character
+    ;   EMITVEC @ EXECUTE ;
+        head(EMIT,EMIT,docolon)
+            dw EMITVEC,FETCH,EXECUTE
+            dw EXIT
+
 
     ;C COUNT   c-addr1 -- c-addr2 u  counted->adr/len
     ;   DUP CHAR+ SWAP C@ ;
