@@ -105,7 +105,7 @@ RULER1:
 ;Z S    ( n -- )     select screen n
 ;     DUP SCR ! BLOCK DROP V ;
     head_editor(S,S,docolon)
-        dw DUP,SCR,STORE,BLOCK,DROP,VEE
+        dw DUP,SCR,STORE,BLOCK,DROP
         dw EXIT
 
 ;Z IA   ( column row -- )  insert at column,row
@@ -113,7 +113,7 @@ RULER1:
     head_editor(IA,IA,docolon)
         dw XLINE,PLUS,TOR
         dw lit,13,WORD,COUNT,RFROM
-        dw SWOP,MOVE,VSTAR
+        dw SWOP,MOVE,UPDATE
         dw EXIT
 
 ;Z P   ( n -- )       place at line n
@@ -125,25 +125,31 @@ RULER1:
 ;Z D   ( n -- )       delete line n
 ;    (LINE) C/L BL FILL V* ;
     head_editor(D,D,docolon)
-        dw XLINE,C_L,BL,FILL,VSTAR
+        dw XLINE,C_L,BL,FILL,UPDATE
         dw EXIT
 
 ;Z X   ( -- )
 ;     (BLOCK) L/B C/L * BL FILL V* ;
     head_editor(X,X,docolon)
-        dw XBLOCK,L_B,C_L,STAR,BL,FILL,VSTAR
+        dw XBLOCK,L_B,C_L,STAR,BL,FILL,UPDATE
         dw EXIT
 
 ;Z B   ( -- )
 ;     -1 SCR +! V ;
-    head_editor(B,B,docolon)
-        dw lit,-1,SCR,PLUSSTORE,VEE
+    head_editor(BEE,B,docolon)
+        dw lit,-1,SCR,PLUSSTORE
         dw EXIT
 
 ;Z N   ( -- )
-;     1 SCR +! V ;
+;     1 SCR +! ;
     head_editor(N,N,docolon)
-        dw lit,1,SCR,PLUSSTORE,VEE
+        dw lit,1,SCR,PLUSSTORE
+        dw EXIT
+
+;Z L   ( -- )
+;     SCR @ LIST ;
+    head_editor(L,L,docolon)
+        dw SCR,FETCH,LIST
         dw EXIT
 
 ;: E SCR @ LOAD ;
@@ -172,8 +178,8 @@ RULER1:
 ;    OVER 127 = IF 1- THEN ( left delete )
 ;    OVER 22 = IF insert_char THEN ( insert space ^v )
 ;    OVER 7 = IF delete_char THEN ( delete char ^g )
-;    OVER 18 = IF B L THEN ( back ^r )
-;    OVER 3 = IF N L THEN ( nextscr ^c ) ;
+;    OVER 18 = IF B  >R >R  V  R> R>  THEN ( back ^r )
+;    OVER 3 = IF N  >R >R  V  R> R>  THEN ( nextscr ^c ) ;
 ;    OVER 25 = IF cut_line THEN ( cut line, shift up ^y ) ;
 ;    OVER 15 = IF insert_line THEN ( shift down, empty line ^o ) ;
 ;    OVER 16 = IF paste_line THEN ( shift down, paste line ^p ) ;
@@ -202,12 +208,12 @@ QCH7:
         dw OVER,lit,127,EQUAL,qbranch,QCH8
         dw ONEMINUS
 QCH8:
-;        dw OVER,lit,2,EQUAL,qbranch,QCH9
-;        dw B,L
-;QCH9:
-;        dw OVER,lit,14,EQUAL,qbranch,QCH10
-;        dw N,L
-;QCH10:
+        dw OVER,lit,18,EQUAL,qbranch,QCH9
+        dw BEE,TOR,TOR,VEE,RFROM,RFROM
+QCH9:
+        dw OVER,lit,3,EQUAL,qbranch,QCH10
+        dw N,TOR,TOR,VEE,RFROM,RFROM
+QCH10:
         dw EXIT
 
 
