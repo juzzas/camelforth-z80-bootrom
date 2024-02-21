@@ -167,6 +167,89 @@ RULER1:
         dw OVER,EMIT
         dw EXIT
 
+;: 'I    ( i -- c-addr )
+;    SCR,FETCH,BLOCK,PLUS  ;
+    head_editor(TICKI,'I,docolon)
+        dw SCR,FETCH,BLOCK,PLUS
+        dw EXIT
+
+; INSERT_CHAR    ( i -- i )
+;    1023 AND DUP             ( i i )
+;    'I DUP 1+          ( i c-addr c-addr+1 )
+;    DUP C/L MOD C/L SWAP -  ( i c-addr c-addr+1 n  )
+;    MOVE           ( i )
+;    BL OVER !CH 2DROP   ( i )
+;    DUP C/L /      ( i l )
+;    13 EMIT  DUP 2 DOTR SPACE LL     ( i )
+;    !XY   ;
+INSERT_CHAR:
+        call docolon
+        dw lit,1023,AND,DUP
+        dw TICKI,DUP,ONEPLUS
+        dw DUP,C_L,MOD,C_L,SWOP,MINUS
+        dw MOVE
+        dw BL,OVER,STORECH,TWODROP
+        dw DUP,C_L,SLASH
+        dw lit,13,EMIT,DUP,lit,2,DOTR,SPACE,LL
+        dw STOREXY
+        dw EXIT
+
+; DELETE_CHAR  ( i -- i )
+;    1023 AND DUP             ( i i )
+;    'I DUP 1+ SWAP         ( i c-addr+1 c-addr )
+;    OVER C/L MOD C/L SWAP -  ( i c-addr+1 c-addr n  )
+;    MOVE           ( i )
+;    BL OVER C/L 1- OR !XY !CH 2DROP   ( i )
+;    DUP C/L /      ( i l )
+;    13 EMIT  DUP 2 DOTR SPACE LL     ( i )
+;    !XY   ;
+DELETE_CHAR:
+        call docolon
+        dw lit,1023,AND,DUP
+        dw TICKI,DUP,ONEPLUS,SWOP
+        dw OVER,C_L,MOD,C_L,SWOP,MINUS
+        dw MOVE
+        dw BL,OVER,C_L,ONEMINUS,OR,STOREXY,STORECH,TWODROP
+        dw DUP,C_L,SLASH
+        dw lit,13,EMIT,DUP,lit,2,DOTR,SPACE,LL
+        dw STOREXY
+        dw EXIT
+
+
+; DELETE_LINE  ( i -- i )
+;    1023 AND DUP 0xffc0 AND 'I ( i 'i-sol )
+;    DUP C/L +                ( i 'i-sol 'i-nl )
+;    SWAP                     ( i 'i-nl 'i-sol )
+;    OVER 1023 AND B/BLK SWAP -        ( i 'i-nl 'i-sol #n )
+;    MOVE
+;    B/BLK C/L - 'I C/L BL FILL  ;   ( i )
+DELETE_LINE:
+        call docolon
+        dw lit,1023,AND,DUP,lit,0xffc0,AND,TICKI
+        dw DUP,C_L,PLUS
+        dw SWOP
+        dw OVER,lit,1023,AND,B_BLK,SWOP,MINUS
+        dw MOVE
+        dw B_BLK,C_L,MINUS,TICKI,C_L,BL,FILL
+        dw EXIT
+
+; INSERT_LINE  ( i -- i )
+;    1023 AND DUP 0xffc0 AND 'I  ( i 'i-sol )
+;    DUP >R
+;    DUP C/L +                ( i 'i-sol 'i-nl )
+;    OVER 1023 AND B/BLK SWAP -        ( i 'i-nl 'i-sol #n )
+;    MOVE
+;    R> C/L BL FILL  ;   ( i )
+INSERT_LINE:
+        call docolon
+        dw lit,1023,AND,DUP,lit,0xffc0,AND,TICKI
+        dw DUP,TOR
+        dw DUP,C_L,PLUS
+        dw OVER,lit,1023,AND,B_BLK,SWOP,MINUS
+        dw MOVE
+        dw RFROM,C_L,BL,FILL
+        dw EXIT
+
 ;: ?CH ( c i -- c i' ( VIM like controls )
 ;    OVER BL - 95 U< IF !CH 1+ EXIT THEN ( text )
 ;    OVER 8 = IF 1- THEN ( left ^h )
@@ -176,10 +259,10 @@ RULER1:
 ;    OVER 24 = IF C/L + THEN ( down ^x )
 ;    OVER 13 = IF C/L 2DUP MOD - + THEN ( crlf return )
 ;    OVER 127 = IF 1- THEN ( left delete )
-;    OVER 22 = IF insert_char THEN ( insert space ^v )
-;    OVER 7 = IF delete_char THEN ( delete char ^g )
 ;    OVER 18 = IF B  >R >R  V  R> R>  THEN ( back ^r )
 ;    OVER 3 = IF N  >R >R  V  R> R>  THEN ( nextscr ^c ) ;
+;    OVER 22 = IF insert_char THEN ( insert space ^v )
+;    OVER 7 = IF delete_char THEN ( delete char ^g )
 ;    OVER 25 = IF cut_line THEN ( cut line, shift up ^y ) ;
 ;    OVER 15 = IF insert_line THEN ( shift down, empty line ^o ) ;
 ;    OVER 16 = IF paste_line THEN ( shift down, paste line ^p ) ;
@@ -188,7 +271,7 @@ RULER1:
         dw STORECH,ONEPLUS
 QCH1:
         dw OVER,lit,8,EQUAL,qbranch,QCH2
-        dw ONEMINUS
+        dw ONEMINUS,BL,OVER,STOREXY,STORECH,TWODROP
 QCH2:
         dw OVER,lit,19,EQUAL,qbranch,QCH3
         dw ONEMINUS
@@ -214,13 +297,25 @@ QCH9:
         dw OVER,lit,3,EQUAL,qbranch,QCH10
         dw N,TOR,TOR,VEE,RFROM,RFROM
 QCH10:
+        dw OVER,lit,22,EQUAL,qbranch,QCH11
+        dw INSERT_CHAR
+QCH11:
+        dw OVER,lit,7,EQUAL,qbranch,QCH12
+        dw DELETE_CHAR
+QCH12:
+        dw OVER,lit,25,EQUAL,qbranch,QCH13
+        dw DELETE_LINE,TOR,TOR,VEE,RFROM,RFROM
+QCH13:
+        dw OVER,lit,15,EQUAL,qbranch,QCH14
+        dw INSERT_LINE,TOR,TOR,VEE,RFROM,RFROM
+QCH14:
         dw EXIT
 
 
 ;: EDIT ( n -- ) CLS 0 DUP AT-XY LIST 0
 ;    BEGIN !XY KEY SWAP ?CH SWAP 27 = UNTIL DROP L ;
     head_editor(EDIT,EDIT,docolon)
-        DW S
+        DW S,VEE
         dw lit,0
 EDIT1:
         dw STOREXY,KEY,SWOP,QCH,SWOP,lit,27,EQUAL,qbranch,EDIT1
