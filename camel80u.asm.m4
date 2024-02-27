@@ -116,22 +116,38 @@ RULER1:
         dw SWOP,MOVE,UPDATE
         dw EXIT
 
-;Z P   ( n -- )       place at line n
-;     0 SWAP IA ;
+;Z Y   ( n -- )        yank line into PAD
+    head_editor(Y,Y,docolon)
+        dw XLINE,PAD,ONEPLUS,C_L,MOVE
+        dw C_L,PAD,STORE
+        dw EXIT
+
+;Z K   ( n -- )        cut line into PAD (move lines up)
+    head_editor(K,K,docolon)
+        dw DUP,Y
+        dw XLINE,DELETE_LINE,DROP,UPDATE
+        dw EXIT
+
+;Z P   ( n -- )        paste contents of PAD at line n
     head_editor(P,P,docolon)
+        dw PAD,COUNT,XLINE,SWOP,MOVE,UPDATE
+        dw EXIT
+
+;Z O   ( n -- )       insert blank line at line n (move lines down)
+    head_editor(O,O,docolon)
+        dw XLINE,INSERT_LINE,DROP,UPDATE
+        dw EXIT
+
+;Z I   ( n -- )       insert text at line n
+;     0 SWAP IA ;
+    head_editor(I,I,docolon)
         dw lit,0,SWOP,IA
         dw EXIT
 
-;Z D   ( n -- )       delete line n
+;Z E   ( n -- )       erase line n
 ;    (LINE) C/L BL FILL V* ;
-    head_editor(D,D,docolon)
+    head_editor(E,E,docolon)
         dw XLINE,C_L,BL,FILL,UPDATE
-        dw EXIT
-
-;Z X   ( -- )
-;     (BLOCK) L/B C/L * BL FILL V* ;
-    head_editor(X,X,docolon)
-        dw XBLOCK,L_B,C_L,STAR,BL,FILL,UPDATE
         dw EXIT
 
 ;Z B   ( -- )
@@ -151,8 +167,6 @@ RULER1:
     head_editor(L,L,docolon)
         dw SCR,FETCH,LIST
         dw EXIT
-
-;: E SCR @ LOAD ;
 
 ;  RC2014 Full screen editor =========================
 
