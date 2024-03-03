@@ -420,12 +420,13 @@ DLITER1: DW EXIT
 
 ; DO_KEY   ( -- char     line ending converted to 13 )
 ;   BEGIN
-;    KEY
-;    DUP 10 <> IF
+;    KEY    ( c )
+;    DUP 10 <> IF  ( c )
 ;        DUP LAST_KEY !    EXIT
 ;    ELSE
-;        LAST_KEY @  13 <> IF
+;        LAST_KEY @  13 <> IF  ( c )
 ;          DROP  13  EXIT
+;        ELSE  DROP  THEN
 ;    THEN
 ;   AGAIN   ;
 ;
@@ -442,6 +443,7 @@ DO_KEY2:
     DW DROP,lit,13,EXIT
 
 DO_KEY3:   ; line ending is Unix style
+    DW DROP
     DW branch,DO_KEY1
 
 SECTION data_user
@@ -464,7 +466,7 @@ SECTION code_user
     ;   DROP NIP SWAP - ;
     head(ACCEPT,ACCEPT,docolon)
         DW OVER,PLUS,ONEMINUS,OVER
-ACC1:   DW KEY,DUP,lit,0DH,NOTEQUAL,qbranch,ACC5
+ACC1:   DW DO_KEY,DUP,lit,0DH,NOTEQUAL,qbranch,ACC5
         DW DUP,EMIT
         DW DUP,lit,8,EQUAL,qbranch,ACC2
         DW BL,EMIT,lit,8,EMIT
