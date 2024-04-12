@@ -839,29 +839,200 @@ FIND1:
     head(VLIST,VLIST,docolon)
         DW lit,XWORDS,lit,STACK_WORDLISTS,STACKFOREACH
         DW EXIT
+; ================================================
+
+; PICK  ( xu...x1 x0 u -- xu...x1 x0 xu )
+; Remove u. Copy the xu to the top of the stack. An ambiguous
+; condition exists if there are less than u+2 items on the stack
+; before PICK is executed.
+;   1+ CELLS SP@ + @ ;
+    head(PICK,PICK,docolon)
+        DW ONEPLUS,CELLS,SPFETCH,PLUS,FETCH
+        DW EXIT
+
+; 2=  ( d1 d2 | n1 n2 n3 n4 -- flag )  true if d1=d2
+;                                      or (n1=n3 AND n2=n4)
+;   ROT =   ( n1 n2 f )
+;   SWAP ROT =   ( n1 n2 f )
+;   AND ;
+    head(TWOEQUAL,2=,docolon)
+        DW ROT,EQUAL
+        DW SWOP,ROT,EQUAL
+        DW AND
+        DW EXIT
 
 ; BLOCK implementation ==========================
 
+; BLOCKCTX structure
+;   Each context struct is indexed to a 1024byte block buffer
+;    DISK number (1 cell)
+;    BLOCK number (1 cell)
+;    BUFFER address (1 cell)
+;    BLOCK update flag (1 cell)
+
+DEFC BLOCKCTX_SIZE = 8
+DEFC BLOCKCTX_NUM = 4
+DEFC BLOCK_FIRST = 0xE000
+
+;Z /BLKCTX   ( -- ) initialise the block contexts
+;    BLKCTX_PTR BLKCTX% 0 FILL
+;    0 BLKCTX_IDX !    ;
+    head(SLASHBLKCTX,/BLKCTX,docolon)
+        dw lit,BLKCTX_PTR
+        dw BLKCTXSIZE,lit,0,FILL
+        dw lit,0,lit,BLKCTX_IDX,STORE
+        dw EXIT
+
+;Z BLKCTX>DISK  ( ctx -- a-addr' )  get address of DISK number
+;    ;
+    head(BLKCTXTODISK,BLKCTX>DISK,docolon)
+        dw EXIT
+
+;Z BLKCTX>BLOCK  ( ctx -- a-addr' )  get address of BLOCK number
+;    ;
+    head(BLKCTXTOBLOCK,BLKCTX>BLOCK,docolon)
+        dw lit,2,PLUS
+        dw EXIT
+
+;Z BLKCTX>BUFFER  ( ctx -- a-addr' )  get address of BUFFER
+;    ;
+    head(BLKCTXTOBUFFER,BLKCTX>BUFFER,docolon)
+        dw lit,4,PLUS
+        dw EXIT
+
+;Z BLKCTX>FLAGS  ( ctx -- a-addr' )  get address of FLAGS
+;    ;
+    head(BLKCTXTOFLAGS,BLKCTX>FLAGS,docolon)
+        dw lit,6,PLUS
+        dw EXIT
+
+;Z BLKCTX%  ( a-addr -- a-addr' )  size of stucture
+    head(BLKCTXSIZE,``BLKCTX%'',docon)
+        dw BLOCKCTX_SIZE
+
+;Z BLKCTX#  ( a-addr -- a-addr' )  number of buffer structures
+    head(BLKCTXNUM,``BLKCTX#'',docon)
+        dw BLOCKCTX_NUM
+
+
 ;Z BLKFIRST      -- a-adrs      address of first block buffer
     head(BLKFIRST,BLKFIRST,docon)
-        dw 0x8800
+        dw BLOCK_FIRST
 
-;Z BLOCK-READ  ( -- )   Compact Flash read block  BLK and DSK
+;Z BLKCTX-NEXT  ( -- ctx )  increment buffer structure
+;   BLKCTX_PTR   BLKCTX_IDX @
+;   BLKCTX% * +  ( new-ctx )
+;   BLKCTX_IDX @  B/BLK *  BLKFIRST PLUS  ( new-ctx buffer )
+;   OVER BLKCTX>BUFFER !  ( new-ctx )
+;   BLKCTX_IDX @ 1+ BLKCTXNUM MOD  BLKCTX_IDX !
+;   ;
+    head(BLKCTX_NEXT,BLKCTX-NEXT,docolon)
+        dw lit,BLKCTX_PTR
+        dw lit,BLKCTX_IDX,FETCH
+        dw BLKCTXSIZE,STAR,PLUS  ; TODO: (FLUSH) this ctx
+        dw lit,BLKCTX_IDX,FETCH,B_BLK,STAR,BLKFIRST,PLUS
+        dw OVER,BLKCTXTOBUFFER,STORE
+        dw lit,BLKCTX_IDX,FETCH,ONEPLUS,BLKCTXNUM,MOD,lit,BLKCTX_IDX,STORE
+        dw EXIT
+
+;Z BLKCTX-FIND   blk disk -- ctx    address of matching buffer, if exists, else 0
+;    BLKCTX_PTR BLKCTX# 0 DO   ( blk dsk ctx[i] )
+;       >R                ( blk dsk ; r: ctx[i] )
+;       2DUP              ( blk dsk blk dsk ; r: ctx[i] )
+;       R@ BLKCTX>BLOCK @  ( blk dsk blk dsk blk[i] ; r: ctx[i] )
+;       R@ BLKCTX>DISK  @  ( blk dsk blk dsk blk[i] dsk[i] ; r: ctx[i] )
+;       2=  IF            ( blk dsk ; r: ctx[i] )
+;           2DROP R> UNLOOP EXIT
+;       THEN
+;       R> BLKCTX% + ( blk dsk ctx[i+1] )
+;    LOOP
+;    2DROP DROP 0   ;
+    head(BLKCTX_FIND,BLKCTX-FIND,docolon)
+        dw lit,BLKCTX_PTR,BLKCTXNUM,lit,0,xdo
+BLKCTXF1:
+        dw TOR
+        dw TWODUP
+        dw RFETCH,BLKCTXTOBLOCK,FETCH
+        dw RFETCH,BLKCTXTODISK,FETCH
+        dw TWOEQUAL,qbranch,BLKCTXF2
+        dw TWODROP,RFROM,UNLOOP
+        dw EXIT
+BLKCTXF2:
+        dw RFROM,BLKCTXSIZE,PLUS
+        dw xloop,BLKCTXF1
+        dw TWODROP,DROP,lit,0
+        dw EXIT
+
+;Z BLKCTX-GET  ( blk dsk -- ctx )  increment buffer structure
+;     2DUP BLKCTX-FIND ?DUP IF   ( blk dsk ctx )
+;         NIP NIP
+;     ELSE                       ( blk dsk )
+;         BLKCTX-NEXT    ( blk dsk ctx )
+;         >R
+;         R@ BLKCTX>DISK !
+;         R@ BLKCTX>BLOCK !
+;         R@ BLKCTX>FLAGS 1 SWAP !
+;         R>  ;
+    head(BLKCTX_GET,BLKCTX-GET,docolon)
+        dw TWODUP,BLKCTX_FIND,QDUP,qbranch,BLKCTXG1
+        dw NIP,NIP
+        dw EXIT
+BLKCTXG1:
+        dw BLKCTX_NEXT
+        dw TOR
+        dw RFETCH,BLKCTXTODISK,STORE
+        dw RFETCH,BLKCTXTOBLOCK,STORE
+        dw RFETCH,BLKCTXTOFLAGS,lit,1,SWOP,STORE
+        dw RFROM
+        dw EXIT
+
+;Z BLKCTX-MAP   xt --     execute xt for each blkctx
+;    BLKCTX_PTR BLKCTX# 0 DO   ( xt ctx[i] )
+;       >R                ( xt ; r: ctx[i] )
+;       DUP R@ SWAP EXECUTE
+;       R> BLKCTX% +      ( xt ctx[i+1] )
+;    LOOP   2DROP  ;
+    head(BLKCTX_MAP,BLKCTX-MAP,docolon)
+        dw lit,BLKCTX_PTR,BLKCTXNUM,lit,0,xdo
+BLKCTXMAP1:
+        dw TOR
+        dw DUP
+        dw RFETCH,SWOP,EXECUTE
+        dw RFROM,BLKCTXSIZE,PLUS
+        dw xloop,BLKCTXMAP1
+        dw TWODROP
+        dw EXIT
+
+;Z BLKCTX-ALLOC  blk disk   -- ctx    address of matching buffer, if exists, else 0
+
+SECTION data_user_16k
+
+BLKCTX_PTR:
+        DEFW 0,0,0,0
+        DEFW 0,0,0,0
+        DEFW 0,0,0,0
+        DEFW 0,0,0,0
+
+BLKCTX_IDX:
+        DEFW 0
+
+SECTION code_user_16k
+
+;Z CF-BLOCK-READ  ( dsk blk adrs -- )   Compact Flash read block  BLK and DSK
 ; Reads the block from the Compact Flash card into memory
-; address found at 'adrs'. 'dks' and 'blk' are the disk
+; address found at 'adrs'. 'dsk' and 'blk' are the disk
 ; and block numbers respectively
-    head(BLOCK_READ,BLOCK-READ,docolon)
-        dw DSK,FETCH,lit,0x7fff,AND,BLK,FETCH,BLKBUFFER,FETCH
+    head(CF_BLOCK_READ,CF-BLOCK-READ,docolon)
 
-        dw DSK,FETCH,lit,0x8000,AND,qbranch,BLOCK_READ1
+;        dw DSK,FETCH,lit,0x8000,AND,qbranch,BLOCK_READ1
 
-        dw BLKREADVEC,FETCH,DUP,qbranch,BLOCK_READ2
-        dw EXECUTE
-        dw branch,BLOCK_READ3
+;        dw BLKREADVEC,FETCH,DUP,qbranch,BLOCK_READ2
+;        dw EXECUTE
+;        dw branch,BLOCK_READ3
 
 BLOCK_READ1:
         dw lit,cflash_read_block,CALL
-        dw branch,BLOCK_WRITE3
+        dw branch,BLOCK_READ3
 
 BLOCK_READ2:
         dw INVERT,XSQUOTE
@@ -874,18 +1045,12 @@ BLOCK_READ3:
         dw QABORT
         dw EXIT
 
-;Z BLOCK-WRITE  ( -- )  Compact Flash read write BLK and DSK
+;Z BLOCK-WRITE  ( dsk blk adrs -- )  Compact Flash write BLK and DSK
 ; Reads the block from the Compact Flash card into memory
-; address found at 'adrs'. 'dks' and 'blk' are the disk
+; address found at 'adrs'. 'dsk' and 'blk' are the disk
 ; and block numbers respectively
-    head(BLOCK_WRITE,BLOCK-WRITE,docolon)
-        dw DSK,FETCH,lit,0x7fff,AND,BLK,FETCH,BLKBUFFER,FETCH
+    head(CF_BLOCK_WRITE,CF-BLOCK-WRITE,docolon)
 
-        dw DSK,FETCH,lit,0x8000,AND,qbranch,BLOCK_WRITE1
-
-        dw BLKWRITEVEC,FETCH,DUP,qbranch,BLOCK_WRITE2
-        dw EXECUTE
-        dw branch,BLOCK_WRITE3
 
 BLOCK_WRITE1:
         dw lit,cflash_write_block,CALL
@@ -902,57 +1067,105 @@ BLOCK_WRITE3:
         dw QABORT
         dw EXIT
 
+;Z CF-BLOCK-READWRITE  ( dsk blk adrs f -- )  read or write block
+;     IF  CF-BLOCK-WRITE  ELSE  CF-BLOCK-READ  THEN ;
+    head(CF_BLOCK_READWRITE,CF-BLOCK-READWRITE,docolon)
+        dw qbranch,CFBRW1
+        dw CF_BLOCK_WRITE,branch,CFBRW2
+CFBRW1:
+        dw CF_BLOCK_READ
+CFBRW2:
+        dw EXIT
+
+;Z BLOCK-READWRITE    ( ctx f -- )  read or write block
+;                              f = 0 read, f = -1 write
+;     >R >R
+;     R@ BLKCTX>DISK @
+;     R@ BLKCTX>BLOCK @
+;     R@ BLKCTX>BUFFER @
+;     0 R@ BLKCTX>FLAGS !
+;     R> DROP  R>      ( dsk blk adrs f )
+;     CF-BLOCK-READWRITE ;
+    head(BLOCK_READWRITE,BLOCK-READWRITE,docolon)
+        dw TOR,TOR
+        dw RFETCH,BLKCTXTODISK,FETCH
+        dw RFETCH,BLKCTXTOBLOCK,FETCH
+        dw RFETCH,BLKCTXTOBUFFER,FETCH
+        dw lit,0,RFETCH,BLKCTXTOFLAGS,STORE
+        dw RFROM,DROP,RFROM
+        dw CF_BLOCK_READWRITE
+        dw EXIT
+
+;Z (BUFFER)      n -- ctx    get buffer context
+;     DUP BLK !
+;     DSK @
+;     BLKCTX-GET   ;
+    head(XBUFFER,(BUFFER),docolon)
+        dw DUP,BLK,STORE
+        dw DSK,FETCH
+        dw BLKCTX_GET
+        dw EXIT
+
 ;C BUFFER        n -- addr         push buffer address
-;     FLUSH
-;     BLK !
-;     BLKFIRST BLKBUFFER !
-;     BLKBUFFER @      ( push buffer address ) ;
+;     (BUFFER)
+;     BLKCTX>BUFFER @  ;
     head(BUFFER,BUFFER,docolon)
-        dw FLUSH
-        dw BLK,STORE
-        dw BLKFIRST,BLKBUFFER,STORE
-        dw BLKBUFFER,FETCH
+        dw XBUFFER
+        dw BLKCTXTOBUFFER,FETCH
         dw EXIT
 
 ;C BLOCK                    n -- addr    load block
-;     DUP BLK @ = IF
-;       DROP BLKBUFFER @
-;     ELSE
-;       BUFFER BLOCK-READ
-;     THEN ;
+;     (BUFFER)     ( ctx )
+;     DUP BLKCTX>FLAGS @ 1 = IF  ( ctx )
+;         DUP 0 BLOCK-READWRITE
+;     THEN
+;     BLKCTX>BUFFER @ ;
     head(BLOCK,BLOCK,docolon)
-        dw DUP,BLK,FETCH,EQUAL,qbranch,BLOCK1
-        dw DROP,BLKBUFFER,FETCH
-        dw branch,BLOCK2
+        dw XBUFFER
+        dw DUP,BLKCTXTOFLAGS,FETCH,lit,1,EQUAL,qbranch,BLOCK1
+        dw DUP,lit,0,BLOCK_READWRITE
 BLOCK1:
-        dw BUFFER,BLOCK_READ
-BLOCK2:
+        dw BLKCTXTOBUFFER,FETCH
         dw EXIT
 
 ;C UPDATE                    --    mark block to update
-;     -1 BLKUPDATE ! ;
+;     BLK @ DSK @ BLKCTX-FIND ?DUP IF
+;        BLKCTX>FLAGS -1 SWAP !
+;     THEN ;
     head(UPDATE,UPDATE,docolon)
-        dw lit,0xffff,BLKUPDATE,STORE
+        dw BLK,FETCH,DSK,FETCH,BLKCTX_FIND,QDUP,qbranch,UPDATE1
+        dw BLKCTXTOFLAGS,lit,0xffff,SWOP,STORE
+UPDATE1:
         dw EXIT
 
-;C UPDATED?                 n -- f   is block updated?
-;     BLK @ = IF
-;         BLKUPDATE FETCH
-;     ELSE 0 THEN ;
+;C UPDATED?                 blk -- f   is block updated?
+;     DSK @ BLKCTX-FIND DUP IF
+;         BLKCTX>FLAGS @
+;     THEN ;
     head(UPDATEDQ,UPDATED?,docolon)
-        dw BLK,FETCH,EQUAL,qbranch,UPDATEDQ1
-        dw BLKUPDATE,FETCH,branch,UPDATEDQ2
+        dw DSK,FETCH,BLKCTX_FIND,DUP,qbranch,UPDATEDQ1
+        dw BLKCTXTOFLAGS,FETCH
 UPDATEDQ1:
-        dw lit,0
-UPDATEDQ2:
         dw EXIT
+
+;Z (FLUSH)  ( ctx -- )  flush blkctx to disk
+;    DUP BLKCTX>FLAGS @ -1 = IF    ( ctx )
+;      DUP -1 BLOCK-READWRITE        ( ctx )
+;      BLKCTX>FLAGS 0 SWAP !
+;    ELSE DROP
+;    THEN ;
+    head(XFLUSH,(FLUSH),docolon)
+        dw DUP,BLKCTXTOFLAGS,FETCH,lit,-1,EQUAL,qbranch,FLUSH1
+        dw DUP,lit,-1,BLOCK_READWRITE
+        dw BLKCTXTOFLAGS,lit,0,SWOP,STORE
+        dw EXIT
+FLUSH1:
+        dw DROP,EXIT
 
 ;C FLUSH                    --    flush blocks to disk
-;     BLK @ UPDATED? IF BLOCK-WRITE  0 BLKUPDATE ! THEN ;
+;     ' (FLUSH) BLKCTX-MAP  ;
     head(FLUSH,FLUSH,docolon)
-        dw BLK,FETCH,UPDATEDQ,qbranch,FLUSH1
-        dw BLOCK_WRITE,lit,0,BLKUPDATE,STORE
-FLUSH1:
+        dw lit,XFLUSH,BLKCTX_MAP
         dw EXIT
 
 ;C LOAD                  n  --    load block n

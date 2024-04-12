@@ -111,12 +111,12 @@
         head(BLKUPDATE,BLKUPDATE,douser)
             dw 26
 
-    ;Z BLKREADVEC   -- a-addr  1024byte block buffer
+    ;Z BLKREADVEC   -- a-addr  if set, use XT to read block
     ;  28 USER BLKREADVEC
         head(BLKREADVEC,BLKREADVEC,douser)
             dw 28
 
-    ;Z BLKWRITEVEC   -- a-addr  1024byte block buffer
+    ;Z BLKWRITEVEC   -- a-addr  if set, use XT to write block
     ;  30 USER BLKWRITEVEC
         head(BLKWRITEVEC,BLKWRITEVEC,douser)
             dw 30
