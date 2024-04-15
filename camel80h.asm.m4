@@ -101,14 +101,14 @@
         head(DSK,DSK,douser)
             dw 22
 
-    ;Z BLKBUFFER    -- a-addr  1024byte block buffer
-    ;  24 USER BLKBUFFER
-        head(BLKBUFFER,BLKBUFFER,douser)
+    ;Z BLKOFFSET    -- a-addr  1024byte block buffer
+    ;  24 USER BLKOFFSET
+        head(BLKOFFSET,BLKOFFSET,douser)
             dw 24
 
-    ;Z BLKUPDATE    -- a-addr  block update flag storage
-    ;  26 USER BLKUPDATE
-        head(BLKUPDATE,BLKUPDATE,douser)
+    ;Z BLKLIMIT    -- a-addr  block update flag storage
+    ;  26 USER BLKLIMIT
+        head(BLKLIMIT,BLKLIMIT,douser)
             dw 26
 
     ;Z BLKRWVEC   -- a-addr  if set, use XT to read block

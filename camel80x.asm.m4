@@ -1073,6 +1073,7 @@ CFBRW2:
 ;     >R >R
 ;     R@ BLKCTX>DISK @
 ;     R@ BLKCTX>BLOCK @
+;     BLKOFFSET @ +
 ;     R@ BLKCTX>BUFFER @
 ;     0 R@ BLKCTX>FLAGS !
 ;     R> DROP  R>      ( dsk blk adrs f )
@@ -1081,6 +1082,7 @@ CFBRW2:
         dw TOR,TOR
         dw RFETCH,BLKCTXTODISK,FETCH
         dw RFETCH,BLKCTXTOBLOCK,FETCH
+        dw BLKOFFSET,FETCH,PLUS
         dw RFETCH,BLKCTXTOBUFFER,FETCH
         dw lit,0,RFETCH,BLKCTXTOFLAGS,STORE
         dw RFROM,DROP,RFROM
@@ -1088,14 +1090,23 @@ CFBRW2:
         dw EXIT
 
 ;Z (BUFFER)      n -- ctx    get buffer context
+;     DUP BLKLIMIT @ U< IF
 ;     DUP BLK !
 ;     DSK @
-;     BLKCTX-GET   ;
+;     BLKCTX-GET
+;     ELSE  ABORT" BLOCK OUT OF RANGE" THEN ;
     head(XBUFFER,(BUFFER),docolon)
+        dw DUP,BLKLIMIT,FETCH,ULESS,qbranch,XBUFFER1
         dw DUP,BLK,STORE
         dw DSK,FETCH
         dw BLKCTX_GET
         dw EXIT
+XBUFFER1:
+        dw XSQUOTE
+        db 18,"BLOCK OUT OF RANGE"
+        DW TYPE
+        dw ABORT
+
 
 ;C BUFFER        n -- addr         push buffer address
 ;     (BUFFER)
