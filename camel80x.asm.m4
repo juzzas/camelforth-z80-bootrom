@@ -1023,13 +1023,6 @@ SECTION code_user_16k
 ; address found at 'adrs'. 'dsk' and 'blk' are the disk
 ; and block numbers respectively
     head(CF_BLOCK_READ,CF-BLOCK-READ,docolon)
-
-;        dw DSK,FETCH,lit,0x8000,AND,qbranch,BLOCK_READ1
-
-;        dw BLKREADVEC,FETCH,DUP,qbranch,BLOCK_READ2
-;        dw EXECUTE
-;        dw branch,BLOCK_READ3
-
 BLOCK_READ1:
         dw lit,cflash_read_block,CALL
         dw branch,BLOCK_READ3
@@ -1050,8 +1043,6 @@ BLOCK_READ3:
 ; address found at 'adrs'. 'dsk' and 'blk' are the disk
 ; and block numbers respectively
     head(CF_BLOCK_WRITE,CF-BLOCK-WRITE,docolon)
-
-
 BLOCK_WRITE1:
         dw lit,cflash_write_block,CALL
         dw branch,BLOCK_WRITE3
@@ -1085,7 +1076,7 @@ CFBRW2:
 ;     R@ BLKCTX>BUFFER @
 ;     0 R@ BLKCTX>FLAGS !
 ;     R> DROP  R>      ( dsk blk adrs f )
-;     CF-BLOCK-READWRITE ;
+;     BLKRWVEC @ EXECUTE ;
     head(BLOCK_READWRITE,BLOCK-READWRITE,docolon)
         dw TOR,TOR
         dw RFETCH,BLKCTXTODISK,FETCH
@@ -1093,7 +1084,7 @@ CFBRW2:
         dw RFETCH,BLKCTXTOBUFFER,FETCH
         dw lit,0,RFETCH,BLKCTXTOFLAGS,STORE
         dw RFROM,DROP,RFROM
-        dw CF_BLOCK_READWRITE
+        dw BLKRWVEC,FETCH,EXECUTE
         dw EXIT
 
 ;Z (BUFFER)      n -- ctx    get buffer context

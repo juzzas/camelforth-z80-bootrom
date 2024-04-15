@@ -111,9 +111,9 @@
         head(BLKUPDATE,BLKUPDATE,douser)
             dw 26
 
-    ;Z BLKREADVEC   -- a-addr  if set, use XT to read block
-    ;  28 USER BLKREADVEC
-        head(BLKREADVEC,BLKREADVEC,douser)
+    ;Z BLKRWVEC   -- a-addr  if set, use XT to read block
+    ;  28 USER BLKRWVEC
+        head(BLKRWVEC,BLKRWVEC,douser)
             dw 28
 
     ;Z BLKWRITEVEC   -- a-addr  if set, use XT to write block
@@ -194,9 +194,9 @@
             DW 0            ; LP init'd elsewhere
             DW 65535        ; BLK                        20
             DW 1            ; DSK
-            DW 0x8800       ; BLKBUFFER
-            DW 0            ; BLKUPDATE
-            DW 0            ; BLKREADVEC
+            DW -1           ; BLKOFFSET
+            DW 8192         ; BLKLIMIT
+            DW CF_BLOCK_READWRITE            ; BLKRWVEC
             DW 0            ; BLKWRITEVEC                30
             DW 0            ; SCR
             DW 0            ; REC-USERVEC
