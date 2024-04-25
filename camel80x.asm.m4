@@ -1350,6 +1350,9 @@ defc SNAPSHOT_RST_LEN = 128-24
         DW XDOES
         call dodoes
         DW SNAPSHOTFROM
+        DW XSQUOTE
+        db 3," OK"
+        dw TYPE,CR,QUIT
         dw EXIT
 
 ; (BSAVE) ( c-addr u blk -- )  save block to file
