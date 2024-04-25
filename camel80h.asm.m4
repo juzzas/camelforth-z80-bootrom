@@ -192,7 +192,7 @@
             DW lastword     ; LATEST
             DW 0            ; HP init'd elsewhere
             DW 0            ; LP init'd elsewhere
-            DW 65535        ; BLK                        20
+            DW 0            ; BLK                        20
             DW 1            ; DSK
             DW -1           ; BLKOFFSET
             DW 8192         ; BLKLIMIT
