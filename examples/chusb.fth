@@ -65,16 +65,19 @@ CREATE CHBUFFER 65 CHARS ALLOT
 
 : CHRD  ( -- buffer' count )
    /CHBUFFER
-   CHCMD_RD CHCMD!  1 MS
    CHDATA@   ( buffer c )
    0 DO
       CHDATA@ CHBUFFER+   [CHAR] . EMIT
-   LOOP ; 
+   LOOP ;
+
+: CHUSBRD
+   CHCMD_RD CHCMD!  1 MS  CHRD  ;
 
 : CHWR ( -- )
    CHBUFFER C@
    0 DO
-      CHBUFFER I 1+ + C@ CHDATA!
+      CHBUFFER I 1+ + C@   CHDATA!
+      [CHAR] + EMIT
    LOOP  ;
 
 
@@ -94,17 +97,19 @@ CREATE CHBUFFER 65 CHARS ALLOT
 
 ( read multiple 64 byte chunks )
 : CHRDBLK ( LBA-L LBA-H buffer -- )
-
-   >R 
+   CHRESET
+   >R
+   1 MS
+   LBA>CHBUFFER
    CHCMD_DSKRD CHCMD! 1 MS
-   LBA>CHBUFFER CHWR
-   1 CHDATA! 
-   CHPOLL 1D <> ABORT" READ ERROR"
-     CHRD
+     CHWR
+     1 CHDATA!
+   CHPOLL DUP . 1D  <> ABORT" READ ERROR"
+     CHUSBRD
 
    CHCMD_DSKRDGO CHCMD! 1 MS
    CHPOLL 1D <> ABORT" READGO ERROR"
-     CHRD
+     CHUSBRD
    
    R>
    7 0 DO  
@@ -135,7 +140,7 @@ CREATE CHBUFFER 65 CHARS ALLOT
    1 MS
    CHPOLL  14 <>  IF ." CHDISKSIZE failed = " . EXIT THEN   ( 14 = success. TODO fix "no media" currently hangs )
    ( read size byte -- should be 8 -- read 8 bytes )
-   CHRD
+   CHUSBRD
  ;
 
 : CHDISKINQ
@@ -143,7 +148,7 @@ CREATE CHBUFFER 65 CHARS ALLOT
    CHPOLL  14 <>  IF ." CHDISKINQ failed = " . EXIT THEN   ( 14 = success. TODO fix "no media" currently hangs )
 
    ( read size byte -- should be 36 -- read 36 bytes )
-   CHRD
+   CHUSBRD
 
  ;
 
