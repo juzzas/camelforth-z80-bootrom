@@ -101,27 +101,19 @@ CREATE CHBUFFER 65 CHARS ALLOT
    >R
    1 MS
    LBA>CHBUFFER
-   CHCMD_DSKRD CHCMD! 1 MS
+   1 CHBUFFER+  ( 1 sector )
+   CHCMD_DSKRD CHCMD!
      CHWR
-     1 CHDATA!
    CHPOLL DUP . 1D  <> ABORT" READ ERROR"
      CHUSBRD
 
-   CHCMD_DSKRDGO CHCMD! 1 MS
-   CHPOLL 1D <> ABORT" READGO ERROR"
-     CHUSBRD
-   
-   R>
-   7 0 DO  
-      CHCMD_DSKRDGO CHCMD!
-      CHPOLL ." rd result = "  DUP .
-      1D = IF
-        CHCMD_RD CHCMD!
-        CHRD
-      THEN
-
+   7 0 DO
+     CHCMD_DSKRDGO   CHPORT_CMD PC!
+     CHPOLL 1D <> ABORT" READGO ERROR"
+       CHUSBRD
    LOOP  ;
-     
+
+
 : CHCHECK?   ( -- f )
    CHCMD_CHECK_EXISTS CHCMD!
    1 MS  A5   CHDATA!
