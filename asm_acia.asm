@@ -27,6 +27,7 @@
 ;
 ; DEFINES SECTION
 ;
+; DEFC ACIA_POLL_TX = 1
 
 DEFC    SER_RX_BUFSIZE  =   $100    ; FIXED Rx buffer size, 256 Bytes, no range checking
 DEFC    SER_RX_FULLSIZE =   SER_RX_BUFSIZE - $10
@@ -41,6 +42,7 @@ DEFC Z80_ACIA_BUFFER_BASE = 0x8000
 ;
 ; Some definitions used with the RC2014 on-board peripherals:
 ;
+
 
 ; ACIA 68B50 Register Mnemonics
 
@@ -171,6 +173,7 @@ im1_tx_check:
         jr C,im1_rx_get             ; another byte received, go get it
 
 im1_tx_send:
+IFNDEF ACIA_POLL_TX
         rrca                        ; check whether a byte can be transmitted, via SER_TDRE
         jr NC,im1_txa_end           ; if not, we're done for now
 
@@ -199,6 +202,7 @@ im1_tei_clear:
         and ~SER_TEI_RTS0           ; mask out (disable) the Tx Interrupt
         ld (serControl),a           ; write the ACIA control byte back
         out (SER_CTRL_ADDR),a       ; Set the ACIA CTRL register
+ENDIF
 
 im1_txa_end:
         pop hl
@@ -252,6 +256,21 @@ rxa_clean_up:
 ;SECTION z80_acia_txa                ; ORG $0120
 PUBLIC acia_putc
 acia_putc:
+IFDEF ACIA_POLL_TX
+        push hl                     ; store HL so we don't clobber it
+        ld l,a                      ; store Tx character
+
+tx_loop:
+        in a,(SER_STATUS_ADDR)      ; get the status of the ACIA
+        and SER_TDRE                ; check whether a byte can be transmitted
+        jr Z,tx_loop                ; if not, so abandon immediate Tx
+
+        ld a,l                      ; Retrieve Tx character for immediate Tx
+        out (SER_DATA_ADDR),a       ; immediately output the Tx byte to the ACIA
+
+        pop hl                      ; recover HL
+        ret                         ; and just complete
+ELSE
         push hl                     ; store HL so we don't clobber it
         ld l,a                      ; store Tx character
 
@@ -304,7 +323,7 @@ txa_buffer_out:
         out (SER_CTRL_ADDR),a       ; set the ACIA CTRL register
         ei                          ; critical section end
         ret
-
+ENDIF
 
 ;------------------------------------------------------------------------------
 
