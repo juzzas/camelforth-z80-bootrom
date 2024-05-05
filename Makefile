@@ -5,7 +5,7 @@ TARGET=camel80
 
 .PHONY: all clean blk $(TARGET)
 
-all: $(TARGET)
+all: $(TARGET) blk
 
 clean:
 	rm -f *.o $(TARGET)
@@ -21,6 +21,7 @@ $(TARGET):
 
 blk:
 	./blocks.py -v -o build/ttester.blk examples/ttester.fth
-	cat build/ttester.blk > build/camelforth.blk
-	dd if=build/camelforth.blk of=camelforth.ide bs=1024 seek=1
+	./blocks.py -v -o build/cffs.blk examples/cffs.fth
 
+	dd if=build/ttester.blk of=camelforth.ide bs=1024 seek=1
+	dd if=build/cffs.blk of=camelforth.ide bs=1024 seek=10
