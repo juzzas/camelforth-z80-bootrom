@@ -95,10 +95,12 @@ CREATE CHBUFFER 65 CHARS ALLOT
    ( CHRD . . )
     ;
 
+VARIABLE blkptr 0 blkptr !
+
 ( read multiple 64 byte chunks )
 : CHRDBLK ( LBA-L LBA-H buffer -- )
    CHRESET
-   >R
+   blkptr !     ( save buffer )
    1 MS
    LBA>CHBUFFER
    1 CHBUFFER+  ( 1 sector )
@@ -106,12 +108,16 @@ CREATE CHBUFFER 65 CHARS ALLOT
      CHWR
    CHPOLL DUP . 1D  <> ABORT" READ ERROR"
      CHUSBRD
+     CHBUFFER  COUNT blkptr @ SWAP  MOVE
+     64 blkptr +!
 
    7 0 DO
      CHCMD_DSKRDGO   CHPORT_CMD PC!
      CHPOLL 1D <> ABORT" READGO ERROR"
        CHUSBRD
-   LOOP  ;
+       CHBUFFER COUNT blkptr @ SWAP  MOVE
+       64 blkptr +!
+   LOOP   ;
 
 
 : CHCHECK?   ( -- f )
