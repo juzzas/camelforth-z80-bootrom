@@ -20,38 +20,31 @@ HEX
 51 CONSTANT CHCMD_RET_SUCCESS
 5F CONSTANT CHCMD_RET_ABORT
 
-: CHCMD! CHPORT_CMD PC! ;
-: CHCMD@ CHPORT_CMD PC@ ;
-: CHDATA! CHPORT_DATA PC!  ;
-: CHDATA@ CHPORT_DATA PC@  ;
-
-: NAP 5 0 DO NOOP LOOP ;
-
 : CHPOLL  ( -- status )
    BEGIN
       CHPORT_CMD PC@ 80 AND UNTIL
    1 MS
-   CHCMD_STATUS CHCMD!
+   CHCMD_STATUS CHPORT_CMD PC!
    1 MS
-   CHDATA@ ;
+   CHPORT_DATA PC@ ;
 
 
 : CHRESET
-   CHCMD_SET_MODE CHCMD!
-   7 CHDATA!
+   CHCMD_SET_MODE CHPORT_CMD PC!
+   7 CHPORT_DATA PC!
    1 MS
-   CHDATA@ ( ." result = " . )
+   CHPORT_DATA PC@ DROP  ( ." result = " . )
    1 MS
 
-   CHCMD_SET_MODE CHCMD!
-   6 CHDATA!
+   CHCMD_SET_MODE CHPORT_CMD PC!
+   6 CHPORT_DATA PC!
    1 MS
-   CHDATA@ ( ." usb result = " . )
+   CHPORT_DATA PC@ DROP  ( ." usb result = " . )
    1 MS
 
    BEGIN
    20 MS
-   CHCMD_DISK_INIT CHCMD!
+   CHCMD_DISK_INIT CHPORT_CMD PC!
    20 MS
    CHPOLL ( ." disk result = " DUP . )  [CHAR] ? EMIT  14 = UNTIL ( 14 = success. TODO fix "no media" currently hangs )
    1 MS
@@ -65,18 +58,18 @@ CREATE CHBUFFER 65 CHARS ALLOT
 
 : CHRD  ( -- buffer' count )
    /CHBUFFER
-   CHDATA@   ( buffer c )
+   CHPORT_DATA PC@   ( buffer c )
    0 DO
-      CHDATA@ CHBUFFER+   [CHAR] . EMIT
+      CHPORT_DATA PC@ CHBUFFER+   [CHAR] . EMIT
    LOOP ;
 
 : CHUSBRD
-   CHCMD_RD CHCMD!  1 MS  CHRD  ;
+   CHCMD_RD CHPORT_CMD PC!  1 MS  CHRD  ;
 
 : CHWR ( -- )
    CHBUFFER C@
    0 DO
-      CHBUFFER I 1+ + C@   CHDATA!
+      CHBUFFER I 1+ + C@   CHPORT_DATA PC!
       [CHAR] + EMIT
    LOOP  ;
 
@@ -104,7 +97,7 @@ VARIABLE blkptr 0 blkptr !
    1 MS
    LBA>CHBUFFER
    1 CHBUFFER+  ( 1 sector )
-   CHCMD_DSKRD CHCMD!
+   CHCMD_DSKRD CHPORT_CMD PC!
      CHWR
    CHPOLL DUP . 1D  <> ABORT" READ ERROR"
      CHUSBRD
@@ -121,9 +114,9 @@ VARIABLE blkptr 0 blkptr !
 
 
 : CHCHECK?   ( -- f )
-   CHCMD_CHECK_EXISTS CHCMD!
-   1 MS  A5   CHDATA!
-   CHDATA@   5A =   ;
+   CHCMD_CHECK_EXISTS CHPORT_CMD PC!
+   1 MS  A5   CHPORT_DATA PC!
+   CHPORT_DATA PC@   5A =   ;
 
 : /CHUSB
    CHCHECK? IF
@@ -134,7 +127,7 @@ VARIABLE blkptr 0 blkptr !
    THEN  ;
 
 : CHDISKSIZE
-   CHCMD_DISK_SIZE CHCMD!
+   CHCMD_DISK_SIZE CHPORT_CMD PC!
    1 MS
    CHPOLL  14 <>  IF ." CHDISKSIZE failed = " . EXIT THEN   ( 14 = success. TODO fix "no media" currently hangs )
    ( read size byte -- should be 8 -- read 8 bytes )
@@ -142,7 +135,7 @@ VARIABLE blkptr 0 blkptr !
  ;
 
 : CHDISKINQ
-   CHCMD_DISK_INQ CHCMD!
+   CHCMD_DISK_INQ CHPORT_CMD PC!
    CHPOLL  14 <>  IF ." CHDISKINQ failed = " . EXIT THEN   ( 14 = success. TODO fix "no media" currently hangs )
 
    ( read size byte -- should be 36 -- read 36 bytes )
