@@ -109,14 +109,14 @@ VARIABLE blkptr 0 blkptr !
    CHPOLL DUP . 1D  <> ABORT" READ ERROR"
      CHUSBRD
      CHBUFFER  COUNT blkptr @ SWAP  MOVE
-     64 blkptr +!
+     40 blkptr +!
 
    7 0 DO
      CHCMD_DSKRDGO   CHPORT_CMD PC!
      CHPOLL 1D <> ABORT" READGO ERROR"
        CHUSBRD
        CHBUFFER COUNT blkptr @ SWAP  MOVE
-       64 blkptr +!
+       40 blkptr +!
    LOOP   ;
 
 
