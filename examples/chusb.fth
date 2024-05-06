@@ -92,12 +92,12 @@ CREATE CHBUFFER 65 CHARS ALLOT
 
 ( set up LBA, 2 sector read )
 : LBA>CHBUFFER   ( LBA-L LBA-H -- ) 
-   /CHBUFFER
    SWAP
-   DUP FF AND  CHBUFFER+
-   FF00 AND 8 RSHIFT CHBUFFER+
-   DUP FF AND  CHBUFFER+
-   FF00 AND 8 RSHIFT CHBUFFER+  ;
+   DUP FF AND         CHPORT_DATA PC!
+   FF00 AND 8 RSHIFT  CHPORT_DATA PC!
+   DUP FF AND         CHPORT_DATA PC!
+   FF00 AND 8 RSHIFT  CHPORT_DATA PC!
+   1                  CHPORT_DATA PC!  ( 1 sector )  ;
 
 ( read 64 byte chunk )
 : (CHRDBLK)  ( buffer -- buffer' ) 
@@ -112,11 +112,11 @@ VARIABLE blkptr 0 blkptr !
    CHRESET
    blkptr !     ( save buffer )
    90 TDELAY
-   LBA>CHBUFFER
-   1 CHBUFFER+  ( 1 sector )
-   90 TDELAY
+
    CHCMD_DSKRD CHPORT_CMD PC!
-     CHWR   90 TDELAY
+   90 TDELAY
+   LBA>CHBUFFER
+
    CHPOLL DUP . 1D  <> ABORT" READ ERROR"
      CHUSBRD
      CHBUFFER  COUNT blkptr @ SWAP  MOVE
