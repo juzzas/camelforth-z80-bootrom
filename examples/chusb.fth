@@ -20,6 +20,21 @@ HEX
 51 CONSTANT CHCMD_RET_SUCCESS
 5F CONSTANT CHCMD_RET_ABORT
 
+: (newCHPOLL)   ( -- f )
+    8000 0 DO
+      CHPORT_CMD PC@ 80 AND  IF UNLOOP -1 EXIT THEN
+        90 TDELAY
+    LOOP
+    0 ;
+
+: newCHPOLL  ( -- status )
+   (CHPOLL)  0= ABORT" POLL ERROR"
+  90 TDELAY
+  CHCMD_STATUS CHPORT_CMD PC!
+  90 TDELAY
+  CHPORT_DATA PC@ ;
+   ;
+
 : CHPOLL  ( -- status )
    BEGIN
       CHPORT_CMD PC@ 80 AND UNTIL
@@ -28,8 +43,8 @@ HEX
    1 MS
    CHPORT_DATA PC@ ;
 
-
 : CHRESET
+   BEGIN
    CHCMD_SET_MODE CHPORT_CMD PC!
    7 CHPORT_DATA PC!
    1 MS
@@ -46,7 +61,8 @@ HEX
    20 MS
    CHCMD_DISK_INIT CHPORT_CMD PC!
    20 MS
-   CHPOLL ( ." disk result = " DUP . )  [CHAR] ? EMIT  14 = UNTIL ( 14 = success. TODO fix "no media" currently hangs )
+   CHPOLL ( ." disk result = " )  DUP .   [CHAR] ? EMIT  14 = UNTIL
+   ( 14 = success. TODO fix "no media" currently hangs )
    1 MS
 ;
 
@@ -60,27 +76,28 @@ CREATE CHBUFFER 65 CHARS ALLOT
    /CHBUFFER
    CHPORT_DATA PC@   ( buffer c )
    0 DO
-      CHPORT_DATA PC@ CHBUFFER+   [CHAR] . EMIT
-   LOOP ;
+      CHPORT_DATA PC@ CHBUFFER+
+   LOOP   [CHAR] . EMIT ;
 
 : CHUSBRD
-   CHCMD_RD CHPORT_CMD PC!  1 MS  CHRD  ;
+   CHCMD_RD CHPORT_CMD PC!  90 TDELAY  CHRD  ;
 
 : CHWR ( -- )
    CHBUFFER C@
    0 DO
       CHBUFFER I 1+ + C@   CHPORT_DATA PC!
+   LOOP
       [CHAR] + EMIT
-   LOOP  ;
-
+  ;
 
 ( set up LBA, 2 sector read )
 : LBA>CHBUFFER   ( LBA-L LBA-H -- ) 
    /CHBUFFER
-   DUP FF00 AND 8 RSHIFT CHBUFFER+
-   FF AND  CHBUFFER+
-   DUP FF00 AND 8 RSHIFT CHBUFFER+
-   FF AND  CHBUFFER+  ;
+   SWAP
+   DUP FF AND  CHBUFFER+
+   FF00 AND 8 RSHIFT CHBUFFER+
+   DUP FF AND  CHBUFFER+
+   FF00 AND 8 RSHIFT CHBUFFER+  ;
 
 ( read 64 byte chunk )
 : (CHRDBLK)  ( buffer -- buffer' ) 
@@ -94,12 +111,12 @@ VARIABLE blkptr 0 blkptr !
 : CHRDBLK ( LBA-L LBA-H buffer -- )
    CHRESET
    blkptr !     ( save buffer )
-   1 MS
+   90 TDELAY
    LBA>CHBUFFER
    1 CHBUFFER+  ( 1 sector )
-   1 MS
+   90 TDELAY
    CHCMD_DSKRD CHPORT_CMD PC!
-     CHWR   1 MS
+     CHWR   90 TDELAY
    CHPOLL DUP . 1D  <> ABORT" READ ERROR"
      CHUSBRD
      CHBUFFER  COUNT blkptr @ SWAP  MOVE
@@ -116,7 +133,9 @@ VARIABLE blkptr 0 blkptr !
 
 : CHCHECK?   ( -- f )
    CHCMD_CHECK_EXISTS CHPORT_CMD PC!
-   1 MS  A5   CHPORT_DATA PC!
+   90 TDELAY
+   A5 CHPORT_DATA PC!
+   90 TDELAY
    CHPORT_DATA PC@   5A =   ;
 
 : /CHUSB
@@ -129,7 +148,7 @@ VARIABLE blkptr 0 blkptr !
 
 : CHDISKSIZE
    CHCMD_DISK_SIZE CHPORT_CMD PC!
-   1 MS
+   90 TDELAY
    CHPOLL  14 <>  IF ." CHDISKSIZE failed = " . EXIT THEN   ( 14 = success. TODO fix "no media" currently hangs )
    ( read size byte -- should be 8 -- read 8 bytes )
    CHUSBRD
@@ -149,6 +168,7 @@ VARIABLE blkptr 0 blkptr !
 CHDISKSIZE   CHBUFFER 10 MEMDUMP
 CHDISKINQ    CHBUFFER 40 MEMDUMP
   400 MS
-1 0 A000 CHRDBLK
+0 0 A000 CHRDBLK
+1 0 A200 CHRDBLK
 
 
