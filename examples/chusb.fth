@@ -163,6 +163,20 @@ VARIABLE blkptr 0 blkptr !
 
  ;
 
+: CH-BLOCK-READ  ( dsk blk adrs -- )
+   >R  2DUP
+   SWAP R@  CHRDBLK
+   1+ SWAP R> CHRDBLK  ;
+
+: CH-BLOCK-WRITE  ( dsk blk adrs -- )
+ (  >R  2DUP )
+ (  SWAP R@  CHWRBLK )
+ (  1+ SWAP R> CHWRBLK ) ;
+
+: CH-BLOCK-READWRITE  ( dsk blk adrs f -- )  read or write block
+   IF  CH-BLOCK-WRITE  ELSE  CH-BLOCK-READ  THEN ;
+
+' CH-BLOCK-READWRITE  BLKRWVEC !
 
 /CHUSB
 CHDISKSIZE   CHBUFFER 10 MEMDUMP
