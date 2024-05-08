@@ -1190,12 +1190,26 @@ LOAD2:
         dw RFROM,BLOCK,DROP
         dw EXIT
 
+;C +LOAD                  n  --    load block BLK + n
+;     BLK @ + LOAD  ;
+    head(PLUSLOAD,+LOAD,docolon)
+        dw BLK,FETCH,PLUS,LOAD
+        dw EXIT
+
 ;C THRU            n1 n2  --    load blocks n1 to n2
 ;     1+ SWAP DO I LOAD LOOP ;
     head(THRU,THRU,docolon)
         dw ONEPLUS,SWOP,xdo
 THRU1:
         dw II,DUP,DOT,LOAD,xloop,THRU1
+        dw EXIT
+
+;C +THRU            n1 n2  --    load blocks BLK+n1 to BLK+n2
+;     1+ SWAP DO I +LOAD LOOP ;
+    head(PLUSTHRU,+THRU,docolon)
+        dw ONEPLUS,SWOP,xdo
+PLUSTHRU1:
+        dw II,DUP,DOT,PLUSLOAD,xloop,PLUSTHRU1
         dw EXIT
 
 ; RC2014 EXTENSION (SCREENS) ====================
