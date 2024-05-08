@@ -71,13 +71,20 @@ class Processor(object):
 
             if len(line) > 64:
                 padded_line = line[:64]
+                logger.warning("line {} too long".format(padlines_cnt+1))
             else:
                 padded_line = line.ljust(64, ' ')
 
             self._outfile.write(padded_line)
-            padlines_cnt += 1
 
-            logger.debug("line: {}".format(padded_line))
+            if padlines_cnt % 16 == 0:
+                logger.debug("Block {0:d}: ".format(int(padlines_cnt / 16) + 1) + ('-' * 64))
+
+            logger.debug("{} ({:02}): {}".format(padlines_cnt + 1,
+                                                 (padlines_cnt % 16) + 1,
+                                                 padded_line))
+
+            padlines_cnt += 1
 
         logger.info("line count: {}".format(padlines_cnt))
 
