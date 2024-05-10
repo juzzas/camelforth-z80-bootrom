@@ -160,20 +160,29 @@ VARIABLE blkptr 0 blkptr !
 
    ( read size byte -- should be 36 -- read 36 bytes )
    CHUSBRD
-
  ;
 
+
+: BLK2LBA   ( dsk blk -- LBA-L LBA-H )
+  DUP 8000 AND  IF 1 ELSE 0 THEN SWAP
+  2*   ( dsk cry blk' )
+  ROT ROT + ;
+  
+
+
 : CH-BLOCK-READ  ( dsk blk adrs -- )
-   >R  2DUP
-   SWAP R@  CHRDBLK
-   1+ SWAP R> CHRDBLK  ;
+   ." CH-READ-BLOCK" .S CR
+   >R  BLK2LBA 2DUP
+   R@  CHRDBLK
+   SWAP 1+ SWAP R> 200 + CHRDBLK  ;
 
 : CH-BLOCK-WRITE  ( dsk blk adrs -- )
  (  >R  2DUP )
  (  SWAP R@  CHWRBLK )
  (  1+ SWAP R> CHWRBLK ) ;
 
-: CH-BLOCK-READWRITE  ( dsk blk adrs f -- )  read or write block
+: CH-BLOCK-READWRITE  ( dsk blk adrs f -- ) 
+   ." CH-BLOCK-READWRITE "  .S CR
    IF  CH-BLOCK-WRITE  ELSE  CH-BLOCK-READ  THEN ;
 
 ' CH-BLOCK-READWRITE  BLKRWVEC !
