@@ -1005,7 +1005,7 @@ BLKCTXMAP1:
 
 ;Z BLKCTX-ALLOC  blk disk   -- ctx    address of matching buffer, if exists, else 0
 
-SECTION data_user_16k
+SECTION data_user
 
 BLKCTX_PTR:
         DEFW 0,0,0,0
