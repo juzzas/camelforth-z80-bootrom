@@ -20,21 +20,6 @@ HEX
 51 CONSTANT CHCMD_RET_SUCCESS
 5F CONSTANT CHCMD_RET_ABORT
 
-: (newCHPOLL)   ( -- f )
-    8000 0 DO
-      CHPORT_CMD PC@ 80 AND  IF UNLOOP -1 EXIT THEN
-        90 TDELAY
-    LOOP
-    0 ;
-
-: newCHPOLL  ( -- status )
-   (CHPOLL)  0= ABORT" POLL ERROR"
-  90 TDELAY
-  CHCMD_STATUS CHPORT_CMD PC!
-  90 TDELAY
-  CHPORT_DATA PC@ ;
-   ;
-
 : CHPOLL  ( -- status )
    BEGIN
       CHPORT_CMD PC@ 80 AND UNTIL
@@ -61,8 +46,10 @@ HEX
    20 MS
    CHCMD_DISK_INIT CHPORT_CMD PC!
    20 MS
-   CHPOLL ( ." disk result = " )  DUP .   [CHAR] ? EMIT  14 = UNTIL
+   CHPOLL
+   ( ." disk result = "   DUP .    [CHAR] ? EMIT )
    ( 14 = success. TODO fix "no media" currently hangs )
+   14 = UNTIL
    1 MS
 ;
 
@@ -77,7 +64,7 @@ CREATE CHBUFFER 65 CHARS ALLOT
    CHPORT_DATA PC@   ( buffer c )
    0 DO
       CHPORT_DATA PC@ CHBUFFER+
-   LOOP   [CHAR] . EMIT ;
+   LOOP   ( [CHAR] . EMIT ) ;
 
 : CHUSBRD
    CHCMD_RD CHPORT_CMD PC!  90 TDELAY  CHRD  ;
@@ -87,7 +74,7 @@ CREATE CHBUFFER 65 CHARS ALLOT
    0 DO
       CHBUFFER I 1+ + C@   CHPORT_DATA PC!
    LOOP
-      [CHAR] + EMIT
+   ( [CHAR] + EMIT )
   ;
 
 ( set up LBA, 2 sector read )
@@ -98,12 +85,6 @@ CREATE CHBUFFER 65 CHARS ALLOT
    DUP FF AND         CHPORT_DATA PC!
    FF00 AND 8 RSHIFT  CHPORT_DATA PC!
    1                  CHPORT_DATA PC!  ( 1 sector )  ;
-
-( read 64 byte chunk )
-: (CHRDBLK)  ( buffer -- buffer' ) 
-   CHPOLL ." rd result = " .
-   ( CHRD . . )
-    ;
 
 VARIABLE blkptr 0 blkptr !
 
@@ -117,7 +98,7 @@ VARIABLE blkptr 0 blkptr !
    90 TDELAY
    LBA>CHBUFFER
 
-   CHPOLL DUP . 1D  <> ABORT" READ ERROR"
+   CHPOLL ( DUP . ) 1D  <> ABORT" READ ERROR"
      CHUSBRD
      CHBUFFER  COUNT blkptr @ SWAP  MOVE
      40 blkptr +!
@@ -171,7 +152,6 @@ VARIABLE blkptr 0 blkptr !
 
 
 : CH-BLOCK-READ  ( dsk blk adrs -- )
-   ." CH-READ-BLOCK" .S CR
    >R  BLK2LBA 2DUP
    R@  CHRDBLK
    SWAP 1+ SWAP R> 200 + CHRDBLK  ;
@@ -182,7 +162,6 @@ VARIABLE blkptr 0 blkptr !
  (  1+ SWAP R> CHWRBLK ) ;
 
 : CH-BLOCK-READWRITE  ( dsk blk adrs f -- ) 
-   ." CH-BLOCK-READWRITE "  .S CR
    IF  CH-BLOCK-WRITE  ELSE  CH-BLOCK-READ  THEN ;
 
 ' CH-BLOCK-READWRITE  BLKRWVEC !
@@ -190,8 +169,8 @@ VARIABLE blkptr 0 blkptr !
 /CHUSB
 CHDISKSIZE   CHBUFFER 10 MEMDUMP
 CHDISKINQ    CHBUFFER 40 MEMDUMP
-  400 MS
-0 0 A000 CHRDBLK
-1 0 A200 CHRDBLK
 
+CHRESET
+0 DSK !
+1 LIST
 
