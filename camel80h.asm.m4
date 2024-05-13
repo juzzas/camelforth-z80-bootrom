@@ -1419,6 +1419,7 @@ COLD2:  DW TYPE,CR
         DW lit,FORTH_WORDLIST_WID,CURRENT,STORE
         DW lit,VOCAB_WORDLIST_WID,VOCLINK,STORE
         DW lit,42,SEED,STORE
+        DW SLASHBLKCTX
         DW ABORT       ; ABORT never returns
 
 ;Z WARM     --      warm start Forth system

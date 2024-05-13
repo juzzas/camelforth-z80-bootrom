@@ -875,11 +875,11 @@ DEFC BLOCKCTX_NUM = 4
 DEFC BLOCK_FIRST = 0xE000
 
 ;Z /BLKCTX   ( -- ) initialise the block contexts
-;    BLKCTX_PTR BLKCTX% 0 FILL
+;    BLKCTX_PTR  BLKCTX% BLKCTX# *  0 FILL
 ;    0 BLKCTX_IDX !    ;
     head(SLASHBLKCTX,/BLKCTX,docolon)
         dw lit,BLKCTX_PTR
-        dw BLKCTXSIZE,lit,0,FILL
+        dw BLKCTXSIZE,BLKCTXNUM,STAR,lit,0,FILL
         dw lit,0,lit,BLKCTX_IDX,STORE
         dw EXIT
 
@@ -1003,9 +1003,8 @@ BLKCTXMAP1:
         dw TWODROP
         dw EXIT
 
-;Z BLKCTX-ALLOC  blk disk   -- ctx    address of matching buffer, if exists, else 0
 
-SECTION data_user
+SECTION bss_user
 
 BLKCTX_PTR:
         DEFW 0,0,0,0
