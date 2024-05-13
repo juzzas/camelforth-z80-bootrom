@@ -36,7 +36,7 @@ EXTERN cflash_read_block
 EXTERN cflash_write_block
 
 EXTERN asm_z80_delay_ms
-
+EXTERN asm_z80_delay_tstate
 
 ;Z RAMTOP      -- a-addr   address of first USER reserved byte
 ;  ramtop_ptr CONSTANT RAMTOP
@@ -163,6 +163,17 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
         pop bc
         next
 
+;Z   TDELAY ( n -- )  delay in t-states
+    head(TDELAY,TDELAY,docode)
+        push hl
+        push de
+        ld h, b
+        ld l, c
+        call asm_z80_delay_tstate
+        pop de
+        pop hl
+        pop bc
+        next
 
 ; RC2014 EXTENSION output ====================
 
