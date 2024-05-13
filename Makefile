@@ -21,7 +21,10 @@ $(TARGET):
 
 blk:
 	./blocks.py -v -o build/ttester.blk examples/ttester.fth
+	./blocks.py -v -o build/fixed.blk examples/fixed.fth
 	./blocks.py -v -o build/cffs.blk examples/cffs.fth
 
-	dd if=build/ttester.blk of=camelforth.ide bs=1024 seek=1
-	dd if=build/cffs.blk of=camelforth.ide bs=1024 seek=10
+	dd if=build/ttester.blk of=camelforth.ide bs=1024 seek=1 conv=notrunc
+	dd if=build/fixed.blk of=camelforth.ide bs=1024 seek=10 conv=notrunc
+	dd if=build/cffs.blk of=camelforth.ide bs=1024 seek=20 conv=notrunc
+
