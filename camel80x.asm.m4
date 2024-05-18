@@ -916,8 +916,10 @@ DEFC BLOCK_FIRST = 0xE000
 
 
 ;Z BLKFIRST      -- a-adrs      address of first block buffer
-    head(BLKFIRST,BLKFIRST,docon)
-        dw BLOCK_FIRST
+;   RAMTOP @ 0xFC00 AND 0x1000 - ;
+    head(BLKFIRST,BLKFIRST,docolon)
+        dw RAMTOP,FETCH,lit,0xFC00,AND,lit,0x1000,MINUS
+        dw EXIT
 
 ;Z BLKCTX-NEXT  ( -- ctx )  increment buffer structure
 ;   BLKCTX_PTR   BLKCTX_IDX @
