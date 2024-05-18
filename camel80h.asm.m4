@@ -497,6 +497,7 @@ TYP5:   DW EXIT
 
 ;C S"       --         compile in-line string
 ;C S"       -- addr u  interpret in-line string
+;     supports 4 x 128byte strings at SQUOTE_TOP
 ;  STATE @ IF
 ;   COMPILE (S")  [ HEX ]
 ;   22 WORD C@ 1+ ALIGNED ALLOT EXIT
@@ -504,7 +505,7 @@ TYP5:   DW EXIT
 ;   22 WORD COUNT      ( addr u )
 ;   S"COUNT @ 3 AND    ( addr u index )
 ;   1+ 7 LSHIFT
-;   RAMTOP @ -         ( addr u addr' )
+;   SQUOTE_TOP -         ( addr u addr' )
 ;   SWAP 2DUP >R >R    ( addr addr' u   r: u addr )
 ;   MOVE R> R>         ( addr u )
 ;   S"COUNT DUP @ 1+ SWAP STORE
@@ -519,7 +520,7 @@ SQUOTE1:
         DW lit,22H,WORD,COUNT
         DW lit,squote_count_ptr,FETCH,lit,0x3,AND
         DW ONEPLUS,lit,7,LSHIFT
-        DW RAMTOP,FETCH,SWOP,MINUS
+        DW lit,SQUOTE_TOP,SWOP,MINUS
         DW SWOP,TWODUP,TOR,TOR
         DW MOVE,RFROM,RFROM
         DW lit,squote_count_ptr,DUP,FETCH,ONEPLUS,SWOP,STORE

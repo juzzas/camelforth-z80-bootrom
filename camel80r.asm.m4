@@ -78,7 +78,7 @@ SECTION code_user
         ld (forth_state_stack_save), sp
 
         ; set up user stack
-        ld sp, 0    ; end of RAM
+        ld sp, USER_STACK_TOP    ; end of RAM
 
         ld hl, call_exit  ; return address
         push hl

@@ -161,6 +161,7 @@ main_code_init:
 ; Memory map:
 ;   8000h       ACIA buffers
 ;   8200h       Camelforth workspace
+;   EM-300h     user stack top
 ;   EM-300h     Terminal Input Buffer, 128 bytes
 ;   EM-200h     User area, 128 bytes
 ;   EM-180h     Parameter stack, 128B, grows down
@@ -168,14 +169,18 @@ main_code_init:
 ;   EM-0D8h     PAD buffer, 88 bytes
 ;   EM-80h      Return stack, 128 B, grows down
 ;   EM=87ffh    End of RAM workspace
-;   8800h       Forth kernel = start of BLOCK buffer
-;   8C00h       end of block buffer
+;   8800h       Forth kernel = start offer dictionary
 ;     ? h       Forth dictionary (user RAM)
 ;   FFFFh       Top of RAM
 ; See also the definitions of U0, S0, and R0
 ; in the "system variables & constants" area.
 ; A task w/o terminal input requires 200h bytes.
 ; Double all except TIB and PAD for 32-bit CPUs.
+
+DEFC WRKSPC = 0x8C00
+DEFC USER_STACK_TOP = WRKSPC      ; ( 128 bytes )
+DEFC SQUOTE_TOP = WRKSPC - 0x80  ; (512 bytes)
+
 
 ; INTERPRETER LOGIC =============================
 ; See also "defining words" at end of this file
@@ -1094,7 +1099,7 @@ include(camel80u.asm.m4)   ; RC2014 Utilities
         defc lastword=link                ; nfa of last word in dict.
         defc editor_lastword=link_editor  ; nfa of last word in EDITOR wordlist.
         defc vocab_lastword=link_vocab    ; nfa of last word in VOCAB wordlist.
-        defc enddict=0x8C00 ;WRKSPC       ; user's code starts here
+        defc enddict=WRKSPC       ; user's code starts here
 
         defc FORTH_WORDLIST_WID=1
         defc EDITOR_WORDLIST_WID=2
