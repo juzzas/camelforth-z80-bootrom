@@ -280,6 +280,7 @@ INSERT_LINE:
 ;    OVER 25 = IF cut_line THEN ( cut line, shift up ^y ) ;
 ;    OVER 15 = IF insert_line THEN ( shift down, empty line ^o ) ;
 ;    OVER 16 = IF paste_line THEN ( shift down, paste line ^p ) ;
+;    OVER 11 = IF update_screen THEN ( do UPDATE ^k ) ;
     head_editor(QCH,?CH,docolon)
         dw OVER,BL,MINUS,lit,95,ULESS,qbranch,QCH1
         dw STORECH,ONEPLUS
@@ -323,6 +324,9 @@ QCH13:
         dw OVER,lit,15,EQUAL,qbranch,QCH14
         dw INSERT_LINE,TOR,TOR,VEE,RFROM,RFROM
 QCH14:
+        dw OVER,lit,11,EQUAL,qbranch,QCH15
+        dw UPDATE,TOR,TOR,VEE,RFROM,RFROM
+QCH15:
         dw EXIT
 
 
