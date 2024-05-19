@@ -91,38 +91,38 @@ dnl ;   DOES>  ;
         DW EXIT
 
 ; Clear STACK
-; : STACK.CLEAR ( lifo -- )
+; : STACK-CLEAR ( lifo -- )
 ;      DUP    ( lifo lifo )
 ;      CELL+  ( lifo lifo+2 )
 ;      SWAP   ( lifo+2 lifo )
 ;      !     ;
-    head(STACKCLEAR,STACK.CLEAR,docolon)
+    head(STACKCLEAR,STACK-CLEAR,docolon)
         DW DUP,CELLPLUS,SWOP,STORE
         DW EXIT
 
 ; : STACK-DEPTH ( lifo -- n )
 ;      STACK.BOUNDS - CELL /  ;
-    head(STACKDEPTH,STACK.DEPTH,docolon)
+    head(STACKDEPTH,STACK-DEPTH,docolon)
         DW STACKBOUNDS,MINUS
         DW TWOSLASH      ;  optimize "DW CELL,SLASH" for 16bit
         DW EXIT
 
-; : STACK.EMPTY? ( lifo -- flag )
+; : STACK-EMPTY? ( lifo -- flag )
 ;      STACK.BOUNDS = ;
-    head(STACKEMPTYQ,STACK.EMPTY?,docolon)
+    head(STACKEMPTYQ,STACK-EMPTY?,docolon)
         DW STACKBOUNDS,EQUAL
         DW EXIT
 
 ; Create parameters for a ?DO loop that will scan every item currently in STACK. The intended use is:
-;      ( lifo )   STACK.BOUNDS ?DO -- CELL +LOOP
-; : STACK.BOUNDS ( lifo -- addr1 addr2 )
+;      ( lifo )   STACK-BOUNDS ?DO -- CELL +LOOP
+; : STACK-BOUNDS ( lifo -- addr1 addr2 )
 ;     DUP @ SWAP CELL+ ;
-    head(STACKBOUNDS,STACK.BOUNDS,docolon)
+    head(STACKBOUNDS,STACK-BOUNDS,docolon)
         DW DUP,FETCH,SWOP,CELLPLUS
         DW EXIT
 
 ; Set the stack from the data stack
-; : STACK.SET     ( rec-n .. rec-1 n lifo )
+; : STACK-SET     ( rec-n .. rec-1 n lifo )
 ;    OVER IF
 ;      2DUP SWAP CELLS + CELL+ ( n lifo tos+2 )
 ;      DUP ROT !           ( ... n tos+2 )
@@ -132,7 +132,7 @@ dnl ;   DOES>  ;
 ;    ELSE
 ;      NIP STACK.CLEAR
 ;    THEN    ;
-    head(STACKSET,STACK.SET,docolon)
+    head(STACKSET,STACK-SET,docolon)
         DW OVER,qbranch,STACKSET2
         DW TWODUP,SWOP,CELLS,PLUS,CELLPLUS
         DW DUP,ROT,STORE
@@ -147,11 +147,11 @@ STACKSET2:
         DW EXIT
 
 ; Get the STACK onto the data stack
-; : STACK.GET  ( lifo -- rec-n .. rec-1 n )
+; : STACK-GET  ( lifo -- rec-n .. rec-1 n )
 ;     DUP STACK.DEPTH    ( lifo n )
 ;     DUP IF             ( lifo n )
 ;         >R             ( lifo )
-;         STACK.BOUNDS   ( addr1 addr2 )
+;         STACK-BOUNDS   ( addr1 addr2 )
 ;         DO              (  )
 ;             I @         ( rec-i )
 ;             CELL
@@ -161,7 +161,7 @@ STACKSET2:
 ;         NIP             ( n )
 ;     THEN                ( )
 ;     ;
-    head(STACKGET,STACK.GET,docolon)
+    head(STACKGET,STACK-GET,docolon)
         DW DUP,STACKDEPTH,DUP,qbranch,STACKGET2
         DW TOR,STACKBOUNDS,xdo
 STACKGET1:
@@ -173,28 +173,28 @@ STACKGET2:
         DW NIP
         DW EXIT
 
-; : STACK.FOREACH  ( xt lifo -- )  ( execute xt for every item in stack )
+; : STACK-MAP  ( xt lifo -- )  ( execute xt for every item in stack )
 ; \ XT should not return anything on stack
-;      DUP @ SWAP STACK.DEPTH   ( xt tos+2 n )
+;      DUP @ SWAP STACK-DEPTH   ( xt tos+2 n )
 ;      ?DUP IF   0 DO           ( xt tos+2 )
 ;         CELL-                 ( xt tos )
 ;         2DUP @ SWAP EXECUTE
 ;      LOOP   THEN
 ;      DROP DROP  ;
-    head(STACKFOREACH,STACK.FOREACH,docolon)
+    head(STACKMAP,STACK-MAP,docolon)
         DW DUP,FETCH,SWOP,STACKDEPTH
-        DW QDUP,qbranch,STACKFOREACH2
+        DW QDUP,qbranch,STACKMAP2
         DW lit,0,xdo
-STACKFOREACH1:
+STACKMAP1:
         DW CELLMINUS,TWODUP,FETCH,SWOP,EXECUTE
-        DW xloop,STACKFOREACH1
-STACKFOREACH2:
+        DW xloop,STACKMAP1
+STACKMAP2:
         DW DROP,DROP
         DW EXIT
 
-; : STACK.UNTIL  ( xt lifo -- x*i flag )  ( execute xt for every item in stack, until xt returns true )
+; : STACK-UNTIL  ( xt lifo -- x*i flag )  ( execute xt for every item in stack, until xt returns true )
 ; \ XT should return flag on stack
-;      DUP @ SWAP STACK.DEPTH   ( xt tos+2 n )
+;      DUP @ SWAP STACK-DEPTH   ( xt tos+2 n )
 ;      ?DUP IF   0 DO           ( xt tos+2 )
 ;         CELL-                 ( xt tos )
 ;         2DUP >R >R            ( xt tos ; tos xt )
@@ -205,7 +205,7 @@ STACKFOREACH2:
 ;         THEN
 ;      LOOP   THEN
 ;      DROP DROP 0 ;
-    head(STACKUNTIL,STACK.UNTIL,docolon)
+    head(STACKUNTIL,STACK-UNTIL,docolon)
         DW DUP,FETCH,SWOP,STACKDEPTH
         DW QDUP,qbranch,STACKUNTIL3
         DW lit,0,xdo
