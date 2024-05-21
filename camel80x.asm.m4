@@ -222,18 +222,34 @@ STACKUNTIL3:
         DW EXIT
 
 
-; \ Forth-94 version of Klaus Schleisiek's dynamic memory allocation (FORML'88) uh 2016-10-28
+dnl ; \ Forth-94 version of Klaus Schleisiek's dynamic memory allocation (FORML'88) uh 2016-10-28
+dnl ;
+dnl ;        |<------------- len ------------->|
+dnl ;0       |2      4                         |
+dnl ;---------------------------------------------------
+dnl ;| X_len | >PTR | <PTR |   empty memory    | X_len |
+dnl ;---------------------------------------------------
+dnl ;         ^
+dnl ;       anchor
+dnl ;
+dnl ;address of >PTR is the reference address of a memory block which becomes the address of useable memory after allocation.
+dnl ;
+dnl ;X is MSB and set, if block is free, not set if used
+dnl ;LEN is usable length in bytes
+dnl ;>PTR is absolute Addr. of next empty block
+dnl ;<PTR is absolute Addr. of previous empty block
 
 ; Variable anchor  0 anchor !
     head(ANCHOR,ANCHOR,docolon)
-        DW lit,HEAP_ANCHOR
+        DW lit,anchor_ptr
         DW EXIT
 
 SECTION data_user
-HEAP_ANCHOR:
+
+anchor_ptr:
     DEFW 0
 
-SECTION code_user16k
+SECTION code_user_16k
 
 ; decimal 050 Constant waste
     head(HEAP_WASTE,HEAP-WASTE,docon)
@@ -272,13 +288,15 @@ HEAP_USE:
         DW EXIT
 
 
-; : release ( mem size -- )   #free or use ;
+; : release ( mem size -- )
+;       #free or use ;
 HEAP_RELEASE:
         call docolon
         DW HEAP_NUMFREE,OR,HEAP_USE
         DW EXIT
 
-; : fits? ( size -- mem | false ) >r anchor @
+; : fits? ( size -- mem | false )
+;    >r anchor @
 ;    BEGIN addr&size  r@ u< 0=
 ;          IF r> drop EXIT THEN
 ;          @ dup anchor @ =
@@ -287,11 +305,11 @@ HEAP_FITSQ:
         call docolon
         DW TOR,ANCHOR,FETCH
 HEAP_FITSQ1:
-        DW HEAP_ADDR_SIZE,RFROM,ULESS,0,EQUAL,qbranch,HEAP_FITSQ2
+        DW HEAP_ADDR_SIZE,RFETCH,ULESS,ZEROEQUAL,qbranch,HEAP_FITSQ2
         DW RFROM,DROP,EXIT
 HEAP_FITSQ2:
-        DW FETCH,ANCHOR,FETCH,EQUAL
-        DW UNTIL,0,EQUAL,RFROM,DROP
+        DW FETCH,DUP,ANCHOR,FETCH,EQUAL,qbranch,HEAP_FITSQ1
+        DW ZEROEQUAL,RFROM,DROP
         DW EXIT
 
 ; : link ( mem >mem <mem -- )
@@ -399,6 +417,53 @@ RESIZE2:
 ; cr .( dynamic memory allocation:)
 ; cr .( Use   addr size EMPTY-MEMORY  to initialize,)
 ; cr .( then use the standard memory allocation wordset ALLOCATE FREE RESIZE to manage memory.)
+
+;\ display chain of free memory blocks ks 13 nov
+; : end? ( addr - addr f )
+;     dup anchor @ = key? or ;
+
+HEAP_ENDQ:
+        call docolon
+        DW DUP,ANCHOR,FETCH,EQUAL,QUERYKEY,OR
+        DW EXIT
+
+; : ?cr ( f -- f )
+;     DUP IF CR THEN ;
+    head(QCR,``?CR'',docolon)
+        DW DUP,qbranch,QCR1
+        DW CR
+QCR1:
+        DW EXIT
+
+; : ?memory anchor @
+;     cr ." ->:"
+;     BEGIN ?cr dup 6 u.r ." : '
+;     addr&len 4 u.r @ end?
+;     UNTIL
+;     cr .' <-:'
+;     BEGIN ?cr dup 6 u.r ." : "
+;         addr&len 4 u.r cell* @ end?
+;     UNTIL drop ;
+    head(HEAP_MEMORYQ,``?MEMORY'',docolon)
+        DW ANCHOR,FETCH
+        DW CR,XSQUOTE
+        DB 4," ->:"
+        DW TYPE
+HEAP_MEMORYQ1:
+        DW QCR,DUP,lit,6,UDOTR,XSQUOTE
+        DB 3," : "
+        DW TYPE
+        DW HEAP_ADDR_SIZE,lit,4,UDOTR,FETCH,HEAP_ENDQ,qbranch,HEAP_MEMORYQ1
+        DW CR,XSQUOTE
+        DB 4," <-:"
+        DW TYPE
+HEAP_MEMORYQ2:
+        DW QCR,DUP,lit,6,UDOTR,XSQUOTE
+        DB 3," : "
+        DW TYPE
+        DW HEAP_ADDR_SIZE,lit,4,UDOTR,CELLPLUS,FETCH,HEAP_ENDQ,qbranch,HEAP_MEMORYQ2
+        DW DROP
+        DW EXIT
 
 
 ; RC2014 EXTENSION CONSTANTS ====================
@@ -668,6 +733,12 @@ AOF2:
 ;    >R S>D R> D.R ;
     head(DOTR,.R,docolon)
         dw TOR,STOD,RFROM,DDOTR
+        dw EXIT
+
+;Z U.R         ( u width --   right align )
+;   0 SWAP D.R ;     ( quick convert to double )
+    head(UDOTR,U.R,docolon)
+        dw lit,0,SWOP,DDOTR
         dw EXIT
 
 ;Z (D.W)         ( d width --   width with leading 0's )
