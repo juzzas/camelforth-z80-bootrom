@@ -194,7 +194,7 @@
             DW 0            ; LP init'd elsewhere
             DW 0            ; BLK                        20
             DW 1            ; DSK
-            DW -1           ; BLKOFFSET
+            DW 0            ; BLKOFFSET
             DW 8192         ; BLKLIMIT
             DW CF_BLOCK_READWRITE            ; BLKRWVEC
             DW 0            ; BLKWRITEVEC                30

@@ -151,15 +151,31 @@ RULER1:
         dw EXIT
 
 ;Z B   ( -- )
-;     -1 SCR +! V ;
+;     -1 SCR +!
+;     SCR @ 0 BLKLIMIT @
+;     WITHIN INVERT IF
+;        0 SCR !
+;     THEN ;
     head_editor(BEE,B,docolon)
         dw lit,-1,SCR,PLUSSTORE
+        dw SCR,FETCH,lit,0,BLKLIMIT,FETCH
+        dw WITHIN,INVERT,qbranch,B1
+        dw lit,0,SCR,STORE
+B1:
         dw EXIT
 
 ;Z N   ( -- )
 ;     1 SCR +! ;
+;     SCR @ 0 BLKLIMIT @
+;     WITHIN INVERT IF
+;        BLKLIMIT @ 1- SCR !
+;     THEN ;
     head_editor(N,N,docolon)
         dw lit,1,SCR,PLUSSTORE
+        dw SCR,FETCH,lit,0,BLKLIMIT,FETCH
+        dw WITHIN,INVERT,qbranch,N1
+        dw BLKLIMIT,FETCH,ONEMINUS,SCR,STORE
+N1:
         dw EXIT
 
 ;Z L   ( -- )

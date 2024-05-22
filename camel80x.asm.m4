@@ -1370,21 +1370,18 @@ XBUFFER1:
 
 ;C BLOCK                    n -- addr    load block
 ;                                        0 if block 0
-;     DUP IF  ( n )
 ;        (BUFFER)     ( ctx )
 ;        DUP BLKCTX>FLAGS @ 1 = IF  ( ctx )
 ;            DUP 0 BLOCK-READWRITE
 ;        THEN
 ;        BLKCTX>BUFFER @
-;     THEN   ;
+;        ;
     head(BLOCK,BLOCK,docolon)
-        dw DUP,qbranch,BLOCK2
         dw XBUFFER
         dw DUP,BLKCTXTOFLAGS,FETCH,lit,1,EQUAL,qbranch,BLOCK1
         dw DUP,lit,0,BLOCK_READWRITE
 BLOCK1:
         dw BLKCTXTOBUFFER,FETCH
-BLOCK2:
         dw EXIT
 
 ;C UPDATE                    --    mark block to update
