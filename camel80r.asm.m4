@@ -193,14 +193,6 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
         dw TYPE
         dw EXIT
 
-;Z RESET  ( -- reset attributes )
-;    VT-ESC ." 0m" ;
-    head(RESET,RESET,docolon)
-        dw VT_ESC, XSQUOTE
-        db 2,"0m"
-        dw TYPE
-        dw EXIT
-
 ;Z AT-XY  ( x y -- move cursor to x,y )
 ;    VT-ESC 1+ (.) TYPE ." ;" 1+ (.) TYPE ." H" ;
     head(AT_XY,AT-XY,docolon)
@@ -210,29 +202,6 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
         dw ONEPLUS,XDOT,TYPE
         dw lit,'H',EMIT
         dw EXIT
-
-;Z INVIS  ( -- make cursor invisible )
-;    VT-ESC ." ?25l" ;
-    head(INVIS,INVIS,docolon)
-        dw VT_ESC,XSQUOTE
-        db 4,"?25l"
-        dw TYPE
-        dw EXIT
-
-;Z VIS  ( -- make cursor visible )
-;    ESC ." [?25h" ;
-    head(VIS,VIS,docolon)
-        dw VT_ESC,XSQUOTE
-        db 4,"?25h"
-        dw TYPE
-        dw EXIT
-
-;Z BELL  ( -- beep )
-;    BEL EMIT ;
-    head(BELL,BELL,docolon)
-        dw lit,7,EMIT
-        dw EXIT
-
 
 ; HEXLOAD implementation ==========================
 
