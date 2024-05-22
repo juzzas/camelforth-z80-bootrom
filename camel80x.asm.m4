@@ -221,6 +221,7 @@ STACKUNTIL3:
         DW DROP,DROP,lit,0
         DW EXIT
 
+IFDEF INCLUDE_HEAP
 
 dnl ; \ Forth-94 version of Klaus Schleisiek's dynamic memory allocation (FORML'88) uh 2016-10-28
 dnl ;
@@ -238,9 +239,9 @@ dnl ;X is MSB and set, if block is free, not set if used
 dnl ;LEN is usable length in bytes
 dnl ;>PTR is absolute Addr. of next empty block
 dnl ;<PTR is absolute Addr. of previous empty block
-
+dnl
 ; Variable anchor  0 anchor !
-    head(ANCHOR,ANCHOR,docolon)
+dnl    head(ANCHOR,ANCHOR,docolon)
         DW lit,anchor_ptr
         DW EXIT
 
@@ -252,24 +253,24 @@ anchor_ptr:
 SECTION code_user_16k
 
 ; decimal 050 Constant waste
-    head(HEAP_WASTE,HEAP-WASTE,docon)
+dnl    head(HEAP_WASTE,HEAP-WASTE,docon)
         DW 50
 
 ; -1 1 rshift Constant #max
-    head(HEAP_NUMMAX,``#HEAP-MAX'',docon)
+dnl    head(HEAP_NUMMAX,``#HEAP-MAX'',docon)
         DW 0x7FFF
 
 ; #max invert Constant #free  \ sign bit
-    head(HEAP_NUMFREE,``#HEAP-FREE'',docon)
+dnl    head(HEAP_NUMFREE,``#HEAP-FREE'',docon)
         DW 0x8000
 
 ; : size ( mem -- size ) 1 cells - @ #max and ;
-    head(HEAP_SIZE,HEAP-SIZE,docolon)
+dnl    head(HEAP_SIZE,HEAP-SIZE,docolon)
         DW lit,1,CELLS,MINUS,FETCH,HEAP_NUMMAX,AND
         DW EXIT
 
 ; : addr&size ( mem -- mem size ) dup size ;
-    head(HEAP_ADDR_SIZE,``HEAP-ADDR&SIZE'',docolon)
+dnl    head(HEAP_ADDR_SIZE,``HEAP-ADDR&SIZE'',docolon)
         DW DUP,HEAP_SIZE
         DW EXIT
 
@@ -348,7 +349,7 @@ HEAP_UNLINK:
 ;         over above   dup rot release
 ;         2dup swap @links link THEN
 ;    r> drop  anchor ! 0 ;
-    head(ALLOCATE,ALLOCATE,docolon)
+dnl    head(ALLOCATE,ALLOCATE,docolon)
         DW lit,3,CELLS,MAX,DUP,TOR,HEAP_FITSQ,QDUP,ZEROEQUAL,qbranch,HEAP_ALLOCATE1
         DW RFROM,lit,-8
         DW EXIT
@@ -372,7 +373,7 @@ HEAP_ALLOCATE3:
 ;    2dup + cell+ dup @ dup 0<
 ;    IF  #max and swap cell+ unlink  +  2 cells +  release 0 EXIT THEN
 ;    2drop release 0 ;
-    head(FREE,FREE,docolon)
+dnl    head(FREE,FREE,docolon)
         DW HEAP_ADDR_SIZE,OVER,lit,2,CELLS,MINUS,FETCH,DUP,ZEROLESS,qbranch,FREE1
         DW HEAP_NUMMAX,AND,lit,2,CELLS,PLUS,ROT,OVER,MINUS,ROT,ROT,PLUS
         DW branch,FREE2
@@ -391,7 +392,7 @@ FREE3:
 ;     IF ( mem mem size newsize )  swap allocate ?dup IF >r drop 2drop r>  EXIT THEN
 ;         dup >r swap move free r> swap EXIT THEN
 ;     2drop drop 0 ;
-    head(RESIZE,RESIZE,docolon)
+dnl    head(RESIZE,RESIZE,docolon)
         DW OVER,SWOP,OVER,HEAP_SIZE,TWODUP,GREATER,qbranch,RESIZE1
         DW SWOP,ALLOCATE,QDUP,qbranch,RESIZE2
         DW TOR,DROP,TWODROP,RFROM
@@ -407,7 +408,7 @@ RESIZE2:
 ;    >r  cell+ dup anchor !   dup 2 cells use  dup 2dup link
 ;    dup above  swap over  dup link
 ;    dup r> 7 cells -  release  above 1 cells -  0 swap ! ;
-    head(EMPTYMEMORY,EMPTY-MEMORY,docolon)
+dnl    head(EMPTYMEMORY,EMPTY-MEMORY,docolon)
         DW TOR,CELLPLUS,DUP,ANCHOR,STORE,DUP,lit,2,CELLS,HEAP_USE,DUP,TWODUP,HEAP_LINK
         DW DUP,HEAP_ABOVE,SWOP,OVER,DUP,HEAP_LINK
         DW DUP,RFROM,lit,7,CELLS,MINUS,HEAP_RELEASE,HEAP_ABOVE,lit,1,CELLS,MINUS,lit,0,SWOP,STORE
@@ -429,7 +430,7 @@ HEAP_ENDQ:
 
 ; : ?cr ( f -- f )
 ;     DUP IF CR THEN ;
-    head(QCR,``?CR'',docolon)
+dnl    head(QCR,``?CR'',docolon)
         DW DUP,qbranch,QCR1
         DW CR
 QCR1:
@@ -444,7 +445,7 @@ QCR1:
 ;     BEGIN ?cr dup 6 u.r ." : "
 ;         addr&len 4 u.r cell* @ end?
 ;     UNTIL drop ;
-    head(HEAP_MEMORYQ,``?MEMORY'',docolon)
+dnl    head(HEAP_MEMORYQ,``?MEMORY'',docolon)
         DW ANCHOR,FETCH
         DW CR,XSQUOTE
         DB 4," ->:"
@@ -465,6 +466,7 @@ HEAP_MEMORYQ2:
         DW DROP
         DW EXIT
 
+ENDIF
 
 ; RC2014 EXTENSION CONSTANTS ====================
 
