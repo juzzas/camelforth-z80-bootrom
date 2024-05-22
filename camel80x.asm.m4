@@ -1461,6 +1461,15 @@ PLUSTHRU1:
         dw II,DUP,DOT,PLUSLOAD,xloop,PLUSTHRU1
         dw EXIT
 
+;C COPY            n1 n2  --    copy block n1 to n2
+;   SWAP BLOCK  ( n2 blk1 )
+;   SWAP BLOCK  ( blk1 blk2 )
+;   B/BLK MOVE UPDATE ;
+    head(COPY,COPY,docolon)
+        dw SWOP,BLOCK,SWOP,BLOCK,B_BLK,MOVE,UPDATE
+        dw EXIT
+
+
 ; RC2014 EXTENSION (SCREENS) ====================
 
 ;Z (BLOCK)                 -- a-addr  load block in SCR
