@@ -1093,8 +1093,8 @@ SECTION code_user_16k
 rom_16k_signature:
         DB "RC2014"
 
-include(camel80x.asm.m4)   ; RC2014 16K ROM extensions
-include(camel80u.asm.m4)   ; RC2014 Utilities
+dnl include(camel80x.asm.m4)   ; RC2014 16K ROM extensions
+dnl include(camel80u.asm.m4)   ; RC2014 Utilities
 
         defc lastword=link                ; nfa of last word in dict.
         defc editor_lastword=link_editor  ; nfa of last word in EDITOR wordlist.

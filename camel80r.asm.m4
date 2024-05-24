@@ -38,33 +38,21 @@ EXTERN cflash_write_block
 EXTERN asm_z80_delay_ms
 EXTERN asm_z80_delay_tstate
 
+
+SECTION code_user
+
 ;Z RAMTOP      -- a-addr   address of first USER reserved byte
 ;  ramtop_ptr CONSTANT RAMTOP
     head(RAMTOP,RAMTOP,docon)
         dw ramtop_ptr
 
-;Z INTVEC      -- a-addr   pointer to address holding interrupt vector
-;  intvec_ptr CONSTANT INTVEC
-    head(INTVEC,INTVEC,docon)
-        dw intvec_ptr
-
-;Z RST30VEC     -- a-addr   pointer to address holding RST30 vector
-;  intvec_ptr CONSTANT RST30VEC
-    head(RST30VEC,RST30VEC,docon)
-        dw rst30vec_ptr
-
 SECTION data_user
+
 ramtop_ptr:
         DEFW 0
 
-intvec_ptr:
-        DEFW 0
-
-rst30vec_ptr:
-        DEFW 0
 
 SECTION code_user
-
 
 ;Z CALL       a-addr --    call machine code at address
     head(CALL,CALL,docode)
@@ -139,81 +127,20 @@ SECTION code_user
 
 ; RC2014 EXTENSION misc ======================
 
-dnl ;Z :NONAME       ( -- xt      define anonymous xt )
-dnl ;    CURRENT @ @ , 0 C,    ( last link + immed flag )
-dnl ;    HERE CURRENT @ !      ( new "latest" )
-dnl ;    0 C,          ( empty NFA )
-dnl ;    HERE               ( push xt to stack             )
-dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
-    head(NONAME,:NONAME,docolon)
-        dw CURRENT,FETCH,FETCH,COMMA,lit,0,CCOMMA
-        dw HERE,CURRENT,FETCH,STORE
-        dw lit,0,CCOMMA
-        dw HERE
-        dw HIDE,RIGHTBRACKET,lit,docolon,COMMACF
-        dw EXIT
-
-;Z   MS ( n -- )  delay n milliseconds
-    head(MS,MS,docode)
-        push hl
-        push de
-        call asm_z80_delay_ms
-        pop de
-        pop hl
-        pop bc
-        next
-
-;Z   TDELAY ( n -- )  delay in t-states
-    head(TDELAY,TDELAY,docode)
-        push hl
-        push de
-        ld h, b
-        ld l, c
-        call asm_z80_delay_tstate
-        pop de
-        pop hl
-        pop bc
-        next
-
-; RC2014 EXTENSION output ====================
-
-
-;Z VT-ESC  ( --  emit escape character )
-;    27 EMIT [CHAR] [ EMIT ;
-    head(VT_ESC,VT-ESC,docolon)
-        dw lit,0x1b,EMIT
-        dw lit,'[',EMIT
-        dw EXIT
-
-;Z CLS  ( --  clear screen )
-;    VT-ESC ." 2J"
-    head(CLS,CLS,docolon)
-        dw VT_ESC, XSQUOTE
-        db 2,"2J"
-        dw TYPE
-        dw EXIT
-
-;Z AT-XY  ( x y -- move cursor to x,y )
-;    VT-ESC 1+ (.) TYPE ." ;" 1+ (.) TYPE ." H" ;
-    head(AT_XY,AT-XY,docolon)
-        dw VT_ESC
-        dw ONEPLUS,XDOT,TYPE
-        dw lit,';',EMIT
-        dw ONEPLUS,XDOT,TYPE
-        dw lit,'H',EMIT
-        dw EXIT
 
 ; HEXLOAD implementation ==========================
 
 ;Z IHXCRC+  ( c -- )
 ;    IHXCRC @ + FF AND IHXCRC ! ;
-    head(IHXCRCPLUS,IHXCRC+,docolon)
+IHXCRCPLUS:
+        call docolon
         DW IHXCRC,FETCH,PLUS,IHXCRC,STORE
         DW EXIT
 
 ;Z ?IHXCRC  ( c -- flag )    ( does the crc match? )
 ;    IHXCRC @ NEGATE FF AND = ;
-    head(QIHXCRC,?IHXCRC,docolon)
+QIHXCRC:
+        call docolon
         DW IHXCRC,FETCH,NEGATE,lit,255,AND,EQUAL
         DW EXIT
 
@@ -223,7 +150,8 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
 ;    >NUMBER       ( du tib-ptr u )
 ;    DROP NIP      ( u tib-ptr )
 ;    R> BASE !    ;
-    head(XIHXBYTE,(IHXBYTE),docolon)
+XIHXBYTE:
+        call docolon
         DW BASE,FETCH,TOR,HEX
         DW TOR,lit,0,STOD,RFROM,lit,2
         DW TONUMBER
@@ -236,7 +164,8 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
 ;    >NUMBER       ( du tib-ptr u )
 ;    DROP NIP      ( u tib-ptr )
 ;    OVER IHXCRC+  ;
-    head(IHXBYTE,IHXBYTE,docolon)
+IHXBYTE:
+        call docolon
         DW XIHXBYTE
         DW OVER,IHXCRCPLUS
         DW EXIT
@@ -247,7 +176,8 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
 ;    >R                    ( u1 u2 )
 ;    SWAP 8 LSHIFT +       ( u )
 ;    R>    ;               ( u tib-ptr )
-    head(IHXWORD,IHXWORD,docolon)
+IHXWORD:
+        call docolon
         DW IHXBYTE,IHXBYTE
         DW TOR
         DW SWOP,lit,8,LSHIFT,PLUS
@@ -263,7 +193,8 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
 ;        1+               ( hex-addr+1 )
 ;        R>               ( hex-addr+1 tib-ptr )
 ;    LOOP ;
-    head(IHXRECSTORE,IHXREC!,docolon)
+IHXRECSTORE:
+        call docolon
         DW ROT,lit,0,xdo
 IHXRECSTORE1:
         DW IHXBYTE
@@ -273,6 +204,106 @@ IHXRECSTORE1:
         DW RFROM
         DW xloop,IHXRECSTORE1
         DW EXIT
+
+;Z IHXCRC       -- a-addr  location for current HEXLOAD CRC
+;  ihxcrc_ptr CONSTANT IHXCRC
+IHXCRC:
+        call docolon
+        dw ihxcrc_ptr
+
+;: IHEX? ( addr len -- src dest n -1   if ok, 0 if not recognised, 1 if end )
+;    DROP
+;    0 IHXCRC !
+;    DUP C@ [CHAR] : <> IF DROP RECTYPE_NULL  ( no colon ) EXIT  THEN
+;
+;    CHAR+
+;    IHXBYTE   ( count tib-ptr )
+;    OVER PAD CELL+ !
+;    IHXWORD   ( count hex-addr tib-ptr )
+;    SWAP PAD !  ( count tib-ptr )
+;    PAD CELL+ CELL+ SWAP     ( count addr tib-ptr )
+;    IHXBYTE   ( count hex-addr record-type tib-ptr )
+;
+;    OVER 0=  IF NIP           ( count addr tib-ptr )
+;        IHXREC!               ( addr tib-ptr )
+;        (IHXBYTE)             ( addr crc tib-ptr )
+;        DROP NIP              ( crc )
+;    ELSE      ( count hex-addr record-type tib-ptr )
+;        DROP NIP NIP
+;        1 = IF      ( end of hex record? )
+;           RECTYPE_NOOP EXIT
+;        ELSE
+;           RECTYPE_NULL EXIT
+;        THEN
+;    THEN
+;
+;    ?IHXCRC IF
+;        PAD CELL+ CELL+        ( src )
+;        PAD @                  ( src dest )
+;        PAD CELL+ @ RECTYPE_IHEX         ( src dest n -1 )
+;    ELSE
+;        RECTYPE_NULL
+;    THEN  ;
+    head(IHEXQ,IHEX?,docolon)
+        DW DROP
+        DW lit,0,IHXCRC,STORE
+        DW DUP,CFETCH,lit,58,NOTEQUAL,qbranch,RECIHEX1
+        DW DROP,lit,0,EXIT
+
+RECIHEX1:
+        DW CHARPLUS
+        DW IHXBYTE,OVER,PAD,CELLPLUS,STORE
+        DW IHXWORD,SWOP,PAD,STORE
+        DW PAD,CELLPLUS,CELLPLUS,SWOP
+        DW IHXBYTE
+
+        DW OVER,ZEROEQUAL,qbranch,RECIHEX2
+        DW NIP,IHXRECSTORE,XIHXBYTE,DROP,NIP
+        DW branch,RECIHEX3
+RECIHEX2:
+        DW DROP,NIP,NIP
+        DW lit,1,EQUAL,qbranch,RECIHEX2a
+        DW lit,1,EXIT
+RECIHEX2a:
+        DW lit,0,EXIT
+
+RECIHEX3:
+        DW QIHXCRC,qbranch,RECIHEX4
+        DW PAD,CELLPLUS,CELLPLUS
+        DW PAD,FETCH
+        DW PAD,CELLPLUS,FETCH,lit,-1
+        DW EXIT
+RECIHEX4:
+        DW lit,0,EXIT
+
+;: HEXLOAD
+;    0 IHEX_START !
+;    0 IHEX_LENGTH !   ;
+    head(HEXLOAD,HEXLOAD,docolon)
+        DW lit,0,lit,ihex_start,STORE
+        DW lit,0,lit,ihex_length,STORE
+        DW EXIT
+
+;: ;HEXLOAD     ( -- ihex_start ihex_length )
+;    IHEX_START @
+;    IHEX_LENGTH @   ;
+    head(SEMIHEXLOAD,;HEXLOAD,docolon)
+        DW lit,ihex_start,FETCH
+        DW lit,ihex_length,FETCH
+        DW EXIT
+
+SECTION data_user
+
+ihxcrc_ptr:
+        DW 0
+
+ihex_start:
+        DW 0
+
+ihex_length:
+        DW 0
+
+SECTION code_user
 
 
 

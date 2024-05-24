@@ -3,6 +3,6 @@ rom_rst.asm
 asm_acia.asm
 main.asm
 camel80.asm.m4
-asm_cflash.asm
-asm_z80_delay_ms.asm
-asm_z80_delay_tstate.asm
+;asm_cflash.asm
+;asm_z80_delay_ms.asm
+;asm_z80_delay_tstate.asm

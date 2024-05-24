@@ -35,6 +35,144 @@
 
 SECTION code_user_16k
 
+;Z /16KROM    init enhanced features
+    head(SLASH16KROM,``/16KROM'',docolon)
+        DW lit,VOCAB_WORDLIST_WID,lit,FORTH_WORDLIST_WID,lit,2,SET_ORDER
+        DW lit,FORTH_WORDLIST_WID,CURRENT,STORE
+        DW lit,VOCAB_WORDLIST_WID,VOCLINK,STORE
+        DW SLASHBLKCTX
+        dw EXIT
+
+    ;Z BLK      -- a-addr     block number storage
+    ;  20 USER BLK
+        head(BLK,BLK,douser)
+            dw 20
+
+    ;Z DSK      -- a-addr     disk number storage
+    ;  22 USER DSK
+        head(DSK,DSK,douser)
+            dw 22
+
+    ;Z BLKOFFSET    -- a-addr  1024byte block buffer
+    ;  24 USER BLKOFFSET
+        head(BLKOFFSET,BLKOFFSET,douser)
+            dw 24
+
+    ;Z BLKLIMIT    -- a-addr  block update flag storage
+    ;  26 USER BLKLIMIT
+        head(BLKLIMIT,BLKLIMIT,douser)
+            dw 26
+
+    ;Z BLKRWVEC   -- a-addr  if set, use XT to read block
+    ;  28 USER BLKRWVEC
+        head(BLKRWVEC,BLKRWVEC,douser)
+            dw 28
+
+    ;Z BLKWRITEVEC   -- a-addr  if set, use XT to write block
+    ;  30 USER BLKWRITEVEC
+        head(BLKWRITEVEC,BLKWRITEVEC,douser)
+            dw 30
+
+    ;Z SCR          -- a-addr  last edited screen number
+    ;  32 USER SCR
+        head(SCR,SCR,douser)
+            dw 32
+
+    ;Z REC-USERVEC      -- xt    if set, use XT as user vector for RECOGNIZER
+    ;  34 USER REC-USERVEC
+        head(REC_USERVEC,REC-USERVEC,douser)
+            dw 34
+
+    ;Z WORDLISTS      -- addr    address of WORDLIST list
+    ; one cell for count, then 8 cells for LFA's of wordlists
+    ;  48 USER WORDLISTS
+        head(WORDLISTS,WORDLISTS,douser)
+            dw 48
+
+
+;Z INTVEC      -- a-addr   pointer to address holding interrupt vector
+;  intvec_ptr CONSTANT INTVEC
+    head(INTVEC,INTVEC,docon)
+        dw intvec_ptr
+
+;Z RST30VEC     -- a-addr   pointer to address holding RST30 vector
+;  intvec_ptr CONSTANT RST30VEC
+    head(RST30VEC,RST30VEC,docon)
+        dw rst30vec_ptr
+
+SECTION data_user
+intvec_ptr:
+        DEFW 0
+
+rst30vec_ptr:
+        DEFW 0
+
+SECTION code_user_16k
+
+dnl ;Z :NONAME       ( -- xt      define anonymous xt )
+dnl ;    CURRENT @ @ , 0 C,    ( last link + immed flag )
+dnl ;    HERE CURRENT @ !      ( new "latest" )
+dnl ;    0 C,          ( empty NFA )
+dnl ;    HERE               ( push xt to stack             )
+dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
+    head(NONAME,:NONAME,docolon)
+        dw CURRENT,FETCH,FETCH,COMMA,lit,0,CCOMMA
+        dw HERE,CURRENT,FETCH,STORE
+        dw lit,0,CCOMMA
+        dw HERE
+        dw HIDE,RIGHTBRACKET,lit,docolon,COMMACF
+        dw EXIT
+
+;Z   MS ( n -- )  delay n milliseconds
+    head(MS,MS,docode)
+        push hl
+        push de
+        call asm_z80_delay_ms
+        pop de
+        pop hl
+        pop bc
+        next
+
+;Z   TDELAY ( n -- )  delay in t-states
+    head(TDELAY,TDELAY,docode)
+        push hl
+        push de
+        ld h, b
+        ld l, c
+        call asm_z80_delay_tstate
+        pop de
+        pop hl
+        pop bc
+        next
+
+; RC2014 EXTENSION output ====================
+
+
+;Z VT-ESC  ( --  emit escape character )
+;    27 EMIT [CHAR] [ EMIT ;
+    head(VT_ESC,VT-ESC,docolon)
+        dw lit,0x1b,EMIT
+        dw lit,'[',EMIT
+        dw EXIT
+
+;Z CLS  ( --  clear screen )
+;    VT-ESC ." 2J"
+    head(CLS,CLS,docolon)
+        dw VT_ESC, XSQUOTE
+        db 2,"2J"
+        dw TYPE
+        dw EXIT
+
+;Z AT-XY  ( x y -- move cursor to x,y )
+;    VT-ESC 1+ (.) TYPE ." ;" 1+ (.) TYPE ." H" ;
+    head(AT_XY,AT-XY,docolon)
+        dw VT_ESC
+        dw ONEPLUS,XDOT,TYPE
+        dw lit,';',EMIT
+        dw ONEPLUS,XDOT,TYPE
+        dw lit,'H',EMIT
+        dw EXIT
+
 ; RC2014 EXTENDED STRUCTURES ====================
 
 ;C CELL-    a-addr1 -- a-addr2    subtract cell size
@@ -417,20 +555,6 @@ WORDLIST1:
             dw DUP,lit,0,SWOP,WIDTONFASTORE
             dw EXIT
 
-;: WID>NFA ( wid -- nfa )
-; Return the address of the first name field in the word list identified by wid.
-;       WORDLISTS DUP @ + @    ;
-        head(WIDTONFA,WID>NFA,docolon)
-            dw CELLS,WORDLISTS,PLUS,FETCH
-            dw EXIT
-
-;: WID>NFA! ( nfa wid -- )
-; Store the address of the first name field in the word list identified by wid.
-;       CELLS,WORDLISTS DUP @ CELLS + !    ;
-        head(WIDTONFASTORE,WID>NFA!,docolon)
-            dw CELLS,WORDLISTS,PLUS,STORE
-            dw EXIT
-
 ;: SEARCH-WORDLIST ( c-addr u wid -- 0 | xt 1 | xt -1 )
 ; Find the definition identified by the string c-addr u in the word list
 ; identified by wid. If the definition is not found, return zero. If the
@@ -526,13 +650,6 @@ RESTOREORDER1:
         head(GET_CURRENT,GET-CURRENT,docolon)
             dw CURRENT,FETCH
             dw EXIT
-
-;: CONTEXT      ( -- wid )
-;    STACK_WORDLIST STACK@
-        head(CONTEXT,CONTEXT,docolon)
-            dw lit,STACK_WORDLISTS,STACKFETCH
-            dw EXIT
-
 
 ;C FIND-NAME-IN   c-addr len wid   --  c-addr len 0       if not found
 ;                                      c-addr len nfa     if found
@@ -1633,6 +1750,7 @@ RECNUM4:
         DW LITERAL
 
 ; : POSTPONE ( "name" -- )  \ COMPILE
+; This is the 16K ROM Next Generation version
 ;   BL WORD  COUNT
 ;     STACK_RECOGNIZER RECOGNIZE   ( xt flags RECTYPE_XT | RECTYPE_NULL )
 ;     DUP
@@ -1640,7 +1758,7 @@ RECNUM4:
 ;     RECTYPE>POST EXECUTE
 ;     R>
 ;     RECTYPE>COMP COMMA   ( add compile action to definition )     ;
-    immed(POSTPONE,POSTPONE,docolon)
+    immed(POSTPONE_NG,POSTPONE-NG,docolon)
         DW BL,WORD,COUNT
         DW STACK_RECOGNIZER,RECOGNIZE
         DW DUP,TOR
@@ -1653,6 +1771,7 @@ RECNUM4:
 ;Z                      interpret given buffer
 ; This is a common factor of EVALUATE and QUIT.
 ; ref. dpANS-6, 3.4 The Forth Text Interpreter
+; This is the 16K ROM Next Generation version
 ;   BEGIN
 ;   BL WORD DUP C@ WHILE        -- textadr
 ;       DUP >R COUNT            -- c-addr n  ; textadr
@@ -1668,49 +1787,23 @@ RECNUM4:
 ;           DROP R> COUNT TYPE 3F EMIT CR ABORT  err
 ;       THEN
 ;   REPEAT DROP ;
-    head(INTERPRET,INTERPRET,docolon)
-INTRP1: DW BL,WORD,DUP,CFETCH,qbranch,INTRP9
-        DW DUP,TOR,COUNT
-        DW STACK_RECOGNIZER,RECOGNIZE
-        DW DUP,RECTYPE_NULL,NOTEQUAL,qbranch,INTRP2
-        DW STATE,FETCH,qbranch,INTRP3
-        DW RECTYPETOCOMP,EXECUTE
-        DW branch,INTRP4
-INTRP3: DW RECTYPETOINT,EXECUTE
-INTRP4: DW RFROM,DROP,branch,INTRP5
-INTRP2: DW DROP,RFROM,COUNT,TYPE,lit,63,EMIT,CR,ABORT
-INTRP5: DW branch,INTRP1
-INTRP9: DW DROP
+    head(INTERPRET_NG,INTERPRET-NG,docolon)
+INTRP_NG1: DW BL,WORD,DUP,CFETCH,qbranch,INTRP_NG9
+           DW DUP,TOR,COUNT
+           DW STACK_RECOGNIZER,RECOGNIZE
+           DW DUP,RECTYPE_NULL,NOTEQUAL,qbranch,INTRP_NG2
+           DW STATE,FETCH,qbranch,INTRP_NG3
+           DW RECTYPETOCOMP,EXECUTE
+           DW branch,INTRP_NG4
+INTRP_NG3: DW RECTYPETOINT,EXECUTE
+INTRP_NG4: DW RFROM,DROP,branch,INTRP_NG5
+INTRP_NG2: DW DROP,RFROM,COUNT,TYPE,lit,63,EMIT,CR,ABORT
+INTRP_NG5: DW branch,INTRP_NG1
+INTRP_NG9: DW DROP
         DW EXIT
 
 
 
-
-SECTION data_user
-
-ihex_start:
-        DW 0
-
-ihex_length:
-        DW 0
-
-SECTION code_user_16k
-
-;: HEXLOAD
-;    0 IHEX_START !
-;    0 IHEX_LENGTH !   ;
-    head(HEXLOAD,HEXLOAD,docolon)
-        DW lit,0,lit,ihex_start,STORE
-        DW lit,0,lit,ihex_length,STORE
-        DW EXIT
-
-;: ;HEXLOAD     ( -- ihex_start ihex_length )
-;    IHEX_START @
-;    IHEX_LENGTH @   ;
-    head(SEMIHEXLOAD,;HEXLOAD,docolon)
-        DW lit,ihex_start,FETCH
-        DW lit,ihex_length,FETCH
-        DW EXIT
 
 
 ; (IHEX)                   ( src dest len -- runtime action )
@@ -1751,6 +1844,17 @@ REC_IHEX_COMP:
 
 
 ;: REC-IHEX ( addr len -- src dest n RECTYPE_IHEX   if ok, RECTYPE_NULL if not recognised )
+;    IHEX? DUP 1 = IF
+;       DROP NIP NIP
+;       RECTYPE_NOOP EXIT
+;    THEN
+;    DUP 0 = IF
+;       DROP NIP NIP
+;       RECTYPE_NULL EXIT
+;    THEN
+;    DROP RECTYPE_IHEX  ;
+;
+;  old:
 ;    DROP
 ;    0 IHXCRC !
 ;    DUP C@ [CHAR] : <> IF DROP RECTYPE_NULL  ( no colon ) EXIT  THEN
@@ -1828,19 +1932,6 @@ RECIHEX4:
 RECUSER1:
         DW TWODROP,RECTYPE_NULL
         DW EXIT
-
-;Z IHXCRC       -- a-addr  location for current HEXLOAD CRC
-;  ihxcrc_ptr CONSTANT IHXCRC
-    head(IHXCRC,IHXCRC,docon)
-        dw ihxcrc_ptr
-
-SECTION data_user
-
-ihxcrc_ptr:
-        DW 0
-
-SECTION code_user_16k
-
 
 ;Z SAVE-INPUT
 ;   SOURCE-ID @ 'SOURCE 2@  >IN @  4 N>R  ;

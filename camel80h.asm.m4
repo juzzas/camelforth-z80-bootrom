@@ -33,6 +33,8 @@
 
 ; SYSTEM VARIABLES & CONSTANTS ==================
 
+SECTION code_user
+
 ;C BL      -- char            an ASCII space
     head(BL,BL,docon)
         dw 20h
@@ -91,45 +93,14 @@
         head(LP,LP,douser)
             dw 18
 
-    ;Z BLK      -- a-addr     block number storage
     ;  20 USER BLK
-        head(BLK,BLK,douser)
-            dw 20
-
-    ;Z DSK      -- a-addr     disk number storage
     ;  22 USER DSK
-        head(DSK,DSK,douser)
-            dw 22
-
-    ;Z BLKOFFSET    -- a-addr  1024byte block buffer
     ;  24 USER BLKOFFSET
-        head(BLKOFFSET,BLKOFFSET,douser)
-            dw 24
-
-    ;Z BLKLIMIT    -- a-addr  block update flag storage
     ;  26 USER BLKLIMIT
-        head(BLKLIMIT,BLKLIMIT,douser)
-            dw 26
-
-    ;Z BLKRWVEC   -- a-addr  if set, use XT to read block
     ;  28 USER BLKRWVEC
-        head(BLKRWVEC,BLKRWVEC,douser)
-            dw 28
-
-    ;Z BLKWRITEVEC   -- a-addr  if set, use XT to write block
     ;  30 USER BLKWRITEVEC
-        head(BLKWRITEVEC,BLKWRITEVEC,douser)
-            dw 30
-
-    ;Z SCR          -- a-addr  last edited screen number
     ;  32 USER SCR
-        head(SCR,SCR,douser)
-            dw 32
-
-    ;Z REC-USERVEC      -- xt    if set, use XT as user vector for RECOGNIZER
     ;  34 USER REC-USERVEC
-        head(REC_USERVEC,REC-USERVEC,douser)
-            dw 34
 
     ;Z CURRENT      -- a-addr   address of CURRENT wid
     ;  36 USER CURRENT
@@ -161,11 +132,7 @@
         head(SOURCE_ID,SOURCE-ID,douser)
             dw 46
 
-    ;Z WORDLISTS      -- addr    address of WORDLIST list
-    ; one cell for count, then 8 cells for LFA's of wordlists
     ;  48 USER WORDLISTS
-        head(WORDLISTS,WORDLISTS,douser)
-            dw 48
 
     ;Z s0       -- a-addr     end of parameter stack
         head(S0,S0,douser)
@@ -196,11 +163,11 @@
             DW 1            ; DSK
             DW 0            ; BLKOFFSET
             DW 8192         ; BLKLIMIT
-            DW CF_BLOCK_READWRITE            ; BLKRWVEC
+            DW 0  ; CF_BLOCK_READWRITE            ; BLKRWVEC
             DW 0            ; BLKWRITEVEC                30
             DW 0            ; SCR
             DW 0            ; REC-USERVEC
-            DW 0            ; CURRENT
+            DW 1            ; CURRENT
             DW vocab_lastword            ; VOC-LINK
             DW TOCONSOLE    ; EMITVEC                    40
             DW 0            ; REFILLVEC
@@ -741,16 +708,16 @@ WORD1:  DW RFROM,RFROM,ROT,MINUS,TOIN,PLUSSTORE
 ;       SWAP IMMED?            -- xt iflag
 ;       0= 1 OR                -- xt 1/-1
 ;   THEN ;
-dnl ;    head(FIND,FIND,docolon)
-;        DW LATEST,FETCH
-;FIND1:  DW TWODUP,OVER,CFETCH,CHARPLUS
-;        DW sequal,DUP,qbranch,FIND2
-;        DW DROP,NFATOLFA,FETCH,DUP
-;FIND2:  DW ZEROEQUAL,qbranch,FIND1
-;        DW DUP,qbranch,FIND3
-;        DW NIP,DUP,NFATOCFA
-;        DW SWOP,IMMEDQ,ZEROEQUAL,lit,1,OR
-;FIND3:  DW EXIT
+    head(FIND,FIND,docolon)
+        DW LATEST,FETCH
+FIND1:  DW TWODUP,OVER,CFETCH,CHARPLUS
+        DW sequal,DUP,qbranch,FIND2
+        DW DROP,NFATOLFA,FETCH,DUP
+FIND2:  DW ZEROEQUAL,qbranch,FIND1
+        DW DUP,qbranch,FIND3
+        DW NIP,DUP,NFATOCFA
+        DW SWOP,IMMEDQ,ZEROEQUAL,lit,1,OR
+FIND3:  DW EXIT
 
 ;C LITERAL  x --        append numeric literal
 ;   STATE @ IF ['] LIT ,XT , THEN ; IMMEDIATE
@@ -838,20 +805,20 @@ QNUM3:  DW EXIT
 ;           THEN
 ;       THEN
 ;   REPEAT DROP ;
-dnl ;    head(INTERPRET,INTERPRET,docolon)
-;INTER1: DW BL,WORD,DUP,CFETCH,qbranch,INTER9
-;        DW FIND,QDUP,qbranch,INTER4
-;        DW ONEPLUS,STATE,FETCH,ZEROEQUAL,OR
-;        DW qbranch,INTER2
-;        DW EXECUTE,branch,INTER3
-;INTER2: DW COMMAXT
-;INTER3: DW branch,INTER8
-;INTER4: DW QNUMBER,qbranch,INTER5
-;        DW LITERAL,branch,INTER6
-;INTER5: DW COUNT,TYPE,lit,3FH,EMIT,CR,ABORT
-;INTER6:
-;INTER8: DW branch,INTER1
-;INTER9: DW DROP,EXIT
+    head(INTERPRET,INTERPRET,docolon)
+INTER1: DW BL,WORD,DUP,CFETCH,qbranch,INTER9
+        DW FIND,QDUP,qbranch,INTER4
+        DW ONEPLUS,STATE,FETCH,ZEROEQUAL,OR
+        DW qbranch,INTER2
+        DW EXECUTE,branch,INTER3
+INTER2: DW COMMAXT
+INTER3: DW branch,INTER8
+INTER4: DW QNUMBER,qbranch,INTER5
+        DW LITERAL,branch,INTER6
+INTER5: DW COUNT,TYPE,lit,3FH,EMIT,CR,ABORT
+INTER6:
+INTER8: DW branch,INTER1
+INTER9: DW DROP,EXIT
 
 ;X REFILL      -- f  refill input buffer
 ;   SOURCE-ID @ 0= IF
@@ -1027,7 +994,7 @@ QABO1:  DW TWODROP,EXIT
 
 ;C CREATE   --      create an empty definition
 ;   CURRENT @ WID>NFA , 0 C,         link & `immed' field
-;   HERE CURRENT @ WID>NFA !           new "latest" link
+;   HERE CURRENT @ WID>NFA!           new "latest" link
 ;   BL WORD C@ 1+ ALLOT         name field
 ;   docreate ,CF                code field
     head(CREATE,CREATE,docolon)
@@ -1120,14 +1087,14 @@ dnl ; be put on the stack.  (All xt's are one cell.)
 ;       ['] ,XT ,XT         to current definition
 ;   ELSE  ,XT      `immed': compile into cur. def'n
 ;   THEN ; IMMEDIATE
-dnl ;    immed(POSTPONE,POSTPONE,docolon)
-;         DW BL,WORD,FIND,DUP,ZEROEQUAL,XSQUOTE
-;         DB 1,"?"
-;         DW QABORT,ZEROLESS,qbranch,POST1
-;         DW lit,lit,COMMAXT,COMMA
-;         DW lit,COMMAXT,COMMAXT,branch,POST2
-; POST1:  DW COMMAXT
-; POST2:  DW EXIT
+    immed(POSTPONE,POSTPONE,docolon)
+        DW BL,WORD,FIND,DUP,ZEROEQUAL,XSQUOTE
+        DB 1,"?"
+        DW QABORT,ZEROLESS,qbranch,POST1
+        DW lit,lit,COMMAXT,COMMA
+        DW lit,COMMAXT,COMMAXT,branch,POST2
+POST1:  DW COMMAXT
+POST2:  DW EXIT
                
 ;Z COMPILE   --   append inline execution token
 ;   R> DUP CELL+ >R @ ,XT ;
@@ -1406,20 +1373,19 @@ tdiv1:
         DB 0dh,0ah
         DW TYPE
         DW lit,65535,RAMTOP,STORE
-        DW lit,0,INTVEC,STORE
-        DW lit,0,RST30VEC,STORE
+        ;DW lit,0,INTVEC,STORE
+        ;DW lit,0,RST30VEC,STORE
         DW ROM16KQ,qbranch,COLD1
         DW XSQUOTE
         DB 10," - 16K ROM"
+        DW lit,65535,lit,flag_rom16k,STORE
+        ; DW SLASH16KROM
         DW branch,COLD2
-COLD1:  DW lit,lastword8k,CURRENT,FETCH,STORE
+COLD1:  DW lit,lastword8k,LATEST,STORE
         DW XSQUOTE
         DB 9," - 8K ROM"
+        DW lit,0,lit,flag_rom16k,STORE
 COLD2:  DW TYPE,CR
-        DW lit,VOCAB_WORDLIST_WID,lit,FORTH_WORDLIST_WID,lit,2,SET_ORDER
-        DW lit,FORTH_WORDLIST_WID,CURRENT,STORE
-        DW lit,VOCAB_WORDLIST_WID,VOCLINK,STORE
-        DW SLASHBLKCTX
         DW ABORT       ; ABORT never returns
 
 ;Z WARM     --      warm start Forth system
@@ -1430,8 +1396,49 @@ COLD2:  DW TYPE,CR
         DB 47,"Z80 CamelForth v1.02  25 Jan 1995 (warmstart)"
         DB 0dh,0ah
         DW TYPE
-        DW FORTH_WORDLIST,lit,1,SET_ORDER
-        DW lit,FORTH_WORDLIST_WID,CURRENT,STORE
-        DW lit,VOCAB_WORDLIST_WID,VOCLINK,STORE
+        DW ROM16KQ,qbranch,WARM1
+        ; DW SLASH16KROM
+WARM1:
         DW ABORT       ; ABORT never returns
 
+
+;: WID>NFA ( wid -- nfa )
+; Return the address of the first name field in the word list identified by wid.
+;       WORDLISTS DUP @ + @    ;
+        head(WIDTONFA,WID>NFA,docolon)
+            dw lit,flag_rom16k,FETCH,qbranch,WIDTONFA1
+            dw CELLS,WORDLISTS,PLUS,FETCH
+            dw EXIT
+WIDTONFA1:
+            dw LATEST,FETCH
+            dw EXIT
+
+;: WID>NFA! ( nfa wid -- )
+; Store the address of the first name field in the word list identified by wid.
+;       CELLS,WORDLISTS DUP @ CELLS + !    ;
+        head(WIDTONFASTORE,WID>NFA!,docolon)
+            dw lit,flag_rom16k,FETCH,qbranch,WIDTONFASTOR1
+         ;   dw CELLS,WORDLISTS,PLUS,STORE
+            dw EXIT
+WIDTONFASTOR1:
+            dw DROP,LATEST,STORE
+            dw EXIT
+
+;: CONTEXT      ( -- wid )
+;    STACK_WORDLIST STACK@
+        head(CONTEXT,CONTEXT,docolon)
+            dw lit,flag_rom16k,FETCH,qbranch,CONTEXT1
+        ;    dw lit,STACK_WORDLISTS,STACKFETCH
+            dw EXIT
+CONTEXT1:
+            dw lit,FORTH_WORDLIST_WID
+            dw EXIT
+
+
+
+SECTION data_user
+
+flag_rom16k:
+        DW 0
+
+SECTION code_user
