@@ -247,33 +247,33 @@ IHXCRC:
     head(IHEXQ,IHEX?,docolon)
         DW DROP
         DW lit,0,IHXCRC,STORE
-        DW DUP,CFETCH,lit,58,NOTEQUAL,qbranch,RECIHEX1
+        DW DUP,CFETCH,lit,58,NOTEQUAL,qbranch,IHEXQ1
         DW DROP,lit,0,EXIT
 
-RECIHEX1:
+IHEXQ1:
         DW CHARPLUS
         DW IHXBYTE,OVER,PAD,CELLPLUS,STORE
         DW IHXWORD,SWOP,PAD,STORE
         DW PAD,CELLPLUS,CELLPLUS,SWOP
         DW IHXBYTE
 
-        DW OVER,ZEROEQUAL,qbranch,RECIHEX2
+        DW OVER,ZEROEQUAL,qbranch,IHEXQ2
         DW NIP,IHXRECSTORE,XIHXBYTE,DROP,NIP
-        DW branch,RECIHEX3
-RECIHEX2:
+        DW branch,IHEXQ3
+IHEXQ2:
         DW DROP,NIP,NIP
-        DW lit,1,EQUAL,qbranch,RECIHEX2a
+        DW lit,1,EQUAL,qbranch,IHEXQ2a
         DW lit,1,EXIT
-RECIHEX2a:
+IHEXQ2a:
         DW lit,0,EXIT
 
-RECIHEX3:
-        DW QIHXCRC,qbranch,RECIHEX4
+IHEXQ3:
+        DW QIHXCRC,qbranch,IHEXQ4
         DW PAD,CELLPLUS,CELLPLUS
         DW PAD,FETCH
         DW PAD,CELLPLUS,FETCH,lit,-1
         DW EXIT
-RECIHEX4:
+IHEXQ4:
         DW lit,0,EXIT
 
 ;: HEXLOAD

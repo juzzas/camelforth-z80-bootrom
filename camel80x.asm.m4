@@ -711,13 +711,14 @@ FINDIN5:
 ;       SWAP IMMED?            -- xt iflag
 ;       0= 1 OR                -- xt 1/-1
 ;   THEN ;
-    head(FIND,FIND,docolon)
+FIND_16K:
+        call docolon
         DW DUP,COUNT,FIND_NAME
-        DW DUP,qbranch,FIND1
+        DW DUP,qbranch,FINDNG1
         DW NIP,DUP,NFATOCFA
         DW SWOP,IMMEDQ
         DW ZEROEQUAL,lit,1,OR
-FIND1:
+FINDNG1:
         DW EXIT
 
 ;WORDLIST CONSTANT ROOT   ROOT SET-CURRENT
@@ -1653,7 +1654,7 @@ RECOGNIZE1:
 
     head(STACK_RECOGNIZER,STACK-RECOGNIZER,docreate)
         DW STACK_RECOGNIZER_END
-        DW REC_IHEX
+        ;DW REC_IHEX
         DW REC_NUMBER
         DW REC_USER
         DW REC_FIND
@@ -1758,7 +1759,8 @@ RECNUM4:
 ;     RECTYPE>POST EXECUTE
 ;     R>
 ;     RECTYPE>COMP COMMA   ( add compile action to definition )     ;
-    immed(POSTPONE_NG,POSTPONE-NG,docolon)
+POSTPONE_16K:
+        call docolon
         DW BL,WORD,COUNT
         DW STACK_RECOGNIZER,RECOGNIZE
         DW DUP,TOR
@@ -1787,7 +1789,8 @@ RECNUM4:
 ;           DROP R> COUNT TYPE 3F EMIT CR ABORT  err
 ;       THEN
 ;   REPEAT DROP ;
-    head(INTERPRET_NG,INTERPRET-NG,docolon)
+INTERPRET_16K:
+        call docolon
 INTRP_NG1: DW BL,WORD,DUP,CFETCH,qbranch,INTRP_NG9
            DW DUP,TOR,COUNT
            DW STACK_RECOGNIZER,RECOGNIZE

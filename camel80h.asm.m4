@@ -163,7 +163,7 @@ SECTION code_user
             DW 1            ; DSK
             DW 0            ; BLKOFFSET
             DW 8192         ; BLKLIMIT
-            DW 0  ; CF_BLOCK_READWRITE            ; BLKRWVEC
+            DW CF_BLOCK_READWRITE            ; BLKRWVEC
             DW 0            ; BLKWRITEVEC                30
             DW 0            ; SCR
             DW 0            ; REC-USERVEC
@@ -709,6 +709,11 @@ WORD1:  DW RFROM,RFROM,ROT,MINUS,TOIN,PLUSSTORE
 ;       0= 1 OR                -- xt 1/-1
 ;   THEN ;
     head(FIND,FIND,docolon)
+        DW lit,xt_find,FETCH,EXECUTE
+        DW EXIT
+
+FIND_8K:
+        call docolon
         DW LATEST,FETCH
 FIND1:  DW TWODUP,OVER,CFETCH,CHARPLUS
         DW sequal,DUP,qbranch,FIND2
@@ -806,6 +811,11 @@ QNUM3:  DW EXIT
 ;       THEN
 ;   REPEAT DROP ;
     head(INTERPRET,INTERPRET,docolon)
+        DW lit,xt_interpret,FETCH,EXECUTE
+        DW EXIT
+
+INTERPRET_8K:
+        call docolon
 INTER1: DW BL,WORD,DUP,CFETCH,qbranch,INTER9
         DW FIND,QDUP,qbranch,INTER4
         DW ONEPLUS,STATE,FETCH,ZEROEQUAL,OR
@@ -1088,6 +1098,11 @@ dnl ; be put on the stack.  (All xt's are one cell.)
 ;   ELSE  ,XT      `immed': compile into cur. def'n
 ;   THEN ; IMMEDIATE
     immed(POSTPONE,POSTPONE,docolon)
+        DW lit,xt_postpone,FETCH,EXECUTE
+        DW EXIT
+
+POSTPONE_8K:
+        call docolon
         DW BL,WORD,FIND,DUP,ZEROEQUAL,XSQUOTE
         DB 1,"?"
         DW QABORT,ZEROLESS,qbranch,POST1
@@ -1379,12 +1394,18 @@ tdiv1:
         DW XSQUOTE
         DB 10," - 16K ROM"
         DW lit,65535,lit,flag_rom16k,STORE
-        ; DW SLASH16KROM
+        DW SLASH16KROM
+        DW lit,FIND_16K,lit,xt_find,STORE
+        DW lit,POSTPONE_16K,lit,xt_postpone,STORE
+        DW lit,INTERPRET_16K,lit,xt_interpret,STORE
         DW branch,COLD2
 COLD1:  DW lit,lastword8k,LATEST,STORE
         DW XSQUOTE
         DB 9," - 8K ROM"
         DW lit,0,lit,flag_rom16k,STORE
+        DW lit,FIND_8K,lit,xt_find,STORE
+        DW lit,POSTPONE_8K,lit,xt_postpone,STORE
+        DW lit,INTERPRET_8K,lit,xt_interpret,STORE
 COLD2:  DW TYPE,CR
         DW ABORT       ; ABORT never returns
 
@@ -1418,7 +1439,7 @@ WIDTONFA1:
 ;       CELLS,WORDLISTS DUP @ CELLS + !    ;
         head(WIDTONFASTORE,WID>NFA!,docolon)
             dw lit,flag_rom16k,FETCH,qbranch,WIDTONFASTOR1
-         ;   dw CELLS,WORDLISTS,PLUS,STORE
+            dw CELLS,WORDLISTS,PLUS,STORE
             dw EXIT
 WIDTONFASTOR1:
             dw DROP,LATEST,STORE
@@ -1428,7 +1449,7 @@ WIDTONFASTOR1:
 ;    STACK_WORDLIST STACK@
         head(CONTEXT,CONTEXT,docolon)
             dw lit,flag_rom16k,FETCH,qbranch,CONTEXT1
-        ;    dw lit,STACK_WORDLISTS,STACKFETCH
+            dw lit,STACK_WORDLISTS,STACKFETCH
             dw EXIT
 CONTEXT1:
             dw lit,FORTH_WORDLIST_WID
@@ -1440,5 +1461,12 @@ SECTION data_user
 
 flag_rom16k:
         DW 0
+
+xt_interpret:
+        DW INTERPRET_16K
+xt_postpone:
+        DW POSTPONE_16K
+xt_find:
+        DW FIND_16K
 
 SECTION code_user

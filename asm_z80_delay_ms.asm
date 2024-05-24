@@ -10,7 +10,7 @@
 ;
 ; ===============================================================
 
-SECTION code_user
+SECTION code_user_16k
 
 PUBLIC asm_z80_delay_ms
 
