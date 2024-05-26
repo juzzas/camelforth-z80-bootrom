@@ -163,7 +163,7 @@ SECTION code_user
             DW 1            ; DSK
             DW 0            ; BLKOFFSET
             DW 8192         ; BLKLIMIT
-            DW CF_BLOCK_READWRITE            ; BLKRWVEC
+            DW 0  ;  CF_BLOCK_READWRITE            ; BLKRWVEC
             DW 0            ; BLKWRITEVEC                30
             DW 0            ; SCR
             DW 0            ; REC-USERVEC
