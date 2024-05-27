@@ -1810,20 +1810,8 @@ INTRP_NG9: DW DROP
 
 
 
-; (IHEX)                   ( src dest len -- runtime action )
-XIHEX:
-        call docolon
-        DW lit,ihex_start,FETCH,ZEROEQUAL,qbranch,XIHEX1
-        DW OVER,lit,ihex_start,STORE
-XIHEX1:
-        DW TWODUP,PLUS,lit,ihex_start,FETCH,MINUS,lit,ihex_length,STORE
-        DW MOVE
-        DW EXIT
 
 ;  NONAME:    ( src dest len --     xt for rectype-ihex )
-;     IHEX_START @ 0= IF OVER IHEX_START ! THEN
-;     2DUP + IHEX_START @ - IHEX_LENGTH !
-;     MOVE    ;
 REC_IHEX_XT:
         call docolon
         DW XIHEX
@@ -1834,10 +1822,7 @@ REC_IHEX_XT:
 ;     ['] (IHEX) ,  ;
 REC_IHEX_COMP:
         call docolon
-        DW SWOP,LITERAL,SLITERAL
-        DW lit,ROT,COMMA
-        DW lit,SWOP,COMMA
-        DW lit,XIHEX,COMMA
+        DW IHEXCOMMA
         DW EXIT
 
 ; RECTYPE: RECTYPE-IHEX ;

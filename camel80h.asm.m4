@@ -793,6 +793,25 @@ QNUM1:  DW TWODROP,NIP,RFROM,qbranch,QNUM2,NEGATE
 QNUM2:  DW lit,-1
 QNUM3:  DW EXIT
 
+; INTERPRET_IHEX   ( src dest len flag  if flag = -1 -- )
+;                  (              flag  if flag = 1  -- )
+;       -1 = IF
+;           STATE @ 0= IF  (IHEX) ELSE IHEX, THEN
+;       ELSE
+;
+;       THEN
+INTERPRET_IHEX:
+        call docolon
+        DW lit,-1,EQUAL,qbranch,INTERPIHEX2
+        DW STATE,FETCH,ZEROEQUAL,qbranch,INTERPIHEX1
+        DW XIHEX,EXIT
+INTERPIHEX1:
+        DW IHEXCOMMA,EXIT
+INTERPIHEX2:
+        DW EXIT
+
+
+
 ;Z INTERPRET    i*x  -- j*x
 ;Z                   interpret buffer at 'SOURCE
 ; This is a common factor of EVALUATE and QUIT.
@@ -804,9 +823,15 @@ QNUM3:  DW EXIT
 ;           1+ STATE @ 0= OR    `immed' or interp?
 ;           IF EXECUTE ELSE ,XT THEN
 ;       ELSE                    -- textadr
-;           ?NUMBER
-;           IF POSTPONE LITERAL     converted ok
-;           ELSE COUNT TYPE 3F EMIT CR ABORT  err
+;           DUP COUNT IHEX?
+;           ?DUP  IF        -- textadr src dest len f
+;               INTERPRET_IHEX  -- textadr
+;               DROP
+;           ELSE
+;               ?NUMBER
+;               IF POSTPONE LITERAL     converted ok
+;               ELSE COUNT TYPE 3F EMIT CR ABORT  err
+;               THEN
 ;           THEN
 ;       THEN
 ;   REPEAT DROP ;
@@ -823,7 +848,10 @@ INTER1: DW BL,WORD,DUP,CFETCH,qbranch,INTER9
         DW EXECUTE,branch,INTER3
 INTER2: DW COMMAXT
 INTER3: DW branch,INTER8
-INTER4: DW QNUMBER,qbranch,INTER5
+INTER4: DW DUP,COUNT,IHEXQ
+        DW QDUP,qbranch,INTER4a
+        DW INTERPRET_IHEX,DROP,branch,INTER6
+INTER4a: DW QNUMBER,qbranch,INTER5
         DW LITERAL,branch,INTER6
 INTER5: DW COUNT,TYPE,lit,3FH,EMIT,CR,ABORT
 INTER6:
@@ -1431,7 +1459,7 @@ WARM1:
             dw CELLS,WORDLISTS,PLUS,FETCH
             dw EXIT
 WIDTONFA1:
-            dw LATEST,FETCH
+            dw DROP,LATEST,FETCH
             dw EXIT
 
 ;: WID>NFA! ( nfa wid -- )

@@ -208,13 +208,13 @@ IHXRECSTORE1:
 ;Z IHXCRC       -- a-addr  location for current HEXLOAD CRC
 ;  ihxcrc_ptr CONSTANT IHXCRC
 IHXCRC:
-        call docolon
+        call docon
         dw ihxcrc_ptr
 
 ;: IHEX? ( addr len -- src dest n -1   if ok, 0 if not recognised, 1 if end )
 ;    DROP
 ;    0 IHXCRC !
-;    DUP C@ [CHAR] : <> IF DROP RECTYPE_NULL  ( no colon ) EXIT  THEN
+;    DUP C@ [CHAR] : <> IF DROP 0  ( no colon ) EXIT  THEN
 ;
 ;    CHAR+
 ;    IHXBYTE   ( count tib-ptr )
@@ -231,18 +231,18 @@ IHXCRC:
 ;    ELSE      ( count hex-addr record-type tib-ptr )
 ;        DROP NIP NIP
 ;        1 = IF      ( end of hex record? )
-;           RECTYPE_NOOP EXIT
+;           1 EXIT   ( flag end of hex )
 ;        ELSE
-;           RECTYPE_NULL EXIT
+;           0 EXIT   ( flag not recognised )
 ;        THEN
 ;    THEN
 ;
 ;    ?IHXCRC IF
 ;        PAD CELL+ CELL+        ( src )
 ;        PAD @                  ( src dest )
-;        PAD CELL+ @ RECTYPE_IHEX         ( src dest n -1 )
+;        PAD CELL+ @ -1         ( src dest n -1 )
 ;    ELSE
-;        RECTYPE_NULL
+;        0   ( flag not recognised )
 ;    THEN  ;
     head(IHEXQ,IHEX?,docolon)
         DW DROP
@@ -275,6 +275,28 @@ IHEXQ3:
         DW EXIT
 IHEXQ4:
         DW lit,0,EXIT
+
+; (IHEX)                   ( src dest len -- runtime action )
+;     IHEX_START @ 0= IF OVER IHEX_START ! THEN
+;     2DUP + IHEX_START @ - IHEX_LENGTH !
+;     MOVE    ;
+XIHEX:
+        call docolon
+        DW lit,ihex_start,FETCH,ZEROEQUAL,qbranch,XIHEX1
+        DW OVER,lit,ihex_start,STORE
+XIHEX1:
+        DW TWODUP,PLUS,lit,ihex_start,FETCH,MINUS,lit,ihex_length,STORE
+        DW MOVE
+        DW EXIT
+
+;  NONAME:    ( src dest len --     compile action for ihex )
+IHEXCOMMA:
+        call docolon
+        DW SWOP,LITERAL,SLITERAL
+        DW lit,ROT,COMMA
+        DW lit,SWOP,COMMA
+        DW lit,XIHEX,COMMA
+        DW EXIT
 
 ;: HEXLOAD
 ;    0 IHEX_START !
