@@ -27,7 +27,7 @@
 ;
 ; DEFINES SECTION
 ;
-; DEFC ACIA_POLL_TX = 1
+DEFC ACIA_POLL_TX = 1
 
 DEFC    SER_RX_BUFSIZE  =   $100    ; FIXED Rx buffer size, 256 Bytes, no range checking
 DEFC    SER_RX_FULLSIZE =   SER_RX_BUFSIZE - $10
