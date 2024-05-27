@@ -126,7 +126,19 @@ forth_state_stack_save:
 SECTION code_user
 
 ; RC2014 EXTENSION misc ======================
+;Z \   (  --     comment to end of line )
+;   13 WORD DROP ;
+   head(BACKSLASH,``\\'',docolon)
+    DW lit,13,WORD,DROP
+    DW EXIT
 
+;Z DUMP  ( caddr len -- )
+;   OVER + SWAP DO I C@ . LOOP ;
+    head(DUMP,DUMP,docolon)
+        DW OVER,PLUS,SWOP,xdo
+DUMP1:
+        DW II,CFETCH,DOT,xloop,DUMP1
+        DW EXIT
 
 ; HEXLOAD implementation ==========================
 

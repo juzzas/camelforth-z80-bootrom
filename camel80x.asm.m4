@@ -84,6 +84,11 @@ SECTION code_user_16k
         head(REC_USERVEC,REC-USERVEC,douser)
             dw 34
 
+    ;Z VOCLINK      -- a-addr   address for VOCLINK wid
+    ;  38 USER CURRENT
+        head(VOCLINK,VOCLINK,douser)
+            dw 38
+
     ;Z WORDLISTS      -- addr    address of WORDLIST list
     ; one cell for count, then 8 cells for LFA's of wordlists
     ;  48 USER WORDLISTS

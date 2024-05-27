@@ -107,11 +107,7 @@ SECTION code_user
         head(CURRENT,CURRENT,douser)
             dw 36
 
-    ;Z VOCLINK      -- a-addr   address for VOCLINK wid
     ;  38 USER CURRENT
-        head(VOCLINK,VOCLINK,douser)
-            dw 38
-
     ;Z EMITVEC      -- xt     if set, use XT as EMIT destination
     ;  40 USER EMITVEC
         head(EMITVEC,EMITVEC,douser)
@@ -1446,7 +1442,7 @@ COLD2:  DW TYPE,CR
         DB 0dh,0ah
         DW TYPE
         DW ROM16KQ,qbranch,WARM1
-        ; DW SLASH16KROM
+        DW SLASH16KROM
 WARM1:
         DW ABORT       ; ABORT never returns
 
