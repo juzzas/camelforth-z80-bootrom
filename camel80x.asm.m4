@@ -1690,7 +1690,7 @@ RECOGNIZE1:
 
     head(STACK_RECOGNIZER,STACK-RECOGNIZER,docreate)
         DW STACK_RECOGNIZER_END
-        ;DW REC_IHEX
+        DW REC_IHEX
         DW REC_NUMBER
         DW REC_USER
         DW REC_FIND
@@ -1877,71 +1877,17 @@ REC_IHEX_COMP:
 ;       RECTYPE_NULL EXIT
 ;    THEN
 ;    DROP RECTYPE_IHEX  ;
-;
-;  old:
-;    DROP
-;    0 IHXCRC !
-;    DUP C@ [CHAR] : <> IF DROP RECTYPE_NULL  ( no colon ) EXIT  THEN
-;
-;    CHAR+
-;    IHXBYTE   ( count tib-ptr )
-;    OVER PAD CELL+ !
-;    IHXWORD   ( count hex-addr tib-ptr )
-;    SWAP PAD !  ( count tib-ptr )
-;    PAD CELL+ CELL+ SWAP     ( count addr tib-ptr )
-;    IHXBYTE   ( count hex-addr record-type tib-ptr )
-;
-;    OVER 0=  IF NIP           ( count addr tib-ptr )
-;        IHXREC!               ( addr tib-ptr )
-;        (IHXBYTE)             ( addr crc tib-ptr )
-;        DROP NIP              ( crc )
-;    ELSE      ( count hex-addr record-type tib-ptr )
-;        DROP NIP NIP
-;        1 = IF      ( end of hex record? )
-;           RECTYPE_NOOP EXIT
-;        ELSE
-;           RECTYPE_NULL EXIT
-;        THEN
-;    THEN
-;
-;    ?IHXCRC IF
-;        PAD CELL+ CELL+        ( src )
-;        PAD @                  ( src dest )
-;        PAD CELL+ @ RECTYPE_IHEX         ( src dest n -1 )
-;    ELSE
-;        RECTYPE_NULL
-;    THEN  ;
     head(REC_IHEX,REC-IHEX,docolon)
-        DW DROP
-        DW lit,0,IHXCRC,STORE
-        DW DUP,CFETCH,lit,58,NOTEQUAL,qbranch,RECIHEX1
-        DW DROP,RECTYPE_NULL,EXIT
-
-RECIHEX1:
-        DW CHARPLUS
-        DW IHXBYTE,OVER,PAD,CELLPLUS,STORE
-        DW IHXWORD,SWOP,PAD,STORE
-        DW PAD,CELLPLUS,CELLPLUS,SWOP
-        DW IHXBYTE
-
-        DW OVER,ZEROEQUAL,qbranch,RECIHEX2
-        DW NIP,IHXRECSTORE,XIHXBYTE,DROP,NIP
-        DW branch,RECIHEX3
-RECIHEX2:
+        DW IHEXQ,DUP,lit,1,EQUAL,qbranch,REC_IHEX1
         DW DROP,NIP,NIP
-        DW lit,1,EQUAL,qbranch,RECIHEX2a
         DW RECTYPE_NOOP,EXIT
-RECIHEX2a:
+REC_IHEX1:
+        DW DUP,ZEROEQUAL,qbranch,REC_IHEX2
+        DW DROP,NIP,NIP
         DW RECTYPE_NULL,EXIT
+REC_IHEX2:
+        DW DROP,RECTYPE_IHEX,EXIT
 
-RECIHEX3:
-        DW QIHXCRC,qbranch,RECIHEX4
-        DW PAD,CELLPLUS,CELLPLUS
-        DW PAD,FETCH
-        DW PAD,CELLPLUS,FETCH,RECTYPE_IHEX
-        DW EXIT
-RECIHEX4:
-        DW RECTYPE_NULL,EXIT
 
 ;: REC-USER ( addr len -- j*x RECTYPE_xxx   if ok, RECTYPE_NULL if not recognised )
 ;     REC-USERVEC @ ?DUP IF
