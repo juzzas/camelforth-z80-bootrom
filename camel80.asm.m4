@@ -1084,6 +1084,7 @@ include(camel80d.asm.m4)   ; CPU Dependencies
 include(camel80h.asm.m4)   ; High Level words
 include(camel80r.asm.m4)   ; RC2014 extensions
 
+camel80_8k_tail:
         defc lastword8k=link       ; nfa of last word in dict for 8K ROM
 
 SECTION code_user_16k
@@ -1096,6 +1097,7 @@ rom_16k_signature:
 include(camel80x.asm.m4)   ; RC2014 16K ROM extensions
 include(camel80u.asm.m4)   ; RC2014 Utilities
 
+camel80_16k_tail:
         defc lastword=link                ; nfa of last word in dict.
         defc editor_lastword=link_editor  ; nfa of last word in EDITOR wordlist.
         defc vocab_lastword=link_vocab    ; nfa of last word in VOCAB wordlist.
