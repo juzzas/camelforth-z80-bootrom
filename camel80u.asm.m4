@@ -93,7 +93,7 @@ RULER1:
 ;Z V    ( -- )      visual list
 ;     CR VB STATUS ;
     head_editor(VEE,V,docolon)
-        dw CLS,lit,0,DUP,AT_XY,VB,STATUS
+        dw PAGE,lit,0,DUP,AT_XY,VB,STATUS
         dw EXIT
 
 ;Z V*   ( -- )      visual list update
@@ -346,7 +346,7 @@ QCH15:
         dw EXIT
 
 
-;: EDIT ( n -- ) CLS 0 DUP AT-XY LIST 0
+;: EDIT ( n -- ) PAGE 0 DUP AT-XY LIST 0
 ;    BEGIN !XY KEY SWAP ?CH SWAP 27 = UNTIL DROP L ;
     head_editor(EDIT,EDIT,docolon)
         DW S,VEE

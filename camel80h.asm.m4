@@ -329,15 +329,6 @@ SECTION code_user
             dw TOR,TOR,TWODUP,RFROM,RFROM
             dw TWOSWAP,EXIT
 
-;C 2LITERAL  x1 x2 --    append double numeric literal
-;   STATE @ IF ['] DLIT ,XT , , THEN ; IMMEDIATE
-; This tests STATE so that it can also be used
-; interpretively.  (ANSI doesn't require this.)
-    immed(TWOLITERAL,2LITERAL,docolon)
-        DW STATE,FETCH,qbranch,DLITER1
-        DW lit,dlit,COMMAXT,COMMA,COMMA
-DLITER1: DW EXIT
-
     ; INPUT/OUTPUT ==================================
 
     ;C EMIT   char --        output character
@@ -1342,14 +1333,6 @@ DOTS2:  DW EXIT
         ld b,h
         ld c,l
         next
-
-;C 2>R   d --           2 to R
-    head(TWOTOR,2>R,docolon)
-        DW SWOP,RFROM,SWOP,TOR,SWOP,TOR,TOR,EXIT
-
-;C 2R>   d --           fetch 2 from R
-    head(TWORFROM,2R>,docolon)
-        DW RFROM,RFROM,RFROM,SWOP,ROT,TOR,EXIT
 
 TNEGATE:
         call docolon

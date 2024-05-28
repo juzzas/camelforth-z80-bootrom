@@ -161,23 +161,14 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
         dw lit,'[',EMIT
         dw EXIT
 
-;Z CLS  ( --  clear screen )
-;    VT-ESC ." 2J"
-    head(CLS,CLS,docolon)
-        dw VT_ESC, XSQUOTE
-        db 2,"2J"
-        dw TYPE
-        dw EXIT
+;C 2>R   d d --           2 cells to R
+    head(TWOTOR,2>R,docolon)
+        DW SWOP,RFROM,SWOP,TOR,SWOP,TOR,TOR,EXIT
 
-;Z AT-XY  ( x y -- move cursor to x,y )
-;    VT-ESC 1+ (.) TYPE ." ;" 1+ (.) TYPE ." H" ;
-    head(AT_XY,AT-XY,docolon)
-        dw VT_ESC
-        dw ONEPLUS,XDOT,TYPE
-        dw lit,';',EMIT
-        dw ONEPLUS,XDOT,TYPE
-        dw lit,'H',EMIT
-        dw EXIT
+;C 2R>   -- d d           fetch 2 cells from R
+    head(TWORFROM,2R>,docolon)
+        DW RFROM,RFROM,RFROM,SWOP,ROT,TOR,EXIT
+
 
 ; RC2014 EXTENDED STRUCTURES ====================
 

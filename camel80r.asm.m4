@@ -148,6 +148,33 @@ DUMP1:
         DW II,CFETCH,DOT,xloop,DUMP1
         DW EXIT
 
+;Z PAGE  ( --  clear screen )
+;    VT-ESC ." 2J"
+    head(PAGE,PAGE,docolon)
+        dw lit,12,EMIT
+        dw EXIT
+
+;Z AT-XY  ( x y -- move cursor to x,y )
+;    VT-ESC 1+ (.) TYPE ." ;" 1+ (.) TYPE ." H" ;
+    head(AT_XY,AT-XY,docolon)
+        dw lit,0x1b,EMIT
+        dw lit,'[',EMIT
+        dw ONEPLUS,XDOT,TYPE
+        dw lit,';',EMIT
+        dw ONEPLUS,XDOT,TYPE
+        dw lit,'H',EMIT
+        dw EXIT
+
+;C 2LITERAL  x1 x2 --    append double numeric literal
+;   STATE @ IF ['] DLIT ,XT , , THEN ; IMMEDIATE
+; This tests STATE so that it can also be used
+; interpretively.  (ANSI doesn't require this.)
+    immed(TWOLITERAL,2LITERAL,docolon)
+        DW STATE,FETCH,qbranch,DLITER1
+        DW lit,dlit,COMMAXT,COMMA,COMMA
+DLITER1: DW EXIT
+
+
 ; HEXLOAD implementation ==========================
 
 ;Z IHXCRC+  ( c -- )
