@@ -140,6 +140,20 @@ BACKSLASH:
     DW lit,13,WORD,DROP
     DW EXIT
 
+;X SLITERAL    c-addr u --    compile string literal
+;    ['] (S") ,XT
+;    DUP C,     ( store size )
+;    HERE   OVER ALIGNED ALLOT
+;    SWAP MOVE
+;   ; IMMEDIATE
+    immed(SLITERAL,SLITERAL,docolon)
+        DW lit,XSQUOTE,COMMAXT
+        DW DUP,CCOMMA
+        DW HERE,OVER,ALIGNED,ALLOT
+        DW SWOP,MOVE
+        DW EXIT
+
+
 ;Z DUMP  ( caddr len -- )
 ;   OVER + SWAP DO I C@ . LOOP ;
     head(DUMP,DUMP,docolon)
@@ -164,16 +178,6 @@ DUMP1:
         dw ONEPLUS,XDOT,TYPE
         dw lit,'H',EMIT
         dw EXIT
-
-;C 2LITERAL  x1 x2 --    append double numeric literal
-;   STATE @ IF ['] DLIT ,XT , , THEN ; IMMEDIATE
-; This tests STATE so that it can also be used
-; interpretively.  (ANSI doesn't require this.)
-    immed(TWOLITERAL,2LITERAL,docolon)
-        DW STATE,FETCH,qbranch,DLITER1
-        DW lit,dlit,COMMAXT,COMMA,COMMA
-DLITER1: DW EXIT
-
 
 ; HEXLOAD implementation ==========================
 

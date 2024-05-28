@@ -169,6 +169,16 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
     head(TWORFROM,2R>,docolon)
         DW RFROM,RFROM,RFROM,SWOP,ROT,TOR,EXIT
 
+;C 2LITERAL  x1 x2 --    append double numeric literal
+;   STATE @ IF ['] DLIT ,XT , , THEN ; IMMEDIATE
+; This tests STATE so that it can also be used
+; interpretively.  (ANSI doesn't require this.)
+    immed(TWOLITERAL,2LITERAL,docolon)
+        DW STATE,FETCH,qbranch,DLITER1
+        DW lit,dlit,COMMAXT,COMMA,COMMA
+DLITER1: DW EXIT
+
+
 
 ; RC2014 EXTENDED STRUCTURES ====================
 
@@ -178,6 +188,35 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
         dec bc
         dec bc
         next
+
+;C CODE:   --      create an empty code definition
+;   CURRENT @ WID>NFA , 0 C,         link & `immed' field
+;   HERE CURRENT @ WID>NFA!           new "latest" link
+;   BL WORD C@ 1+ ALLOT         name field
+    head(CODECOLON,CODE:,docolon)
+        DW CURRENT,FETCH,WIDTONFA,COMMA,lit,0,CCOMMA
+        DW HERE,CURRENT,FETCH,WIDTONFASTORE
+        DW BL,WORD,CFETCH,ONEPLUS,ALLOT
+        DW EXIT
+
+
+;C ;CODE   --      end a code definition
+    head(SEMICODE,;CODE,docolon)
+        DW lit,semicode_block,HERE
+        DW lit,semicode_block_len,MOVE
+        DW lit,semicode_block_len,ALLOT
+        DW EXIT
+
+semicode_block:
+        DB 0xeb   ;  ex de,hl
+        DB 0x5e   ;  ld e,(hl)
+        DB 0x23   ;  inc hl
+        DB 0x56   ;  ld d,(hl)
+        DB 0x23   ;  inc hl
+        DB 0xeb   ;  ex de,hl
+        DB 0xe9   ;  jp (hl)
+defc semicode_block_len = 7
+
 
 ; http://www.forth.org/svfig/Len/softstak.htm
 

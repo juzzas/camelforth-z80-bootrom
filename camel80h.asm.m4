@@ -329,6 +329,7 @@ SECTION code_user
             dw TOR,TOR,TWODUP,RFROM,RFROM
             dw TWOSWAP,EXIT
 
+
     ; INPUT/OUTPUT ==================================
 
     ;C EMIT   char --        output character
@@ -492,19 +493,6 @@ SECTION code_user
     immed(DOTQUOTE,.",docolon)
         DW SQUOTE
         DW lit,TYPE,COMMAXT
-        DW EXIT
-
-;X SLITERAL    c-addr u --    compile string literal
-;    ['] (S") ,XT
-;    DUP C,     ( store size )
-;    HERE   OVER ALIGNED ALLOT
-;    SWAP MOVE
-;   ; IMMEDIATE
-    immed(SLITERAL,SLITERAL,docolon)
-        DW lit,XSQUOTE,COMMAXT
-        DW DUP,CCOMMA
-        DW HERE,OVER,ALIGNED,ALLOT
-        DW SWOP,MOVE
         DW EXIT
 
 ; NUMERIC OUTPUT ================================
@@ -1390,10 +1378,9 @@ tdiv1:
 ;   ABORT ;
     head(COLD,COLD,docolon)
         DW UINIT,U0,NINIT,CMOVE
-        DW XSQUOTE
-        DB 35,"Z80 CamelForth v1.02  25 Jan 1995"
-        DB 0dh,0ah
-        DW TYPE
+        DW lit,camel_signon
+        DW lit,camel_signon_len
+        DW TYPE,CR
         DW lit,65535,RAMTOP,STORE
         ;DW lit,0,INTVEC,STORE
         ;DW lit,0,RST30VEC,STORE
@@ -1420,10 +1407,12 @@ COLD2:  DW TYPE,CR
 ;   ." Z80 CamelForth etc."
 ;   ABORT ;
     head(WARM,WARM,docolon)
-        DW XSQUOTE
-        DB 47,"Z80 CamelForth v1.02  25 Jan 1995 (warmstart)"
-        DB 0dh,0ah
+        DW lit,camel_signon
+        DW lit,camel_signon_len
         DW TYPE
+        DW XSQUOTE
+        DB 7," (warm)"
+        DW TYPE,CR
         DW ROM16KQ,qbranch,WARM1
         DW SLASH16KROM
 WARM1:
@@ -1463,6 +1452,9 @@ CONTEXT1:
             dw EXIT
 
 
+camel_signon:
+        DB "Z80 CamelForth v1.02  25 Jan 1995"
+	defc camel_signon_len = 33
 
 SECTION data_user
 
