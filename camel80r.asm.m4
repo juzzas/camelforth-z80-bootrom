@@ -128,7 +128,15 @@ SECTION code_user
 ; RC2014 EXTENSION misc ======================
 ;Z \   (  --     comment to end of line )
 ;   13 WORD DROP ;
-   head(BACKSLASH,``\\'',docolon)
+dnl   head(BACKSLASH,``\'',docolon)
+    ; macro doesn't like the \ character, so manually build this word
+    DW CALL_link
+    DB 0
+BACKSLASH_link:
+    define(`link', `BACKSLASH_link')
+    DEFM 1,0x5c
+BACKSLASH:
+    call docolon
     DW lit,13,WORD,DROP
     DW EXIT
 
