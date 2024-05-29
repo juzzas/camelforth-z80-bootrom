@@ -287,7 +287,7 @@ wrByte:
 
     jp ide_wait_ready           ;wait until the write is complete
 
-SECTION     data_user
+SECTION     bss_user
 cflash_init_flag: defb 0
 
 SECTION     code_user

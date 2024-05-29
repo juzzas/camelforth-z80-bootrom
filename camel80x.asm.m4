@@ -1006,7 +1006,7 @@ BLKCTXMAP1:
         dw EXIT
 
 
-SECTION bss_user
+SECTION data_user
 
 BLKCTX_PTR:
         DEFW 0,0,0,0
