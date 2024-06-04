@@ -1322,6 +1322,15 @@ DOTS2:  DW EXIT
         ld c,l
         next
 
+;C 2>R   d d --           2 cells to R
+    head(TWOTOR,2>R,docolon)
+        DW SWOP,RFROM,SWOP,TOR,SWOP,TOR,TOR,EXIT
+
+;C 2R>   -- d d           fetch 2 cells from R
+    head(TWORFROM,2R>,docolon)
+        DW RFROM,RFROM,RFROM,SWOP,ROT,TOR,EXIT
+
+
 TNEGATE:
         call docolon
         DW TOR,TWODUP,OR,DUP,qbranch,TNEG1,DROP,DNEGATE,lit,1
