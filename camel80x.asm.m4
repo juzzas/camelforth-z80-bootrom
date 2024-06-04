@@ -161,14 +161,6 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
         dw lit,'[',EMIT
         dw EXIT
 
-;C 2>R   d d --           2 cells to R
-    head(TWOTOR,2>R,docolon)
-        DW SWOP,RFROM,SWOP,TOR,SWOP,TOR,TOR,EXIT
-
-;C 2R>   -- d d           fetch 2 cells from R
-    head(TWORFROM,2R>,docolon)
-        DW RFROM,RFROM,RFROM,SWOP,ROT,TOR,EXIT
-
 ;C 2LITERAL  x1 x2 --    append double numeric literal
 ;   STATE @ IF ['] DLIT ,XT , , THEN ; IMMEDIATE
 ; This tests STATE so that it can also be used
