@@ -40,7 +40,7 @@ SECTION code_user_16k
         DW lit,VOCAB_WORDLIST_WID,lit,FORTH_WORDLIST_WID,lit,2,SET_ORDER
         DW lit,FORTH_WORDLIST_WID,CURRENT,STORE
         DW lit,VOCAB_WORDLIST_WID,VOCLINK,STORE
-        DW lit,CF_BLOCK_READWRITE,BLKRWVEC,STORE
+        DW lit,BLOCK_READWRITE,BLKRWVEC,STORE
         DW SLASHBLKCTX
         dw EXIT
 
@@ -1011,54 +1011,117 @@ BLKCTX_IDX:
 
 SECTION code_user_16k
 
-;Z CF-BLOCK-READ  ( dsk blk adrs -- )   Compact Flash read block  BLK and DSK
-; Reads the block from the Compact Flash card into memory
+EXTERN cflash_init
+;Z /CFLASH   ( -- ) initialise the Compact Flash driver
+;   clash_init CALL    ( f )
+;   IF  ." CFLASH INITIALISED"
+;   ELSE ." NO CFLASH" THEN ;
+    head(SLASHCFLASH,/CFLASH,docolon)
+        dw lit,cflash_init,CALL
+        dw qbranch,SLASHCFLASH1
+        dw XSQUOTE
+        db 18,"CFLASH INITIALISED"
+        dw TYPE,EXIT
+SLASHCFLASH1:
+        dw XSQUOTE
+        db 9,"NO CFLASH"
+        dw TYPE
+        dw EXIT
+
+EXTERN cflash_read_sector
+;Z CF-SECTOR-READ  ( lba-l lba-h adrs -- )   Compact Flash read sector at LBA
+; Reads the sector from the Compact Flash card into memory
 ; address found at 'adrs'. 'dsk' and 'blk' are the disk
 ; and block numbers respectively
-    head(CF_BLOCK_READ,CF-BLOCK-READ,docolon)
-BLOCK_READ1:
-        dw lit,cflash_read_block,CALL
-        dw branch,BLOCK_READ3
+;   clash_read_sector CALL ;
+    head(CF_SECTOR_READ,CF_SECTOR_READ,docolon)
+        dw XSQUOTE
+        db 13,"sector-read: "
+        dw TYPE,DOTS,CR
+        dw lit,cflash_read_sector,CALL
+        dw XSQUOTE
+        db 13,"sector-post: "
+        dw TYPE,DOTS,CR
+        dw branch,SECTOR_READ3
 
-BLOCK_READ2:
+SECTOR_READ2:
         dw INVERT,XSQUOTE
         db 9,"NO DRIVER"
         dw QABORT,EXIT
 
-BLOCK_READ3:
+SECTOR_READ3:
         dw INVERT,XSQUOTE
         db 10,"READ ERROR"
         dw QABORT
         dw EXIT
 
-;Z BLOCK-WRITE  ( dsk blk adrs -- )  Compact Flash write BLK and DSK
-; Reads the block from the Compact Flash card into memory
-; address found at 'adrs'. 'dsk' and 'blk' are the disk
-; and block numbers respectively
-    head(CF_BLOCK_WRITE,CF-BLOCK-WRITE,docolon)
-BLOCK_WRITE1:
-        dw lit,cflash_write_block,CALL
-        dw branch,BLOCK_WRITE3
+EXTERN cflash_write_sector
+;Z CF-SECTOR-WRITE  ( lba-l lba-h adrs -- )   Compact Flash write sector at LBA
+;   clash_write_sector CALL ;
+    head(CF_SECTOR_WRITE,CF_SECTOR_WRITE,docolon)
+        dw lit,cflash_write_sector,CALL
+        dw branch,SECTOR_WRITE3
 
-BLOCK_WRITE2:
+SECTOR_WRITE2:
         dw INVERT,XSQUOTE
         db 9,"NO DRIVER"
         dw QABORT,EXIT
 
-BLOCK_WRITE3:
+SECTOR_WRITE3:
         dw INVERT,XSQUOTE
         db 11,"WRITE ERROR"
         dw QABORT
         dw EXIT
+        dw EXIT
 
-;Z CF-BLOCK-READWRITE  ( dsk blk adrs f -- )  read or write block
-;     IF  CF-BLOCK-WRITE  ELSE  CF-BLOCK-READ  THEN ;
-    head(CF_BLOCK_READWRITE,CF-BLOCK-READWRITE,docolon)
-        dw qbranch,CFBRW1
-        dw CF_BLOCK_WRITE,branch,CFBRW2
-CFBRW1:
-        dw CF_BLOCK_READ
-CFBRW2:
+;Z BLK2LBA   ( dsk blk -- LBA-L LBA-H )
+;  DUP 8000 AND  IF 1 ELSE 0 THEN SWAP
+;  2*   ( dsk cry blk' )
+;  ROT ROT + ;
+    head(BLK2LBA,BLK2LBA,docolon)
+        ; TODO: fix to use 8MB slices instead of multiples of 64MB
+        dw DUP,lit,0x8000,AND,qbranch,B2LBA1
+        dw lit,1
+        dw branch,B2LBA2
+B2LBA1:
+        dw lit,0
+B2LBA2:
+        dw SWOP,TWOSTAR
+        dw ROT,ROT,PLUS
+        dw EXIT
+
+
+;Z BLOCK-READ  ( dsk blk adrs -- )  Compact Flash read BLK and DSK
+; Reads the block from the Compact Flash card into memory
+; address found at 'adrs'. 'dsk' and 'blk' are the disk
+; and block numbers respectively
+;     >R BLK2LBA 2DUP R@   ( LBA-L LBA-H LBA-L LBA-H adrs ;  R: adrs )
+;     CF_SECTOR_READ       ( LBA-L LBA-H ;  R: adrs )
+;     1 S>D D+             ( LBA-L' LBA-H' ;  R: adrs )
+;     R>  512 +            ( LBA-L' LBA-H' adrs' )
+;     CF_SECTOR_READ
+;     EXIT
+    head(BLOCK_READ,BLOCK-READ,docolon)
+        dw DOTS,CR
+        dw TOR,BLK2LBA,TWODUP,RFETCH    ; convert block to LBA
+        dw CF_SECTOR_READ
+        dw DOTS,CR
+        dw lit,1,STOD,DPLUS
+        dw RFROM,lit,512,PLUS
+        dw CF_SECTOR_READ
+        dw DOTS,CR
+        dw EXIT
+
+;Z BLOCK-WRITE  ( dsk blk adrs -- )  Compact Flash write BLK and DSK
+; Writes the block to the Compact Flash card from memory
+; address found at 'adrs'. 'dsk' and 'blk' are the disk
+; and block numbers respectively
+    head(BLOCK_WRITE,BLOCK-WRITE,docolon)
+        dw TOR,BLK2LBA,TWODUP,RFETCH    ; convert block to LBA
+        dw CF_SECTOR_WRITE
+        dw SWOP,ONEPLUS,SWOP
+        dw RFROM,lit,512,PLUS
+        dw CF_SECTOR_WRITE
         dw EXIT
 
 ;Z BLOCK-READWRITE    ( ctx f -- )  read or write block
@@ -1070,7 +1133,7 @@ CFBRW2:
 ;     R@ BLKCTX>BUFFER @
 ;     0 R@ BLKCTX>FLAGS !
 ;     R> DROP  R>      ( dsk blk adrs f )
-;     BLKRWVEC @ EXECUTE ;
+;     IF BLOCK-WRITE ELSE BLOCK-READ ;
     head(BLOCK_READWRITE,BLOCK-READWRITE,docolon)
         dw TOR,TOR
         dw RFETCH,BLKCTXTODISK,FETCH
@@ -1079,7 +1142,11 @@ CFBRW2:
         dw RFETCH,BLKCTXTOBUFFER,FETCH
         dw lit,0,RFETCH,BLKCTXTOFLAGS,STORE
         dw RFROM,DROP,RFROM
-        dw BLKRWVEC,FETCH,EXECUTE
+        dw qbranch,BLOCK_READWRITE1
+        dw BLOCK_WRITE,branch,BLOCK_READWRITE2
+BLOCK_READWRITE1:
+        dw BLOCK_READ
+BLOCK_READWRITE2:
         dw EXIT
 
 ;Z (BUFFER)      n -- ctx    get buffer context

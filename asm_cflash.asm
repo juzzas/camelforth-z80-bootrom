@@ -38,68 +38,38 @@ defc __IDE_CMD_FEATURE = 0xEF
 defc __CF_8BIT = 0x01
 defc __CF_NOCACHE =	0x82
 
-PUBLIC cflash_read_block
-cflash_read_block:
-    ld a,(cflash_init_flag)
-    or a
-    call z, cflash_init
 
+PUBLIC cflash_read_sector
+cflash_read_sector:
     rst 0x28    ; read buffer_ptr from TOS
     ld hl, bc
 
-    rst 0x28    ; read block number from TOS
-    ld de, bc
-
-    rst 0x28    ; read disk number from TOS to BC
-
-    ; convert disk and block number to LBA
-    sla e
-    sra d
-    sra c
-    sra b
-
+    rst 0x28    ; read LBA-high from TOS
     push bc
-    push de
-    and a
-    call ide_read_sector
-    jr nc, read_write_error
-    pop de
-    pop bc
-    inc e
+
+    rst 0x28    ; read LBA-low from TOS to BC
+    ld de,bc
+
+    pop bc      ; bcde = LBA
+
     and a
     call ide_read_sector
     jr nc, read_write_error
     jp read_write_ok
 
-PUBLIC cflash_write_block
-cflash_write_block:
-    ld a,(cflash_init_flag)
-    or a
-    call z, cflash_init
-
+PUBLIC cflash_write_sector
+cflash_write_sector:
     rst 0x28    ; read buffer_ptr from TOS
     ld hl, bc
 
-    rst 0x28    ; read block number from TOS
-    ld de, bc
-
-    rst 0x28    ; read disk number from TOS
-
-    ; convert disk and block number to LBA
-    sla e
-    sra d
-    sra c
-    sra b
-
+    rst 0x28    ; read LBA-high from TOS
     push bc
-    push de
-    and a
-    call ide_write_sector
-    pop de
-    pop bc
-    jr nc, read_write_error
 
-    inc e
+    rst 0x28    ; read LBA-low from TOS
+    ld de,bc
+
+    pop bc      ; bcde = LBA
+
     and a
     call ide_write_sector
     jr nc, read_write_error
@@ -139,8 +109,14 @@ cflash_init:
 
     call ide_wait_ready
 
-    ld a, 1
-    ld (cflash_init_flag), a
+init_ok:
+    ld bc, 0xffff
+    rst 0x20
+    ret
+
+init_error:
+    ld bc, 0x0000
+    rst 0x20
     ret
 
 ; set up the drive LBA registers
@@ -287,7 +263,4 @@ wrByte:
 
     jp ide_wait_ready           ;wait until the write is complete
 
-SECTION     bss_user
-cflash_init_flag: defb 0
-
-SECTION     code_user
+SECTION     code_user_16k
