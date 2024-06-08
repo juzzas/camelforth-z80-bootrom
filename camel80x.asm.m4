@@ -1035,13 +1035,7 @@ EXTERN cflash_read_sector
 ; and block numbers respectively
 ;   clash_read_sector CALL ;
     head(CF_SECTOR_READ,CF_SECTOR_READ,docolon)
-        dw XSQUOTE
-        db 13,"sector-read: "
-        dw TYPE,DOTS,CR
         dw lit,cflash_read_sector,CALL
-        dw XSQUOTE
-        db 13,"sector-post: "
-        dw TYPE,DOTS,CR
         dw branch,SECTOR_READ3
 
 SECTOR_READ2:
@@ -1102,14 +1096,11 @@ B2LBA2:
 ;     CF_SECTOR_READ
 ;     EXIT
     head(BLOCK_READ,BLOCK-READ,docolon)
-        dw DOTS,CR
         dw TOR,BLK2LBA,TWODUP,RFETCH    ; convert block to LBA
         dw CF_SECTOR_READ
-        dw DOTS,CR
         dw lit,1,STOD,DPLUS
         dw RFROM,lit,512,PLUS
         dw CF_SECTOR_READ
-        dw DOTS,CR
         dw EXIT
 
 ;Z BLOCK-WRITE  ( dsk blk adrs -- )  Compact Flash write BLK and DSK
