@@ -97,8 +97,8 @@ SECTION code_user
     ;  22 USER DSK
     ;  24 USER BLKOFFSET
     ;  26 USER BLKLIMIT
-    ;  28 USER BLKRWVEC
-    ;  30 USER BLKWRITEVEC
+    ;  28 USER SECTWRVEC
+    ;  30 USER SECTRDVEC
     ;  32 USER SCR
     ;  34 USER REC-USERVEC
 
@@ -159,8 +159,8 @@ SECTION code_user
             DW 1            ; DSK
             DW 0            ; BLKOFFSET
             DW 8192         ; BLKLIMIT
-            DW 0  ;  CF_BLOCK_READWRITE            ; BLKRWVEC
-            DW 0            ; BLKWRITEVEC                30
+            DW NOOP         ; SECTWRVEC
+            DW NOOP         ; SECTRDVEC                  30
             DW 0            ; SCR
             DW 0            ; REC-USERVEC
             DW 1            ; CURRENT

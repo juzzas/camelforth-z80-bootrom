@@ -40,7 +40,8 @@ SECTION code_user_16k
         DW lit,VOCAB_WORDLIST_WID,lit,FORTH_WORDLIST_WID,lit,2,SET_ORDER
         DW lit,FORTH_WORDLIST_WID,CURRENT,STORE
         DW lit,VOCAB_WORDLIST_WID,VOCLINK,STORE
-        DW lit,BLOCK_READWRITE,BLKRWVEC,STORE
+        DW lit,NOOP,SECTWRVEC,STORE
+        DW lit,NOOP,SECTRDVEC,STORE
         DW SLASHBLKCTX
         dw EXIT
 
@@ -64,14 +65,14 @@ SECTION code_user_16k
         head(BLKLIMIT,BLKLIMIT,douser)
             dw 26
 
-    ;Z BLKRWVEC   -- a-addr  if set, use XT to read block
-    ;  28 USER BLKRWVEC
-        head(BLKRWVEC,BLKRWVEC,douser)
+    ;Z SECTWRVEC   -- a-addr  if set, use XT to write sector
+    ;  28 USER SECTWRVEC   ( LBA-L LBA-H adrs )
+        head(SECTWRVEC,SECTWRVEC,douser)
             dw 28
 
-    ;Z BLKWRITEVEC   -- a-addr  if set, use XT to write block
-    ;  30 USER BLKWRITEVEC
-        head(BLKWRITEVEC,BLKWRITEVEC,douser)
+    ;Z SECTRDVEC   -- a-addr  if set, use XT to read sector
+    ;  30 USER SECTRDVEC    ( LBA-L LBA-H adrs )
+        head(SECTRDVEC,SECTRDVEC,douser)
             dw 30
 
     ;Z SCR          -- a-addr  last edited screen number
@@ -1014,11 +1015,16 @@ SECTION code_user_16k
 EXTERN cflash_init
 ;Z /CFLASH   ( -- ) initialise the Compact Flash driver
 ;   clash_init CALL    ( f )
-;   IF  ." CFLASH INITIALISED"
+;   IF
+;      ' CF-SECTOR-READ  SECTRDVEC !
+;      ' CF-SECTOR-WRITE  SECTWRVEC !
+;       ." CFLASH INITIALISED"
 ;   ELSE ." NO CFLASH" THEN ;
     head(SLASHCFLASH,/CFLASH,docolon)
         dw lit,cflash_init,CALL
         dw qbranch,SLASHCFLASH1
+        dw lit,CF_SECTOR_READ,SECTRDVEC,STORE
+        dw lit,CF_SECTOR_WRITE,SECTWRVEC,STORE
         dw XSQUOTE
         db 18,"CFLASH INITIALISED"
         dw TYPE,EXIT
@@ -1100,7 +1106,7 @@ B2LBA2:
         dw CF_SECTOR_READ
         dw lit,1,STOD,DPLUS
         dw RFROM,lit,512,PLUS
-        dw CF_SECTOR_READ
+        dw SECTRDVEC,FETCH,EXECUTE
         dw EXIT
 
 ;Z BLOCK-WRITE  ( dsk blk adrs -- )  Compact Flash write BLK and DSK
@@ -1112,7 +1118,7 @@ B2LBA2:
         dw CF_SECTOR_WRITE
         dw SWOP,ONEPLUS,SWOP
         dw RFROM,lit,512,PLUS
-        dw CF_SECTOR_WRITE
+        dw SECTWRVEC,FETCH,EXECUTE
         dw EXIT
 
 ;Z BLOCK-READWRITE    ( ctx f -- )  read or write block
