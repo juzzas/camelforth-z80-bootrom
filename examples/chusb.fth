@@ -99,7 +99,7 @@ CREATE CHBUFFER 65 CHARS ALLOT
 
 
 ( read multiple 64 byte chunks )
-: CHRDBLK ( LBA-L LBA-H buffer -- )
+: CH-SECTOR-READ ( LBA-L LBA-H buffer -- )
    CHRESET
    blkptr !     ( save buffer )
    90 TDELAY
@@ -121,7 +121,7 @@ CREATE CHBUFFER 65 CHARS ALLOT
        40 blkptr +!
    LOOP   ;
 
-: CHWRBLK ( LBA-L LBA-H buffer -- )
+: CH-SECTOR-WRITE ( LBA-L LBA-H buffer -- )
    CHRESET
    blkptr !     ( save buffer )
    90 TDELAY
@@ -151,6 +151,8 @@ CREATE CHBUFFER 65 CHARS ALLOT
 : /CHUSB
    CHCHECK? IF
      CHRESET
+     ' CH-SECTOR-READ  SECTRDVEC !
+     ' CH-SECTOR-WRITE SECTWRVEC !
      ." CHUSB OK" CR
    ELSE
     ." NO CHUSB" CR EXIT
@@ -172,28 +174,6 @@ CREATE CHBUFFER 65 CHARS ALLOT
    CHUSBRD
  ;
 
-
-: BLK2LBA   ( dsk blk -- LBA-L LBA-H )
-  DUP 8000 AND  IF 1 ELSE 0 THEN SWAP
-  2*   ( dsk cry blk' )
-  ROT ROT + ;
-  
-
-
-: CH-BLOCK-READ  ( dsk blk adrs -- )
-   >R  BLK2LBA 2DUP
-   R@  CHRDBLK
-   SWAP 1+ SWAP R> 200 + CHRDBLK  ;
-
-: CH-BLOCK-WRITE  ( dsk blk adrs -- )
-   >R  BLK2LBA 2DUP
-   R@  CHWRBLK
-   SWAP 1+ SWAP R>  200 + CHWRBLK   ;
-
-: CH-BLOCK-READWRITE  ( dsk blk adrs f -- ) 
-   IF  CH-BLOCK-WRITE  ELSE  CH-BLOCK-READ  THEN ;
-
-' CH-BLOCK-READWRITE  BLKRWVEC !
 
 /CHUSB
 CHDISKSIZE   CHBUFFER 10 MEMDUMP
