@@ -20,6 +20,8 @@ HEX
 51 CONSTANT CHCMD_RET_SUCCESS
 5F CONSTANT CHCMD_RET_ABORT
 
+VARIABLE blkptr 0 blkptr !
+
 : CHPOLL  ( -- status )
    BEGIN
       CHPORT_CMD PC@ 80 AND UNTIL
@@ -69,6 +71,15 @@ CREATE CHBUFFER 65 CHARS ALLOT
 : CHUSBRD
    CHCMD_RD CHPORT_CMD PC!  90 TDELAY  CHRD  ;
 
+: CHUSBWR  ( -- )
+   CHCMD_WR CHPORT_CMD PC!  90 TDELAY
+   blkptr @
+   40 CHPORT_DATA PC!
+   40 0 DO
+      DUP  C@  CHPORT_DATA PC!  1+
+   LOOP
+   [CHAR] + EMIT  ;
+
 : CHWR ( -- )
    CHBUFFER C@
    0 DO
@@ -86,10 +97,9 @@ CREATE CHBUFFER 65 CHARS ALLOT
    FF00 AND 8 RSHIFT  CHPORT_DATA PC!
    1                  CHPORT_DATA PC!  ( 1 sector )  ;
 
-VARIABLE blkptr 0 blkptr !
 
 ( read multiple 64 byte chunks )
-: CHRDBLK ( LBA-L LBA-H buffer -- )
+: CH-SECTOR-READ ( LBA-L LBA-H buffer -- )
    CHRESET
    blkptr !     ( save buffer )
    90 TDELAY
@@ -111,6 +121,25 @@ VARIABLE blkptr 0 blkptr !
        40 blkptr +!
    LOOP   ;
 
+: CH-SECTOR-WRITE ( LBA-L LBA-H buffer -- )
+   CHRESET
+   blkptr !     ( save buffer )
+   90 TDELAY
+
+   CHCMD_DSKWR CHPORT_CMD PC!
+   90 TDELAY
+   LBA>CHBUFFER
+   CHPOLL  DUP .  1E  <> ABORT" WRITE ERROR"
+
+     CHUSBWR
+     40 blkptr +!
+   ." done 1" CR
+   7 0 DO
+       CHUSBWR
+       CHCMD_DSKWRGO   CHPORT_CMD PC!
+     CHPOLL 1E <> ABORT" WRITEGO ERROR"
+       40 blkptr +!
+   LOOP   ;
 
 : CHCHECK?   ( -- f )
    CHCMD_CHECK_EXISTS CHPORT_CMD PC!
@@ -122,6 +151,8 @@ VARIABLE blkptr 0 blkptr !
 : /CHUSB
    CHCHECK? IF
      CHRESET
+     ['] CH-SECTOR-READ  SECTRDVEC !
+     ['] CH-SECTOR-WRITE SECTWRVEC !
      ." CHUSB OK" CR
    ELSE
     ." NO CHUSB" CR EXIT
@@ -143,28 +174,6 @@ VARIABLE blkptr 0 blkptr !
    CHUSBRD
  ;
 
-
-: BLK2LBA   ( dsk blk -- LBA-L LBA-H )
-  DUP 8000 AND  IF 1 ELSE 0 THEN SWAP
-  2*   ( dsk cry blk' )
-  ROT ROT + ;
-  
-
-
-: CH-BLOCK-READ  ( dsk blk adrs -- )
-   >R  BLK2LBA 2DUP
-   R@  CHRDBLK
-   SWAP 1+ SWAP R> 200 + CHRDBLK  ;
-
-: CH-BLOCK-WRITE  ( dsk blk adrs -- )
- (  >R  2DUP )
- (  SWAP R@  CHWRBLK )
- (  1+ SWAP R> CHWRBLK ) ;
-
-: CH-BLOCK-READWRITE  ( dsk blk adrs f -- ) 
-   IF  CH-BLOCK-WRITE  ELSE  CH-BLOCK-READ  THEN ;
-
-' CH-BLOCK-READWRITE  BLKRWVEC !
 
 /CHUSB
 CHDISKSIZE   CHBUFFER 10 MEMDUMP

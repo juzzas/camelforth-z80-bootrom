@@ -1103,7 +1103,7 @@ B2LBA2:
 ;     EXIT
     head(BLOCK_READ,BLOCK-READ,docolon)
         dw TOR,BLK2LBA,TWODUP,RFETCH    ; convert block to LBA
-        dw CF_SECTOR_READ
+        dw SECTRDVEC,FETCH,EXECUTE
         dw lit,1,STOD,DPLUS
         dw RFROM,lit,512,PLUS
         dw SECTRDVEC,FETCH,EXECUTE
@@ -1115,7 +1115,7 @@ B2LBA2:
 ; and block numbers respectively
     head(BLOCK_WRITE,BLOCK-WRITE,docolon)
         dw TOR,BLK2LBA,TWODUP,RFETCH    ; convert block to LBA
-        dw CF_SECTOR_WRITE
+        dw SECTWRVEC,FETCH,EXECUTE
         dw SWOP,ONEPLUS,SWOP
         dw RFROM,lit,512,PLUS
         dw SECTWRVEC,FETCH,EXECUTE
