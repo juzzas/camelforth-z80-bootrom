@@ -1394,22 +1394,18 @@ tdiv1:
         ;DW lit,0,INTVEC,STORE
         ;DW lit,0,RST30VEC,STORE
         DW ROM16KQ,qbranch,COLD1
-        DW XSQUOTE
-        DB 10," - 16K ROM"
         DW lit,65535,lit,flag_rom16k,STORE
         DW SLASH16KROM
         DW lit,FIND_16K,lit,xt_find,STORE
         DW lit,POSTPONE_16K,lit,xt_postpone,STORE
         DW lit,INTERPRET_16K,lit,xt_interpret,STORE
-        DW branch,COLD2
+        DW ABORT
+
 COLD1:  DW lit,lastword8k,LATEST,STORE
-        DW XSQUOTE
-        DB 9," - 8K ROM"
         DW lit,0,lit,flag_rom16k,STORE
         DW lit,FIND_8K,lit,xt_find,STORE
         DW lit,POSTPONE_8K,lit,xt_postpone,STORE
         DW lit,INTERPRET_8K,lit,xt_interpret,STORE
-COLD2:  DW TYPE,CR
         DW ABORT       ; ABORT never returns
 
 ;Z WARM     --      warm start Forth system
