@@ -43,6 +43,9 @@ SECTION code_user_16k
         DW lit,NOOP,SECTWRVEC,STORE
         DW lit,NOOP,SECTRDVEC,STORE
         DW SLASHBLKCTX
+        DW XSQUOTE
+        DB 10," - 16K ROM"
+        DW TYPE,CR
         dw EXIT
 
     ;Z BLK      -- a-addr     block number storage
