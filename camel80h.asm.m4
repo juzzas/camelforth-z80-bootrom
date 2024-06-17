@@ -118,7 +118,7 @@ SECTION code_user
         head(REFILLVEC,REFILLVEC,douser)
             dw 42
 
-    ;Z HANDLER      -- xt    if set, use XT as REFILL source
+    ;Z HANDLER      -- xt    if set, use XT as THROW handler
     ;  44 USER HANDLER
         head(HANDLER,HANDLER,douser)
             dw 44
