@@ -1925,21 +1925,21 @@ REC_IHEX_COMP:
 
 ;: REC-IHEX ( addr len -- src dest n RECTYPE_IHEX   if ok, RECTYPE_NULL if not recognised )
 ;    IHEX? DUP 1 = IF
-;       DROP NIP NIP
+;       DROP
 ;       RECTYPE_NOOP EXIT
 ;    THEN
-;    DUP 0 = IF
-;       DROP NIP NIP
+;    DUP 0= IF
+;       DROP
 ;       RECTYPE_NULL EXIT
 ;    THEN
 ;    DROP RECTYPE_IHEX  ;
     head(REC_IHEX,REC-IHEX,docolon)
         DW IHEXQ,DUP,lit,1,EQUAL,qbranch,REC_IHEX1
-        DW DROP,NIP,NIP
+        DW DROP
         DW RECTYPE_NOOP,EXIT
 REC_IHEX1:
         DW DUP,ZEROEQUAL,qbranch,REC_IHEX2
-        DW DROP,NIP,NIP
+        DW DROP
         DW RECTYPE_NULL,EXIT
 REC_IHEX2:
         DW DROP,RECTYPE_IHEX,EXIT
