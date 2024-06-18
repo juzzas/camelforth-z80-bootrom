@@ -131,11 +131,9 @@ SECTION code_user
 ;
 
 ;------------------------------------------------------------------------------
+; Assume AF and HL are pushed by the interrupt handler
 PUBLIC handle_acia_int
 handle_acia_int:
-        push af
-        push hl
-
         in a,(SER_STATUS_ADDR)      ; get the status of the ACIA
         rrca                        ; check whether a byte has been received, via SER_RDRF
         jr NC,im1_tx_send           ; if not, go check for bytes to transmit
@@ -205,9 +203,6 @@ im1_tei_clear:
 ENDIF
 
 im1_txa_end:
-        pop hl
-        pop af
-
         ret
 
 ;------------------------------------------------------------------------------
