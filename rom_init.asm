@@ -21,10 +21,14 @@
 ; SOFTWARE.
 
 EXTERN acia_init
-
+EXTERN intvec_ptr
+EXTERN nmivec_ptr
 
 SECTION code_crt_init
 
+    ld hl, 0
+    ld (intvec_ptr), hl
+    ld (nmivec_ptr), hl
     call acia_init
 
 

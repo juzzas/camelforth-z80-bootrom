@@ -50,6 +50,8 @@ EXTERN forth_pop
 
 SECTION code_user
 
+jp_hl:
+	jp	(hl)
 
 PUBLIC _z80_rst_08h
 _z80_rst_08h:
@@ -76,7 +78,45 @@ _z80_rst_28h:
 PUBLIC _z80_rst_38h
 _z80_rst_38h:
     di
+    push hl
+    push af
+
     call handle_acia_int
+
+    ld hl, (intvec_ptr)
+    ld a, h
+    or l
+    call nz, jp_hl
+
+    pop af
+    pop hl
     ei
     reti
 
+PUBLIC _z80_nmi
+_z80_nmi:
+    di
+    push hl
+    push af
+
+    ld hl, (nmivec_ptr)
+    ld a, h
+    or l
+    call nz, jp_hl
+
+    pop af
+    pop hl
+    ei
+    retn
+
+SECTION data_user
+
+PUBLIC intvec_ptr
+intvec_ptr:
+        DEFW 0
+
+PUBLIC nmivec_ptr
+nmivec_ptr:
+        DEFW 0
+
+SECTION code_user
