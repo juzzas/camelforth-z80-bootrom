@@ -329,13 +329,17 @@ acia_init:
         LD (serRxInPtr),HL
         LD (serRxOutPtr),HL
 
+IFNDEF ACIA_POLL_TX
         LD HL,serTxBuf              ; Initialise Tx Buffer
         LD (serTxInPtr),HL
         LD (serTxOutPtr),HL
+ENDIF
 
         XOR A                       ; 0 the RXA & TXA Buffer Counts
         LD (serRxBufUsed),A
+IFNDEF ACIA_POLL_TX
         LD (serTxBufUsed),A
+ENDIF
 
         LD A,SER_RESET              ; Master Reset the ACIA
         OUT (SER_CTRL_ADDR),A
