@@ -32,12 +32,6 @@
 ;   "internal" implementation words & extensions.
 ; ===============================================
 
-EXTERN cflash_read_block
-EXTERN cflash_write_block
-
-EXTERN asm_z80_delay_ms
-EXTERN asm_z80_delay_tstate
-
 
 SECTION code_user
 
@@ -53,6 +47,7 @@ ramtop_ptr:
 
 
 SECTION code_user
+EXTERN jp_hl
 
 ;Z CALL       a-addr --    call machine code at address
     head(CALL,CALL,docode)
@@ -61,23 +56,18 @@ SECTION code_user
         ld sp, forth_state_stack_top
         push ix
         push iy
-        ; push hl
         push de
         ld (forth_state_stack_save), sp
 
         ; set up user stack
         ld sp, USER_STACK_TOP    ; end of RAM
 
-        ld hl, call_exit  ; return address
-        push hl
-        ld h,b
-        ld l,c
-        jp (hl)
+        ld hl,bc
+        call jp_hl
 
 call_exit:
         ld sp, (forth_state_stack_save)
         pop de
-        ; pop hl
         pop iy
         pop ix
 
@@ -112,22 +102,19 @@ forth_pop:
 ; forth_callxt --  call Forth XT in HL
 PUBLIC forth_callxt
 forth_callxt:
-        ld (callxt_temp), hl
-
         ld (user_stack_save), sp
 
+        ; get snapshot of Forth state
         ld sp, (forth_state_stack_save)
         pop de
-        ; pop hl
         pop iy
         pop ix
 
         ld sp, (forth_stack_save)
         pop bc   ; fill BC with TOS
 
-        ; set up a new forth thread
+        ; set up a new forth thread, xt in hl
         ld de, callxt_exit_xt
-        ld hl, (callxt_temp)
         jp (hl)              ; jump to xt
 
 callxt_exit:
@@ -154,9 +141,6 @@ forth_state_stack:
 forth_state_stack_top:
 
 forth_state_stack_save:
-        DEFW  0
-
-callxt_temp:
         DEFW  0
 
 SECTION code_user

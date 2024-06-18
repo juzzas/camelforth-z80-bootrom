@@ -32,6 +32,9 @@
 ;   "internal" implementation words & extensions.
 ; ===============================================
 
+EXTERN asm_z80_delay_ms
+EXTERN asm_z80_delay_tstate
+
 
 SECTION code_user_16k
 

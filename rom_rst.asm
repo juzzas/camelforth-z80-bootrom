@@ -51,6 +51,7 @@ EXTERN forth_callxt
 
 SECTION code_user
 
+PUBLIC jp_hl
 jp_hl:
 	jp	(hl)
 
