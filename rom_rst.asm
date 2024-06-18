@@ -45,6 +45,7 @@ EXTERN acia_pollc
 
 EXTERN forth_push
 EXTERN forth_pop
+EXTERN forth_callxt
 
 
 
@@ -74,6 +75,11 @@ _z80_rst_20h:
 PUBLIC _z80_rst_28h
 _z80_rst_28h:
     jp forth_pop
+
+PUBLIC _z80_rst_30h
+_z80_rst_30h:
+    jp forth_callxt
+
 
 PUBLIC _z80_rst_38h
 _z80_rst_38h:
