@@ -1392,7 +1392,6 @@ tdiv1:
         DW TYPE,CR
         DW lit,65535,RAMTOP,STORE
         ;DW lit,0,INTVEC,STORE
-        ;DW lit,0,RST30VEC,STORE
         DW ROM16KQ,qbranch,COLD1
         DW lit,65535,lit,flag_rom16k,STORE
         DW SLASH16KROM

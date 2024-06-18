@@ -99,25 +99,18 @@ SECTION code_user_16k
         head(WORDLISTS,WORDLISTS,douser)
             dw 48
 
-
+EXTERN intvec_ptr
 ;Z INTVEC      -- a-addr   pointer to address holding interrupt vector
 ;  intvec_ptr CONSTANT INTVEC
     head(INTVEC,INTVEC,docon)
         dw intvec_ptr
 
-;Z RST30VEC     -- a-addr   pointer to address holding RST30 vector
-;  intvec_ptr CONSTANT RST30VEC
-    head(RST30VEC,RST30VEC,docon)
-        dw rst30vec_ptr
+EXTERN nmivec_ptr
+;Z NMIVEC      -- a-addr   pointer to address holding interrupt vector
+;  intvec_ptr CONSTANT NMIVEC
+    head(NMIVEC,NMIVEC,docon)
+        dw nmivec_ptr
 
-SECTION data_user
-intvec_ptr:
-        DEFW 0
-
-rst30vec_ptr:
-        DEFW 0
-
-SECTION code_user_16k
 
 dnl ;Z :NONAME       ( -- xt      define anonymous xt )
 dnl ;    CURRENT @ @ , 0 C,    ( last link + immed flag )
