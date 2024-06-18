@@ -61,7 +61,7 @@ SECTION code_user
         ld sp, forth_state_stack_top
         push ix
         push iy
-        push hl
+        ; push hl
         push de
         ld (forth_state_stack_save), sp
 
@@ -77,7 +77,7 @@ SECTION code_user
 call_exit:
         ld sp, (forth_state_stack_save)
         pop de
-        pop hl
+        ; pop hl
         pop iy
         pop ix
 
@@ -118,7 +118,7 @@ forth_callxt:
 
         ld sp, (forth_state_stack_save)
         pop de
-        pop hl
+        ; pop hl
         pop iy
         pop ix
 
