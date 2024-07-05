@@ -24,13 +24,22 @@
 EXTERN main_code_start
 EXTERN main_code_warmstart
 
+EXTERN acia_init
+EXTERN acia_putc
+EXTERN acia_getc
+EXTERN acia_pollc
+
+EXTERN intvec_ptr
+EXTERN nmivec_ptr
+
 PUBLIC _main
 
-SECTION code_user
+SECTION code
 
 DEFC CHAR_CR = 13
 DEFC CHAR_LF = 10
 
+;; _main arrives with interrupts disabled
 _main:
     ld hl, signon_msg
 
@@ -46,10 +55,16 @@ loop_exit:
     jp main_code_start
 
 
-SECTION rodata_user
+SECTION rodata
 
 signon_msg:
     DEFM 13, 10
     DEFM "RC2014 - CamelForth BootROM - STAGING", 13, 10
     DEFM "Ported to RC2014 ROM by Justin Skists", 13, 10, 0
+
+
+SECTION rc2014
+    DEFB 127, 127, 72, 72, 72, 127, 55, 62, 127, 65, 65, 65, 99, 34, 39, 111
+    DEFB 73, 73, 89, 115, 5, 62, 127, 67, 93, 97, 127, 62, 1, 33, 127, 127
+    DEFB 1, 1, 28, 124, 100, 4, 127, 127, 4
 

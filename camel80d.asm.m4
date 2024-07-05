@@ -37,7 +37,7 @@
 ;       addresses are byte-aligned.
 ; ===============================================
 
-SECTION code_user
+SECTION code
 
 ; ALIGNMENT AND PORTABILITY OPERATORS ===========
 ; Many of these are synonyms for other words,

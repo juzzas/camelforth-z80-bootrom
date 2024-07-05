@@ -34,7 +34,7 @@
 
 EXTERN _hexload
 
-SECTION code_user_16k
+SECTION code_16k
 
 ;  RC2014 simple editor =========================
 

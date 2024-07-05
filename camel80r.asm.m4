@@ -33,20 +33,20 @@
 ; ===============================================
 
 
-SECTION code_user
+SECTION code
 
 ;Z RAMTOP      -- a-addr   address of first USER reserved byte
 ;  ramtop_ptr CONSTANT RAMTOP
     head(RAMTOP,RAMTOP,docon)
         dw ramtop_ptr
 
-SECTION data_user
+SECTION data
 
 ramtop_ptr:
-        DEFW 0
+        DEFS 2
 
 
-SECTION code_user
+SECTION code
 EXTERN jp_hl
 
 ;Z CALL       a-addr --    call machine code at address
@@ -128,22 +128,22 @@ callxt_exit:
 callxt_exit_xt:
         DEFW  callxt_exit
 
-SECTION data_user
+SECTION data
 
 forth_stack_save:
-        DEFW  0
+        DEFS 2
 
 user_stack_save:
-        DEFW  0
+        DEFS 2
 
 forth_state_stack:
         DEFS 16
 forth_state_stack_top:
 
 forth_state_stack_save:
-        DEFW  0
+        DEFS 2
 
-SECTION code_user
+SECTION code
 
 ; RC2014 EXTENSION misc ======================
 ;Z \   (  --     comment to end of line )
@@ -385,18 +385,17 @@ IHEXCOMMA:
         DW lit,ihex_length,FETCH
         DW EXIT
 
-SECTION data_user
+SECTION data
 
 ihxcrc_ptr:
-        DW 0
+        DEFS 2
 
 ihex_start:
-        DW 0
+        DEFS 2
 
 ihex_length:
-        DW 0
+        DEFS 2
 
-SECTION code_user
 
 
 
