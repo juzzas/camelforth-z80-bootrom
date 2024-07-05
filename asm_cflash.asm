@@ -6,7 +6,7 @@
 ; March 2018
 ;
 
-SECTION     code_user_16k
+SECTION     code_16k
 
 defc __IO_CF_IDE_DATA = 0x10
 defc __IO_CF_IDE_ERROR = 0x11
@@ -262,5 +262,3 @@ wrByte:
     jr nz,wr4secs
 
     jp ide_wait_ready           ;wait until the write is complete
-
-SECTION     code_user_16k

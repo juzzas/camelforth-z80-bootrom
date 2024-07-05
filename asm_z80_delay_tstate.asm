@@ -11,7 +11,7 @@
 ;
 ; ===============================================================
 
-SECTION code_user_16k
+SECTION code_16k
 
 PUBLIC asm_z80_delay_tstate
 

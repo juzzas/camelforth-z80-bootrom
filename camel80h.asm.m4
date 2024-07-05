@@ -33,7 +33,7 @@
 
 ; SYSTEM VARIABLES & CONSTANTS ==================
 
-SECTION code_user
+SECTION code
 
 ;C BL      -- char            an ASCII space
     head(BL,BL,docon)
@@ -401,12 +401,12 @@ DO_KEY3:   ; line ending is Unix style
     DW DROP
     DW branch,DO_KEY1
 
-SECTION data_user
+SECTION data
 
 LAST_KEY:
-    DW 0
+    DS 2
 
-SECTION code_user
+SECTION code
 
     ;C ACCEPT  c-addr +n -- +n'  get line from term'l
     ;   OVER + 1- OVER      -- sa ea a
@@ -481,12 +481,12 @@ SQUOTE1:
         DW lit,squote_count_ptr,DUP,FETCH,ONEPLUS,SWOP,STORE
         DW EXIT
 
-SECTION data_user
+SECTION data
 
 squote_count_ptr:
-        DEFW 0
+        DEFS 2
 
-SECTION code_user
+SECTION code
 
 ;C ."       --         compile string to print
 ;   POSTPONE S"  POSTPONE TYPE ; IMMEDIATE
@@ -1460,16 +1460,15 @@ camel_signon:
         DB "Z80 CamelForth v1.02  25 Jan 1995"
 	defc camel_signon_len = 33
 
-SECTION data_user
+SECTION data
 
 flag_rom16k:
-        DW 0
-
+        DEFS 2
 xt_interpret:
-        DW INTERPRET_16K
+        DEFS 2
 xt_postpone:
-        DW POSTPONE_16K
+        DEFS 2
 xt_find:
-        DW FIND_16K
+        DEFS 2
 
-SECTION code_user
+SECTION code

@@ -57,7 +57,7 @@
 ; IMMED defines a header for an IMMEDIATE word.
 ;
 
-SECTION code_user
+SECTION code
 
 PUBLIC main_code_start
 PUBLIC main_code_warmstart
@@ -352,9 +352,9 @@ querykey2:
         ld b,0
         next
 
-SECTION data_user
-last_key: db 0
-SECTION code_user
+SECTION data
+last_key: ds 1
+SECTION code
 
 
 ;X BYE     i*x --    return to CP/M
@@ -1087,9 +1087,8 @@ include(camel80r.asm.m4)   ; RC2014 extensions
 camel80_8k_tail:
         defc lastword8k=link       ; nfa of last word in dict for 8K ROM
 
-SECTION code_user_16k
-
-        org 0x2000
+SECTION code_16k
+        ALIGN 0x2000
 
 rom_16k_signature:
         DB "RC2014"

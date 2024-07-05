@@ -35,8 +35,7 @@
 EXTERN asm_z80_delay_ms
 EXTERN asm_z80_delay_tstate
 
-
-SECTION code_user_16k
+SECTION code_16k
 
 ;Z /16KROM    init enhanced features
     head(SLASH16KROM,``/16KROM'',docolon)
@@ -49,6 +48,8 @@ SECTION code_user_16k
         DW XSQUOTE
         DB 10," - 16K ROM"
         DW TYPE,CR
+        DW SLASHCFLASH
+        DW lit,0,DSK,STORE
         dw EXIT
 
     ;Z BLK      -- a-addr     block number storage
@@ -554,12 +555,12 @@ XDDOTW2:
 
 ; https://www.taygeta.com/forth/dpans16.htm#16.6.2.1965
 
-SECTION data_user
+SECTION data
 
 STACK_WORDLISTS:
         ds 34    ; 16 cells + stack top pointer
 
-SECTION code_user_16k
+SECTION code_16k
 
 ;: WORDLIST ( -- wid )
 ; Create a new empty word list, returning its word list identifier wid.
@@ -998,18 +999,15 @@ BLKCTXMAP1:
         dw EXIT
 
 
-SECTION data_user
+SECTION data
 
 BLKCTX_PTR:
-        DEFW 0,0,0,0
-        DEFW 0,0,0,0
-        DEFW 0,0,0,0
-        DEFW 0,0,0,0
+        DEFS 32  ;  4 * 4 words
 
 BLKCTX_IDX:
-        DEFW 0
+        DEFS 2
 
-SECTION code_user_16k
+SECTION code_16k
 
 EXTERN cflash_init
 ;Z /CFLASH   ( -- ) initialise the Compact Flash driver
@@ -1026,7 +1024,7 @@ EXTERN cflash_init
         dw lit,CF_SECTOR_WRITE,SECTWRVEC,STORE
         dw XSQUOTE
         db 18,"CFLASH INITIALISED"
-        dw TYPE,EXIT
+        dw TYPE,CR,EXIT
 SLASHCFLASH1:
         dw XSQUOTE
         db 9,"NO CFLASH"
