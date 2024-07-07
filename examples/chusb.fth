@@ -23,12 +23,15 @@ HEX
 VARIABLE blkptr 0 blkptr !
 
 : CHPOLL  ( -- status )
-   BEGIN
-      CHPORT_CMD PC@ 80 AND UNTIL
-   1 MS
-   CHCMD_STATUS CHPORT_CMD PC!
-   1 MS
-   CHPORT_DATA PC@ ;
+   BEGIN  ( 7999 0 DO )
+      CHPORT_CMD PC@ 80 AND DUP IF
+        1 MS
+        CHCMD_STATUS CHPORT_CMD PC!
+        1 MS
+        CHPORT_DATA PC@
+        ( UNLOOP ) EXIT
+      THEN  UNTIL ( LOOP )
+   ." timeout"  0 ;
 
 : CHRESET
    BEGIN
@@ -45,9 +48,9 @@ VARIABLE blkptr 0 blkptr !
    1 MS
 
    BEGIN
-   20 MS
+   ( 20 MS )
    CHCMD_DISK_INIT CHPORT_CMD PC!
-   20 MS
+   90 TDELAY  ( 20 MS )
    CHPOLL
    ( ." disk result = "   DUP .    [CHAR] ? EMIT )
    ( 14 = success. TODO fix "no media" currently hangs )
@@ -71,6 +74,14 @@ CREATE CHBUFFER 65 CHARS ALLOT
 : CHUSBRD
    CHCMD_RD CHPORT_CMD PC!  90 TDELAY  CHRD  ;
 
+: CHWR ( -- )
+   CHBUFFER C@
+   0 DO
+      CHBUFFER I 1+ + C@   CHPORT_DATA PC!
+   LOOP
+   ( [CHAR] + EMIT )
+  ;
+
 : CHUSBWR  ( -- )
    CHCMD_WR CHPORT_CMD PC!  90 TDELAY
    blkptr @
@@ -80,28 +91,20 @@ CREATE CHBUFFER 65 CHARS ALLOT
    LOOP
    [CHAR] + EMIT  ;
 
-: CHWR ( -- )
-   CHBUFFER C@
-   0 DO
-      CHBUFFER I 1+ + C@   CHPORT_DATA PC!
-   LOOP
-   ( [CHAR] + EMIT )
-  ;
-
 ( set up LBA, 2 sector read )
 : LBA>CHBUFFER   ( LBA-L LBA-H -- ) 
    SWAP
    DUP FF AND         CHPORT_DATA PC!
-   FF00 AND 8 RSHIFT  CHPORT_DATA PC!
+            8 RSHIFT  CHPORT_DATA PC!
    DUP FF AND         CHPORT_DATA PC!
-   FF00 AND 8 RSHIFT  CHPORT_DATA PC!
+            8 RSHIFT  CHPORT_DATA PC!
    1                  CHPORT_DATA PC!  ( 1 sector )  ;
 
 
 ( read multiple 64 byte chunks )
 : CH-SECTOR-READ ( LBA-L LBA-H buffer -- )
-   CHRESET
    blkptr !     ( save buffer )
+   CHRESET
    90 TDELAY
 
    CHCMD_DSKRD CHPORT_CMD PC!
@@ -122,18 +125,15 @@ CREATE CHBUFFER 65 CHARS ALLOT
    LOOP   ;
 
 : CH-SECTOR-WRITE ( LBA-L LBA-H buffer -- )
-   CHRESET
    blkptr !     ( save buffer )
-   90 TDELAY
+   CHRESET  90 TDELAY
 
    CHCMD_DSKWR CHPORT_CMD PC!
    90 TDELAY
    LBA>CHBUFFER
-   CHPOLL  DUP .  1E  <> ABORT" WRITE ERROR"
 
-     CHUSBWR
-     40 blkptr +!
-   ." done 1" CR
+   CHPOLL  DUP .  1E  <> ABORT" WRITE ERROR"
+   ." done 1.5" CR
    7 0 DO
        CHUSBWR
        CHCMD_DSKWRGO   CHPORT_CMD PC!
@@ -175,7 +175,9 @@ CREATE CHBUFFER 65 CHARS ALLOT
  ;
 
 
+.S CR
 /CHUSB
+.S CR
 CHDISKSIZE   CHBUFFER 10 MEMDUMP
 CHDISKINQ    CHBUFFER 40 MEMDUMP
 
