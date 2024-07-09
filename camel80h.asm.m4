@@ -450,6 +450,20 @@ TYP5:   DW EXIT
         DW RFROM,COUNT,TWODUP,PLUS,ALIGNED,TOR
         DW EXIT
 
+; allocate buffer for S"
+;Z (SBUFFER)      -- c-addr
+;   sbuffer_index_ptr @ 3 AND    ( index )
+;   1+ 7 LSHIFT
+;   SQUOTE_TOP -         ( addr )
+;   1 sbuffer_index_ptr +!  ;
+XSBUFFER:
+        call docolon
+        DW lit,sbuffer_index_ptr,FETCH,lit,0x3,AND
+        DW ONEPLUS,lit,7,LSHIFT
+        DW lit,SQUOTE_TOP,SWOP,MINUS
+        DW lit,1,lit,sbuffer_index_ptr,PLUSSTORE
+        DW EXIT
+
 ;C S"       --         compile in-line string
 ;C S"       -- addr u  interpret in-line string
 ;     supports 4 x 128byte strings at SQUOTE_TOP
@@ -458,12 +472,9 @@ TYP5:   DW EXIT
 ;   22 WORD C@ 1+ ALIGNED ALLOT EXIT
 ;  ELSE
 ;   22 WORD COUNT      ( addr u )
-;   S"COUNT @ 3 AND    ( addr u index )
-;   1+ 7 LSHIFT
-;   SQUOTE_TOP -         ( addr u addr' )
+;   (XSBUFFER)          ( addr u addr' )
 ;   SWAP 2DUP >R >R    ( addr addr' u   r: u addr )
 ;   MOVE R> R>         ( addr u )
-;   S"COUNT DUP @ 1+ SWAP STORE
 ;  THEN  ; IMMEDIATE
     immed(SQUOTE,S",docolon)
         DW STATE,FETCH,qbranch,SQUOTE1
@@ -473,17 +484,14 @@ TYP5:   DW EXIT
 
 SQUOTE1:
         DW lit,22H,WORD,COUNT
-        DW lit,squote_count_ptr,FETCH,lit,0x3,AND
-        DW ONEPLUS,lit,7,LSHIFT
-        DW lit,SQUOTE_TOP,SWOP,MINUS
+        DW XSBUFFER
         DW SWOP,TWODUP,TOR,TOR
         DW MOVE,RFROM,RFROM
-        DW lit,squote_count_ptr,DUP,FETCH,ONEPLUS,SWOP,STORE
         DW EXIT
 
 SECTION data
 
-squote_count_ptr:
+sbuffer_index_ptr:
         DEFS 2
 
 SECTION code
