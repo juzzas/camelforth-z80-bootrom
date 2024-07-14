@@ -854,10 +854,10 @@ REFILL1:
         DW REFILLVEC,FETCH,EXECUTE
         DW EXIT
 
-
-
 ;C EVALUATE  i*x c-addr u -- j*x  interpret string
-;   SOURCE-ID @ R> 'SOURCE 2@ >R >R  >IN @ >R
+;   SOURCE-ID @ R>
+;   -1 SOURCE-ID !
+;   'SOURCE 2@ >R >R  >IN @ >R
 ;   'SOURCE 2! 0 >IN !
 ;   INTERPRET
 ;   R> >IN !  R> R> 'SOURCE 2! R> SOURCE-ID !;
