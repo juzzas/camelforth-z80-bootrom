@@ -166,7 +166,7 @@ SECTION code
             DW 1            ; CURRENT
             DW vocab_lastword            ; VOC-LINK
             DW TOCONSOLE    ; EMITVEC                    40
-            DW 0            ; REFILLVEC
+            DW XREFILL8K   ; REFILLVEC
             DW 0            ; HANDLER
             DW 0            ; SOURCE-ID
             DW 3            ; number of wordlists        48
@@ -841,16 +841,17 @@ INTER6:
 INTER8: DW branch,INTER1
 INTER9: DW DROP,EXIT
 
-;X REFILL      -- f  refill input buffer
-;   SOURCE-ID @ 0= IF
-;     TIB DUP TIBSIZE ACCEPT 'SOURCE 2! 0 >IN ! SPACE -1
-;   ELSE  REFILLVEC @ EXECUTE   THEN   ;
-    head(REFILL,REFILL,docolon)
-        DW SOURCE_ID,FETCH,ZEROEQUAL,qbranch,REFILL1
+;X (REFILL8K)  -- f  refill input buffer
+;     TIB DUP TIBSIZE ACCEPT 'SOURCE 2! 0 >IN ! SPACE -1 ;
+XREFILL8K:
+        call docolon
         DW TIB,DUP,TIBSIZE,ACCEPT,TICKSOURCE,TWOSTORE
-        DW lit,0,TOIN,STORE,SPACE,lit,-1,EXIT
+        DW lit,0,TOIN,STORE,SPACE,lit,-1
+        DW EXIT
 
-REFILL1:
+;X REFILL      -- f  refill input buffer
+;   REFILLVEC @ EXECUTE   ;
+    head(REFILL,REFILL,docolon)
         DW REFILLVEC,FETCH,EXECUTE
         DW EXIT
 
