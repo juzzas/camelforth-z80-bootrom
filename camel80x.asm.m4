@@ -1212,7 +1212,8 @@ UPDATEDQ1:
 ;      BLKCTX>FLAGS 0 SWAP !
 ;    ELSE DROP
 ;    THEN ;
-    head(XFLUSH,(FLUSH),docolon)
+XFLUSH:
+        call docolon
         dw DUP,BLKCTXTOFLAGS,FETCH,lit,-1,EQUAL,qbranch,FLUSH1
         dw DUP,lit,-1,BLOCK_READWRITE
         dw BLKCTXTOFLAGS,lit,0,SWOP,STORE
@@ -1220,10 +1221,21 @@ UPDATEDQ1:
 FLUSH1:
         dw DROP,EXIT
 
-;C FLUSH                    --    flush blocks to disk
+;C EMPTY-BUFFERS          --  release blocks, don't save to disk
+    head(EMPTY_BUFFERS,EMPTY-BUFFERS,docolon)
+        dw SLASHBLKCTX
+        dw EXIT
+
+;C SAVE-BUFFERS           --  save updated blocks to disk
 ;     ' (FLUSH) BLKCTX-MAP  ;
-    head(FLUSH,FLUSH,docolon)
+    head(SAVE_BUFFERS,SAVE-BUFFERS,docolon)
         dw lit,XFLUSH,BLKCTX_MAP
+        dw EXIT
+
+;C FLUSH                   --    flush blocks to disk
+;    SAVE-BUFFERS /BLKCTX  ;
+    head(FLUSH,FLUSH,docolon)
+        dw SAVE_BUFFERS, SLASHBLKCTX
         dw EXIT
 
 ;C LOAD                  n  --    load block n
