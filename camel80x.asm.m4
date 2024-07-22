@@ -827,11 +827,19 @@ FINDNG1:
     head(VOCS,VOCS,docolon)
         DW VOCLINK,FETCH,XWORDS,EXIT
 
-;: VLIST  ( -- )      list all words in search order
-;   (WORDS) STACK_WORDLISTS STACK.MAP ;
-    head(VLIST,VLIST,docolon)
+;Z WORDS_16K ( -- )      list all words in search order
+;   ['] (WORDS) STACK_WORDLISTS STACK.MAP ;
+WORDS_16K:
+        call docolon
         DW lit,XWORDS,lit,STACK_WORDLISTS,STACKMAP
         DW EXIT
+
+;Z VLIST  ( -- )      list all words in current context
+;   CONTEXT (WORDS) ;
+    head(VLIST,VLIST,docolon)
+        DW CONTEXT,XWORDS
+        DW EXIT
+
 ; ================================================
 
 ; PICK  ( xu...x1 x0 u -- xu...x1 x0 xu )

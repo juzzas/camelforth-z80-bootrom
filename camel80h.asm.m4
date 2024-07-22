@@ -1275,7 +1275,8 @@ MOVE2:  DW EXIT
 ;          NFA>LFA @
 ;       REPEAT
 ;   DROP ;
-    head(XWORDS,(WORDS),docolon)
+XWORDS:
+        call docolon
         DW WIDTONFA
         DW DUP,ZEROEQUAL,qbranch,WDS1
         DW DROP,EXIT
@@ -1290,10 +1291,17 @@ WDS3:   DW NFATOLFA,FETCH
 WDS4:
         DW DROP,EXIT
 
-;X WORDS    --          list all words in current wordlist.
+;Z WORDS_8K    --          list all words in current wordlist.
 ;   CONTEXT (WORDS) ;
-    head(WORDS,WORDS,docolon)
+WORDS_8K:
+        call docolon
         DW CONTEXT,XWORDS
+        DW EXIT
+
+;X WORDS    --          list all words in current wordlist.
+;   xt_words @ EXECUTE ;
+    head(WORDS,WORDS,docolon)
+        DW lit,xt_words,FETCH,EXECUTE
         DW EXIT
 
 ;X .S      --           print stack contents
@@ -1407,6 +1415,7 @@ tdiv1:
         DW lit,FIND_16K,lit,xt_find,STORE
         DW lit,POSTPONE_16K,lit,xt_postpone,STORE
         DW lit,INTERPRET_16K,lit,xt_interpret,STORE
+        DW lit,WORDS_16K,lit,xt_words,STORE
         DW ABORT
 
 COLD1:  DW lit,lastword8k,LATEST,STORE
@@ -1414,6 +1423,7 @@ COLD1:  DW lit,lastword8k,LATEST,STORE
         DW lit,FIND_8K,lit,xt_find,STORE
         DW lit,POSTPONE_8K,lit,xt_postpone,STORE
         DW lit,INTERPRET_8K,lit,xt_interpret,STORE
+        DW lit,WORDS_8K,lit,xt_words,STORE
         DW ABORT       ; ABORT never returns
 
 ;Z WARM     --      warm start Forth system
@@ -1478,6 +1488,8 @@ xt_interpret:
 xt_postpone:
         DEFS 2
 xt_find:
+        DEFS 2
+xt_words:
         DEFS 2
 
 SECTION code
