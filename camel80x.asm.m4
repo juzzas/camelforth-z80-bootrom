@@ -44,6 +44,7 @@ SECTION code_16k
         DW lit,VOCAB_WORDLIST_WID,VOCLINK,STORE
         DW lit,NOOP,SECTWRVEC,STORE
         DW lit,NOOP,SECTRDVEC,STORE
+        DW lit,0,lit,tempbuff_offset,STORE
         DW SLASHBLKCTX
         DW XSQUOTE
         DB 10," - 16K ROM"
@@ -151,6 +152,37 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
         pop hl
         pop bc
         next
+
+; TEMPBUFF reserves 256byte buffers as a stack
+;Z   TEMPBUFF-BASE  ( -- addr )  addr of base of tempbuffers
+    head(TEMPBUFF_BASE,TEMPBUFF-BASE,docolon)
+        dw BLKFIRST,lit,tempbuff_offset,FETCH,MINUS
+        dw EXIT
+
+;Z   TEMPBUFF-ALLOC  ( -- addr ) allocates 256byte buffer
+    head(TEMPBUFF_ALLOC,TEMPBUFF-ALLOC,docolon)
+        dw lit,256,lit,tempbuff_offset,PLUSSTORE
+        dw TEMPBUFF_BASE
+        dw EXIT
+
+;Z   TEMPBUFF-FREE  ( --  ) frees last 256byte buffer
+    head(TEMPBUFF_FREE,TEMPBUFF-FREE,docolon)
+        dw lit,-256,lit,tempbuff_offset,PLUSSTORE
+        dw EXIT
+
+;C   UNUSED  ( -- u )  return unused space in data area
+    head(UNUSED,UNUSED,docolon)
+        dw TEMPBUFF_BASE,HERE,MINUS
+        dw EXIT
+
+
+SECTION data
+
+tempbuff_offset:
+        defs 2
+
+SECTION code_16k
+
 
 ; RC2014 EXTENSION output ====================
 
