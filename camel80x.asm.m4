@@ -1278,20 +1278,112 @@ FLUSH1:
         dw SAVE_BUFFERS, SLASHBLKCTX
         dw EXIT
 
-;C LOAD                  n  --    load block n
-;     BLK @ >R
-;     DUP 0= IF    BLOCK DROP
-;            ELSE  BLOCK B/BLK EVALUATE  THEN
-;     R> BLOCK DROP  ;
-    head(LOAD,LOAD,docolon)
-        dw BLK,FETCH,TOR
-        dw DUP,lit,0,EQUAL,qbranch,LOAD1
-        dw BLOCK,DROP,branch,LOAD2
-LOAD1:
-        dw BLOCK,B_BLK,EVALUATE
-LOAD2:
-        dw RFROM,BLOCK,DROP
+;Z block-refill
+;    VARIABLE block-parse-line
+;
+
+;Z parse-block           c-addr -- address of block buffer to parse
+;   16 0 DO     c-addr
+;      DUP B/L INTERPRET
+
+
+; VARIABLE load-blk#
+; VARIABLE load-index
+; VARIABLE load-buff
+; -1 CONSTANT TRUE
+; 0 CONSTANT FALSE
+
+
+SECTION data
+
+load_index: DS 2
+load_blknum: DS 2
+
+SECTION code_16k
+
+
+
+
+; ( tloader - load text files embedded into blocks          1 / n)
+; : load-refill  ( -- flag )
+;     load-index @ 1023 > IF 
+;         -1 load-blk# +!
+;         0 load-index !
+;         1 BLK +!   THEN
+; 
+;     load-blk# @ 0= IF 0 EXIT THEN
+; 
+;     BLK @ BLOCK    ( addr )
+;     load-index @ +  ( index )
+;         C/L 'SOURCE 2!
+; 
+;     0 >IN !
+;     C/L load-index  +! TRUE    ;
+LOAD_REFILL:
+        call docolon
+        dw lit,load_index,FETCH,lit,1023,GREATER,qbranch,LOAD_REFILL1
+        dw lit,-1,lit,load_blknum,PLUSSTORE
+        dw lit,0,lit,load_index,STORE
+        dw lit,1,BLK,PLUSSTORE
+
+LOAD_REFILL1:
+        dw lit,load_blknum,FETCH,ZEROEQUAL,qbranch,LOAD_REFILL2
+        dw lit,0,EXIT
+
+LOAD_REFILL2:
+        dw BLK,FETCH,BLOCK
+        dw lit,load_index,FETCH,PLUS,C_L,TICKSOURCE,TWOSTORE
+
+        dw lit,0,TOIN,STORE
+        dw C_L,lit,load_index,PLUSSTORE,lit,-1
         dw EXIT
+
+
+
+; : (LOAD)  ( -- )
+;    BEGIN
+;      REFILL  IF
+;        SOURCE TYPE  CR  INTERPRET
+;      ELSE   EXIT
+;      THEN
+;    AGAIN  ;
+XLOAD:
+        call docolon
+XLOAD1:
+        dw REFILL,qbranch,XLOAD2
+        dw SOURCE,TYPE,CR,INTERPRET
+        dw branch,XLOAD1
+
+XLOAD2:
+        dw EXIT
+
+
+;C  LOAD ( blk -- )
+;    load-index @ >R   0 load-index !
+;    load-blk# @ >R    1 load-blk# !
+;    REFILLVEC @ >R    ['] load-refill REFILLVEC !
+;    SAVE-INPUT
+;    BLK !
+;    (LOAD)
+;    RESTORE-INPUT
+;    R> REFILLVEC !  
+;    R> load-blk# !
+;    R> load-index ! ;
+    head(LOAD,LOAD,docolon)
+        dw lit,load_index,FETCH,TOR,lit,0,lit,load_index,STORE
+        dw lit,load_blknum,FETCH,TOR,lit,1,lit,load_blknum,STORE
+        dw REFILLVEC,FETCH,TOR,lit,LOAD_REFILL,REFILLVEC,STORE
+        dw SAVE_INPUT
+        dw BLK,STORE
+        dw XLOAD
+        dw RESTORE_INPUT
+        dw RFROM,REFILLVEC,STORE
+        dw RFROM,lit,load_blknum,STORE
+        dw RFROM,lit,load_index,STORE
+
+        dw EXIT
+
+
 
 ;C +LOAD                  n  --    load block BLK + n
 ;     BLK @ + LOAD  ;
@@ -2009,13 +2101,15 @@ RECUSER1:
         DW EXIT
 
 ;Z SAVE-INPUT
-;   SOURCE-ID @ 'SOURCE 2@  >IN @  4 N>R  ;
+;   REFILL-VEC @ SOURCE-ID @ BLK @ 'SOURCE 2@  >IN @  4 N>R  ;
     head(SAVE_INPUT,SAVE-INPUT,docolon)
+        DW REFILLVEC,FETCH
         DW SOURCE_ID,FETCH
+        DW BLK,FETCH
         DW TICKSOURCE,TWOFETCH
         DW TOIN,FETCH
 
-        DW lit,4
+        DW lit,6
 
         DW DUP
 NTOR1:  DW DUP
@@ -2028,7 +2122,7 @@ NTOR2:
         DW EXIT
 
 ;Z RESTORE-INPUT
-;   NR> DROP  >IN !  'SOURCE 2! SOURCE-ID !  ;
+;   NR> DROP  >IN !  'SOURCE 2! BLK ! SOURCE-ID ! REFILL-VEC ! ;
     head(RESTORE_INPUT,RESTORE-INPUT,docolon)
         DW RFROM,RFROM,SWOP,TOR,DUP
 NR1:    DW DUP
@@ -2041,5 +2135,7 @@ NR2:    DW DROP
         DW DROP
         DW TOIN,STORE
         DW TICKSOURCE,TWOSTORE
+        DW BLK,STORE
         DW SOURCE_ID,STORE
+        DW REFILLVEC,STORE
         DW EXIT
