@@ -912,6 +912,7 @@ THROW1: DW EXIT
 
 ;C QUIT     --    R: i*x --    interpret from kbd
 ;   L0 LP !  R0 RP!   0 STATE ! 0 HANDLER !  0 SOURCE-ID !
+;   ['] XREFILL8K REFILLVEC !
 ;   BEGIN
 ;     REFILL  IF
 ;       ['] INTERPRET CATCH
@@ -923,6 +924,7 @@ THROW1: DW EXIT
 ;       ENDCASE
 ;     ELSE
 ;       0 SOURCE-ID !
+;       0 BLK !
 ;     THEN
 ;   AGAIN ;
     head(QUIT,QUIT,docolon)
@@ -930,6 +932,8 @@ THROW1: DW EXIT
         DW R0,RPSTORE,lit,0,STATE,STORE
         DW lit,0,HANDLER,STORE
         DW lit,0,SOURCE_ID,STORE
+        DW lit,0,BLK,STORE
+        DW lit,XREFILL8K,REFILLVEC,STORE
 
 QUIT1:  DW REFILL
 
@@ -966,6 +970,7 @@ QUIT4:
 
 QUITX:
         DW lit,0,SOURCE_ID,STORE
+        DW lit,0,BLK,STORE
         DW branch,QUIT1
 
 ;C ABORT    i*x --   R: j*x --   clear stk & QUIT

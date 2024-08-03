@@ -147,7 +147,7 @@ SECTION code
 
 ; RC2014 EXTENSION misc ======================
 ;Z \   (  --     comment to end of line )
-;   13 WORD DROP ;
+;   SOURCE >IN ! DROP ;
 dnl   head(BACKSLASH,``\'',docolon)
     ; macro doesn't like the \ character, so manually build this word
     DW CALL_link
@@ -157,7 +157,7 @@ BACKSLASH_link:
     DEFM 1,0x5c
 BACKSLASH:
     call docolon
-    DW lit,13,WORD,DROP
+    DW SOURCE,TOIN,STORE,DROP
     DW EXIT
 
 ;X SLITERAL    c-addr u --    compile string literal
