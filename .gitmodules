@@ -1,0 +1,3 @@
+[submodule "forth2012-test-suite"]
+	path = forth2012-test-suite
+	url = https://github.com/gerryjackson/forth2012-test-suite.git

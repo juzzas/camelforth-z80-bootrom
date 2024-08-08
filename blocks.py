@@ -64,6 +64,16 @@ class Processor(object):
 
     def process(self, logger):
         """ Process infile to outfile."""
+        pass
+
+
+class ProcessBlocks(Processor):
+    def __init__(self, infile, outfile):
+        super().__init__(infile, outfile)
+
+
+    def process(self, logger):
+        """ Process infile to outfile."""
 
         padlines_cnt = 0
         for line in self._infile:
@@ -95,6 +105,34 @@ class Processor(object):
         logger.info("blocks count: {0:d}".format(int(padlines_cnt / 16)))
 
 
+class ProcessText(Processor):
+    def __init__(self, infile, outfile):
+        super().__init__(infile, outfile)
+
+
+    def process(self, logger):
+        """ Process infile to outfile."""
+        bytecount = 0
+        linecount = 0
+        for line in self._infile:
+            line = line.rstrip('\r\n')
+
+            self._outfile.write(line)
+            self._outfile.write('\r')
+            bytecount += len(line) + 1
+            linecount += 1
+
+        self._outfile.write(chr(26))
+        bytecount += 1
+
+        padding = 1024 - (bytecount % 1024)
+        self._outfile.write(chr(26) * padding)
+        bytecount += padding
+
+        logger.info("line count: {}".format(linecount))
+        logger.info("blocks count: {0:d}".format(int(bytecount / 1024)))
+
+
 def signal_handler(signal, frame):
     logger = logger.getLogger(__name__)
     logger.debug("term received")
@@ -114,6 +152,8 @@ def main(arguments):
                         default=sys.stdout, type=argparse.FileType('w'))
     parser.add_argument("-v", "--verbose", action="count",
                         help="increase output verbosity", default=0)
+    parser.add_argument("-t", "--text", action="store_true",
+                        help="input file is text")
 
     args = parser.parse_args(arguments)
 
@@ -143,7 +183,11 @@ def main(arguments):
     try:
         exit_code = 0;
 
-        processor = Processor(args.infile, args.outfile)
+        if args.text:
+            processor = ProcessText(args.infile, args.outfile)
+        else:
+            processor = ProcessBlocks(args.infile, args.outfile)
+
         if not processor:
             logger.critical("unable to process")
             exit(2)
