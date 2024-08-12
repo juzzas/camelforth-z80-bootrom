@@ -204,6 +204,21 @@ SECTION code_16k
 DLITER1: DW EXIT
 
 
+;C 2VARIABLE  x1 x2 --      define a Forth double variable
+;   CREATE 2 CELLS ALLOT ;
+; Action of RAM variable is identical to CREATE,
+; so we don't need a DOES> clause to change it.
+    head(TWOVARIABLE,2VARIABLE,docolon)
+        DW CREATE,lit,2,CELLS,ALLOT,EXIT
+
+;C 2CONSTANT x1 x2  -      define a Forth constant
+;   CREATE , , DOES> 2@  ;
+    head(TWOCONSTANT,2CONSTANT,docolon)
+        DW CREATE,COMMA,COMMA,XDOES
+
+        call dodoes
+        DW TWOFETCH
+        DW EXIT
 
 ; RC2014 EXTENDED STRUCTURES ====================
 
