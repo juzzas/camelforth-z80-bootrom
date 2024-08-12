@@ -147,11 +147,11 @@ SECTION code
 
 ; RC2014 EXTENSION misc ======================
 ;Z \   (  --     comment to end of line )
-;   SOURCE >IN ! DROP ;
+;   SOURCE >IN ! DROP ;   IMMEDIATE
 dnl   head(BACKSLASH,``\'',docolon)
     ; macro doesn't like the \ character, so manually build this word
     DW CALL_link
-    DB 0
+    DB 1
 BACKSLASH_link:
     define(`link', `BACKSLASH_link')
     DEFM 1,0x5c
