@@ -38,6 +38,7 @@ defc __IDE_CMD_FEATURE = 0xEF
 defc __CF_8BIT = 0x01
 defc __CF_NOCACHE =	0x82
 
+EXTERN asm_z80_delay_ms
 
 PUBLIC cflash_read_sector
 cflash_read_sector:
@@ -91,6 +92,41 @@ read_write_error:
 
 PUBLIC cflash_init
 cflash_init:
+    ; THE RC2014 SD PICO TAKES A FEW SECONDS TO INITIALIZE.  ATEMPTING TO
+    ; ACCESS IT DURING THIS TIME WILL FAIL.  THE DATA LINES ALL HAVE
+    ; PULL-DOWN RESISTORS, SO WHILE IT IS INITIALIZING, READING ANY
+    ; REGISTER WILL CONSISTENTLY RETURN $00.  THE FOLLOWING BIT OF CODE
+    ; WILL SCAN THE IDE REGISTER BLOCK.  WHILE ALL REGISTERS REMAIN ZERO,
+    ; WE WAIT (UNTIL TIMEOUT).  IN MY TESTING, IT SEEMS VERY UNLIKELY
+    ; THAT ANY OTHER DEVICE WILL RETURN $00 FOR ALL REGISTERS.
+    ; (code, and comment, borrowed from RomWBW)
+
+    ld  hl,500          ; 5 SECONDS
+pico_wait001:
+    ld  c,__IO_CF_IDE_DATA
+    ld  b,8         ; NUMBER OF REGISTERS TO CHECK
+pico_wait002:
+    in  a,(c)           ; GET REGISTER VALUE
+    or  a           ; SET FLAGS
+    jr  nz,pico_waitend       ; IF NOT ZERO, MOVE ON
+    inc c           ; NEXT REGISTER
+    djnz    pico_wait002     ; CHECK ALL 8 REGS
+    push bc
+    push de
+    push hl
+    ld bc,100   ; delay 100ms
+    call asm_z80_delay_ms
+    pop hl
+    pop de
+    pop bc
+    dec hl
+    ld  a,h
+    or  l
+    jr  nz,pico_wait001      ; LOOP
+    jp init_error     ; GIVE UP?
+
+
+pico_waitend:
     call ide_wait_ready         ;make sure drive is ready to proceed
 
     ; Set 8-bit mode
