@@ -1228,9 +1228,10 @@ EXTERN cflash_identify
         dw lit,CF_SECTOR_READ,SECTRDVEC,STORE
         dw lit,CF_SECTOR_WRITE,SECTWRVEC,STORE
         dw TEMPBUFF_ALLOC,DROP,TEMPBUFF_ALLOC,DUP,TOR,lit,cflash_identify,CALL
-        dw RFETCH,lit,256,MEMDUMP
+;        dw RFETCH,lit,256,MEMDUMP
         dw RFETCH,lit,120,PLUS,FETCH
         dw RFROM,lit,122,PLUS,FETCH
+        dw lit,CF_CAPACITY_DATA,TWOSTORE
         dw TEMPBUFF_FREE,TEMPBUFF_FREE
         dw XSQUOTE
         db 18,"CFLASH INITIALISED"
@@ -1240,6 +1241,18 @@ SLASHCFLASH1:
         db 9,"NO CFLASH"
         dw TYPE
         dw EXIT
+
+;Z CF-CAPACITY  ( d -- )   Fetch Compact Flash capacity (blocks)
+    head(CF_CAPACITY,CF_CAPACITY,docolon)
+        DW lit,CF_CAPACITY_DATA,TWOFETCH,DTWOSLASH
+        DW EXIT
+
+
+SECTION data
+CF_CAPACITY_DATA:
+        DEFS 4
+
+SECTION code_16k
 
 EXTERN cflash_read_sector
 ;Z CF-SECTOR-READ  ( lba-l lba-h adrs -- )   Compact Flash read sector at LBA
