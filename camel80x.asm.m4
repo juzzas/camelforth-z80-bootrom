@@ -220,6 +220,153 @@ DLITER1: DW EXIT
         DW TWOFETCH
         DW EXIT
 
+;C 0<>     x1 -- flag    test not eq to 0
+    head(ZERONOTEQUAL,0<>,docolon)
+        DW ZEROEQUAL,INVERT,EXIT
+
+;C 0>     n -- flag     test greater than 0
+    head(ZEROGREATER,0>,docolon)
+        DW lit,0x7fff,AND,EXIT
+
+
+;C D-
+;   dnegate d+ ;
+    head(DMINUS,D-,docolon)
+        dw DNEGATE,DPLUS,EXIT
+
+;: D=
+;   rot = -rot = and ;
+    head(DEQUAL,D=,docolon)
+        dw ROT,EQUAL,ROT,ROT,EQUAL,AND,EXIT
+
+;: d< rot 2dup >
+;    if = nip nip if 0 exit then -1 exit then
+;    2drop u< ;
+    head(DLESS,D<,docolon)
+        DW ROT,TWODUP,GREATER
+        DW qbranch,DLESS2
+
+        DW EQUAL,NIP,NIP
+        DW qbranch,DLESS1
+
+        DW lit,0,EXIT
+
+DLESS1:
+        DW lit,-1,EXIT
+
+
+DLESS2:
+        DW TWODROP,ULESS
+        DW EXIT
+
+
+;: D0<   NIP #MSB AND 0<> ;
+    head(DZEROLESS,D0<,docolon)
+        DW NIP,lit,0x8000,AND,ZERONOTEQUAL,EXIT
+
+;: D0=   OR 0=  ;
+    head(DZEROEQUAL,D0=,docolon)
+        DW OR,ZEROEQUAL,EXIT
+
+;: d2/ dup 1 and >r 2/ swap 2/ r>    if #msb or then swap ;
+    head(DTWOSLASH,D2/,docolon)
+       DW DUP,lit,1,AND,TOR,TWOSLASH,SWOP,TWOSLASH,RFROM
+       DW qbranch,DTWOSLASH1
+       DW lit,0x8000,OR
+
+DTWOSLASH1:
+       DW SWOP
+       DW EXIT
+
+;: d2* over #msb and >r 2* swap 2* swap r>  if 1 or then ;
+    head(DTWOSTAR,D2*,docolon)
+       DW OVER,lit,0x8000,AND,TOR,TWOSTAR,SWOP,TWOSTAR,SWOP,RFROM
+       DW qbranch,DTWOSTAR1
+       DW lit,1,OR
+DTWOSTAR1:
+       DW EXIT
+
+
+
+;: dmax 2over 2over d< if 2swap then 2drop ; ( d1 d2 -- d )
+    head(DMAX,DMAX,docolon)
+        DW TWOOVER,TWOOVER,DLESS
+        DW qbranch,DMAX1
+        DW TWOSWAP
+DMAX1:
+        DW TWODROP,EXIT
+
+;: dmin 2over 2over d> if 2swap then 2drop ; ( d1 d2 -- d )
+    head(DMIN,DMIN,docolon)
+        DW TWOOVER,TWOOVER,TWOSWAP,DLESS
+        DW qbranch,DMIN1
+        DW TWOSWAP
+DMIN1:
+        DW TWODROP,EXIT
+
+
+; RC2014 EXTENDED STRINGS =======================
+
+; \ Compare the string specified by c-addr1 u1 to the string
+; \ specified by c-addr2 u2. The strings are compared, beginning
+; \ at the given addresses, character by character, up to the
+; \ length of the shorter string or until a difference is found.
+; \ If the two strings are identical, n is zero. If the two
+; \ strings are identical up to the length of the shorter string,
+; \ n is minus-one (-1) if u1 is less than u2 and one (1)
+; \ otherwise. If the two strings are not identical up to the
+; \ length of the shorter string, n is minus-one (-1) if the
+; \ first non-matching character in the string specified by
+; \ c-addr1 u1 has a lesser numeric value than the corresponding
+; \ character in the string specified by c-addr2 u2 and one (1)
+; \ otherwise.
+;
+;C COMPARE  ( c-addr1 u1 caddr2 u2 -- n )
+;   ROT 2DUP 2>R  ( c-addr1 u1 caddr2 u2 u1 ; u2 u1 )
+;   MIN           ( c-addr1 caddr2 u'  ; u2 u1 )
+;   S=            ( n ; u2 u1 )
+;   ?DUP 0<> IF  2R> 2DROP                     \ no match
+;            ELSE  2R>   2DUP  = IF  2DROP 0   \ match
+;                 \ else which is shorter ?
+;                 ELSE  <  IF  -1  ELSE  1  THEN  THEN
+;            THEN    ;
+    head(COMPARE,COMPARE,docolon)
+        DW ROT,TWODUP,TWOTOR
+        DW MIN
+        DW sequal
+        DW QDUP,ZERONOTEQUAL,qbranch,COMPARE1
+
+        DW TWORFROM,TWODROP
+        DW EXIT
+
+COMPARE1:
+        DW TWORFROM,TWODUP,EQUAL,qbranch,COMPARE2
+
+        DW TWODROP,lit,0
+        DW EXIT
+
+COMPARE2:
+        DW LESS,qbranch,COMPARE3
+
+        DW lit,-1
+        DW EXIT
+
+COMPARE3:
+        DW lit,1
+        DW EXIT
+
+;: prefix rot min tuck compare ; ( c1 u1 c2 u2 -- f )
+;: search ( c1 u1 c2 u2 -- c3 u3 f : find c2/u2 in c1/u1 )
+;    swap >r >r 2dup
+;    begin
+;      dup r@ >= over 0> and
+;      while
+;        2dup r> r> 2dup >r >r swap prefix
+;        0= if rot drop rot drop rdrop rdrop -1 exit then
+;        +string
+;      repeat
+;    2drop rdrop rdrop 0 ;
+
 ; RC2014 EXTENDED STRUCTURES ====================
 
 ;C CELL-    a-addr1 -- a-addr2    subtract cell size
@@ -898,16 +1045,6 @@ WORDS_16K:
         DW ONEPLUS,CELLS,SPFETCH,PLUS,FETCH
         DW EXIT
 
-; 2=  ( d1 d2 | n1 n2 n3 n4 -- flag )  true if d1=d2
-;                                      or (n1=n3 AND n2=n4)
-;   ROT =   ( n1 n2 f )
-;   SWAP ROT =   ( n1 n2 f )
-;   AND ;
-    head(TWOEQUAL,2=,docolon)
-        DW ROT,EQUAL
-        DW SWOP,ROT,EQUAL
-        DW AND
-        DW EXIT
 
 ; BLOCK implementation ==========================
 
@@ -991,7 +1128,7 @@ DEFC BLOCK_FIRST = 0xE000
 ;       2DUP              ( blk dsk blk dsk ; r: ctx[i] )
 ;       R@ BLKCTX>BLOCK @  ( blk dsk blk dsk blk[i] ; r: ctx[i] )
 ;       R@ BLKCTX>DISK  @  ( blk dsk blk dsk blk[i] dsk[i] ; r: ctx[i] )
-;       2=  IF            ( blk dsk ; r: ctx[i] )
+;       D=  IF            ( blk dsk ; r: ctx[i] )
 ;           2DROP R> UNLOOP EXIT
 ;       THEN
 ;       R> BLKCTX% + ( blk dsk ctx[i+1] )
@@ -1004,7 +1141,7 @@ BLKCTXF1:
         dw TWODUP
         dw RFETCH,BLKCTXTOBLOCK,FETCH
         dw RFETCH,BLKCTXTODISK,FETCH
-        dw TWOEQUAL,qbranch,BLKCTXF2
+        dw DEQUAL,qbranch,BLKCTXF2
         dw TWODROP,RFROM,UNLOOP
         dw EXIT
 BLKCTXF2:

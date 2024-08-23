@@ -1084,6 +1084,7 @@ include(camel80d.asm.m4)   ; CPU Dependencies
 include(camel80h.asm.m4)   ; High Level words
 include(camel80r.asm.m4)   ; RC2014 extensions
 
+SECTION code
 camel80_8k_tail:
         defc lastword8k=link       ; nfa of last word in dict for 8K ROM
 
