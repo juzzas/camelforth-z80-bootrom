@@ -155,6 +155,36 @@ init_error:
     rst 0x20
     ret
 
+
+PUBLIC cflash_identify
+cflash_identify:
+    rst 0x28    ; read buffer_ptr from TOS
+    ld hl, bc
+
+    call ide_wait_ready
+
+    ld a,__IDE_CMD_ID
+    out (__IO_CF_IDE_COMMAND),a
+
+    call ide_wait_ready         ;make sure drive is ready to proceed
+    call ide_wait_drq           ;wait until it's got the data
+
+    ld c,4
+id4secs:
+    ld b,128
+idByte:
+    in a,(__IO_CF_IDE_DATA)
+    ld (hl),a
+    inc hl
+    dec b
+    jr nz, idByte
+    dec c
+    jr nz, id4secs
+
+    scf                         ;carry = 1 on return = operation ok
+    ret
+
+
 ; set up the drive LBA registers
 ; Uses AF, BC, DE
 ; LBA is contained in BCDE registers

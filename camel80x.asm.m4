@@ -1214,6 +1214,7 @@ BLKCTX_IDX:
 SECTION code_16k
 
 EXTERN cflash_init
+EXTERN cflash_identify
 ;Z /CFLASH   ( -- ) initialise the Compact Flash driver
 ;   clash_init CALL    ( f )
 ;   IF
@@ -1226,6 +1227,11 @@ EXTERN cflash_init
         dw qbranch,SLASHCFLASH1
         dw lit,CF_SECTOR_READ,SECTRDVEC,STORE
         dw lit,CF_SECTOR_WRITE,SECTWRVEC,STORE
+        dw TEMPBUFF_ALLOC,DROP,TEMPBUFF_ALLOC,DUP,TOR,lit,cflash_identify,CALL
+        dw RFETCH,lit,256,MEMDUMP
+        dw RFETCH,lit,120,PLUS,FETCH
+        dw RFROM,lit,122,PLUS,FETCH
+        dw TEMPBUFF_FREE,TEMPBUFF_FREE
         dw XSQUOTE
         db 18,"CFLASH INITIALISED"
         dw TYPE,CR,EXIT
