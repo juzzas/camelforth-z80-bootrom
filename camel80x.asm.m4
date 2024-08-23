@@ -1062,7 +1062,8 @@ DEFC BLOCK_FIRST = 0xE000
 ;Z /BLKCTX   ( -- ) initialise the block contexts
 ;    BLKCTX_PTR  BLKCTX% BLKCTX# *  0 FILL
 ;    0 BLKCTX_IDX !    ;
-    head(SLASHBLKCTX,/BLKCTX,docolon)
+SLASHBLKCTX:
+        call docolon
         dw lit,BLKCTX_PTR
         dw BLKCTXSIZE,BLKCTXNUM,STAR,lit,0,FILL
         dw lit,0,lit,BLKCTX_IDX,STORE
@@ -1070,39 +1071,46 @@ DEFC BLOCK_FIRST = 0xE000
 
 ;Z BLKCTX>DISK  ( ctx -- a-addr' )  get address of DISK number
 ;    ;
-    head(BLKCTXTODISK,BLKCTX>DISK,docolon)
+BLKCTXTODISK:
+        call docolon
         dw EXIT
 
 ;Z BLKCTX>BLOCK  ( ctx -- a-addr' )  get address of BLOCK number
 ;    ;
-    head(BLKCTXTOBLOCK,BLKCTX>BLOCK,docolon)
+BLKCTXTOBLOCK:
+        call docolon
         dw lit,2,PLUS
         dw EXIT
 
 ;Z BLKCTX>BUFFER  ( ctx -- a-addr' )  get address of BUFFER
 ;    ;
-    head(BLKCTXTOBUFFER,BLKCTX>BUFFER,docolon)
+BLKCTXTOBUFFER:
+        call docolon
         dw lit,4,PLUS
         dw EXIT
 
 ;Z BLKCTX>FLAGS  ( ctx -- a-addr' )  get address of FLAGS
 ;    ;
-    head(BLKCTXTOFLAGS,BLKCTX>FLAGS,docolon)
+BLKCTXTOFLAGS:
+        call docolon
         dw lit,6,PLUS
         dw EXIT
 
-;Z BLKCTX%  ( a-addr -- a-addr' )  size of stucture
-    head(BLKCTXSIZE,``BLKCTX%'',docon)
+;Z BLKCTX%  (  -- u )  size of stucture
+BLKCTXSIZE:
+        call docon
         dw BLOCKCTX_SIZE
 
-;Z BLKCTX#  ( a-addr -- a-addr' )  number of buffer structures
-    head(BLKCTXNUM,``BLKCTX#'',docon)
+;Z BLKCTX#  ( -- u )  number of buffer structures
+BLKCTXNUM:
+        call docon
         dw BLOCKCTX_NUM
 
 
 ;Z BLKFIRST      -- a-adrs      address of first block buffer
 ;   RAMTOP @ 0xFC00 AND 0x1000 - ;
-    head(BLKFIRST,BLKFIRST,docolon)
+BLKFIRST:
+        call docolon
         dw RAMTOP,FETCH,lit,0xFC00,AND,lit,0x1000,MINUS
         dw EXIT
 
@@ -1113,7 +1121,8 @@ DEFC BLOCK_FIRST = 0xE000
 ;   OVER BLKCTX>BUFFER !  ( new-ctx )
 ;   BLKCTX_IDX @ 1+ BLKCTXNUM MOD  BLKCTX_IDX !
 ;   ;
-    head(BLKCTX_NEXT,BLKCTX-NEXT,docolon)
+BLKCTX_NEXT:
+        call docolon
         dw lit,BLKCTX_PTR
         dw lit,BLKCTX_IDX,FETCH
         dw BLKCTXSIZE,STAR,PLUS  ; TODO: (FLUSH) this ctx
@@ -1134,7 +1143,8 @@ DEFC BLOCK_FIRST = 0xE000
 ;       R> BLKCTX% + ( blk dsk ctx[i+1] )
 ;    LOOP
 ;    2DROP DROP 0   ;
-    head(BLKCTX_FIND,BLKCTX-FIND,docolon)
+BLKCTX_FIND:
+        call docolon
         dw lit,BLKCTX_PTR,BLKCTXNUM,lit,0,xdo
 BLKCTXF1:
         dw TOR
@@ -1160,7 +1170,8 @@ BLKCTXF2:
 ;         R@ BLKCTX>BLOCK !
 ;         R@ BLKCTX>FLAGS 1 SWAP !
 ;         R>  ;
-    head(BLKCTX_GET,BLKCTX-GET,docolon)
+BLKCTX_GET:
+        call docolon
         dw TWODUP,BLKCTX_FIND,QDUP,qbranch,BLKCTXG1
         dw NIP,NIP
         dw EXIT
@@ -1179,7 +1190,8 @@ BLKCTXG1:
 ;       DUP R@ SWAP EXECUTE
 ;       R> BLKCTX% +      ( xt ctx[i+1] )
 ;    LOOP   2DROP  ;
-    head(BLKCTX_MAP,BLKCTX-MAP,docolon)
+BLKCTX_MAP:
+        call docolon
         dw lit,BLKCTX_PTR,BLKCTXNUM,lit,0,xdo
 BLKCTXMAP1:
         dw TOR
