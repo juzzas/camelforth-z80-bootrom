@@ -107,7 +107,6 @@ SECTION code
         head(CURRENT,CURRENT,douser)
             dw 36
 
-    ;  38 USER CURRENT
     ;Z EMITVEC      -- xt     if set, use XT as EMIT destination
     ;  40 USER EMITVEC
         head(EMITVEC,EMITVEC,douser)

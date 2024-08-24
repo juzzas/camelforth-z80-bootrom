@@ -1229,8 +1229,8 @@ EXTERN cflash_identify
         dw lit,CF_SECTOR_WRITE,SECTWRVEC,STORE
         dw TEMPBUFF_ALLOC,DROP,TEMPBUFF_ALLOC,DUP,TOR,lit,cflash_identify,CALL
 ;        dw RFETCH,lit,256,MEMDUMP
-        dw RFETCH,lit,120,PLUS,FETCH
-        dw RFROM,lit,122,PLUS,FETCH
+        dw RFETCH,lit,120,PLUS,FETCH      ; low word of max LBA
+        dw RFROM,lit,122,PLUS,FETCH       ; high word of max LBA
         dw lit,CF_CAPACITY_DATA,TWOSTORE
         dw TEMPBUFF_FREE,TEMPBUFF_FREE
         dw XSQUOTE
@@ -1242,9 +1242,9 @@ SLASHCFLASH1:
         dw TYPE
         dw EXIT
 
-;Z CF-CAPACITY  ( d -- )   Fetch Compact Flash capacity (blocks)
+;Z CF-CAPACITY  ( d -- )   Fetch Compact Flash capacity (sectors)
     head(CF_CAPACITY,CF_CAPACITY,docolon)
-        DW lit,CF_CAPACITY_DATA,TWOFETCH,DTWOSLASH
+        DW lit,CF_CAPACITY_DATA,TWOFETCH
         DW EXIT
 
 
