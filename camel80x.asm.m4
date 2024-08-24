@@ -1227,14 +1227,11 @@ EXTERN cflash_identify
         dw qbranch,SLASHCFLASH1
         dw lit,CF_SECTOR_READ,SECTRDVEC,STORE
         dw lit,CF_SECTOR_WRITE,SECTWRVEC,STORE
-        dw TEMPBUFF_ALLOC,DROP,TEMPBUFF_ALLOC,DUP,TOR,lit,cflash_identify,CALL
-;        dw RFETCH,lit,256,MEMDUMP
-        dw RFETCH,lit,120,PLUS,FETCH      ; low word of max LBA
-        dw RFROM,lit,122,PLUS,FETCH       ; high word of max LBA
-        dw lit,CF_CAPACITY_DATA,TWOSTORE
-        dw TEMPBUFF_FREE,TEMPBUFF_FREE
         dw XSQUOTE
-        db 18,"CFLASH INITIALISED"
+        db 20,"CFLASH INITIALISED ("
+        dw TYPE,CF_CAPACITY,DTWOSLASH,DDOT
+        dw XSQUOTE
+        db 7,"blocks)"
         dw TYPE,CR,EXIT
 SLASHCFLASH1:
         dw XSQUOTE
@@ -1244,7 +1241,11 @@ SLASHCFLASH1:
 
 ;Z CF-CAPACITY  ( d -- )   Fetch Compact Flash capacity (sectors)
     head(CF_CAPACITY,CF_CAPACITY,docolon)
-        DW lit,CF_CAPACITY_DATA,TWOFETCH
+        dw TEMPBUFF_ALLOC,DROP,TEMPBUFF_ALLOC,DUP,TOR,lit,cflash_identify,CALL
+;        dw RFETCH,lit,256,MEMDUMP
+        dw RFETCH,lit,120,PLUS,FETCH      ; low word of max LBA
+        dw RFROM,lit,122,PLUS,FETCH       ; high word of max LBA
+        dw TEMPBUFF_FREE,TEMPBUFF_FREE
         DW EXIT
 
 
