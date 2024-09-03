@@ -206,13 +206,48 @@ HEX
         DUP C@ TMSEMIT 1+
     LOOP  DROP  ;
 
+: TMSPLOT-XY ( x y -- )
+    F01B CALL   ;
+
+: TMSCLR-XY ( x y -- )
+    F01E CALL   ;
+
+: TMSINT+ ( -- )
+    F021 CALL   ;
+
+: TMSINT- ( -- )
+    F024 CALL   ;
+
+8 CONSTANT TMSRAM
+9 CONSTANT TMSREG
+
+3800 CONSTANT  'TMSNAME   ( name table address: multiples of 400H )
+2000 CONSTANT  'TMSCOLOR  ( color table address: multiples of 40H )
+0000 CONSTANT  'TMSPATTERN  ( pattern table: multiples of 800H )
+1800 CONSTANT  'TMSSPRITEPATTERN ( sprite attribute table: multiples of 80H )
+3BC0 CONSTANT  'TMSSPRITEATTR  ( sprite pattern table: multiples of 800H )
+
+: TMSWRADDR DUP 00FF AND TMSREG PC!
+            3F00 AND 8 RSHIFT 40 + TMSREG PC! ;
+: TMSRDADDR DUP 00FF AND TMSREG PC!
+            3F00 AND 8 RSHIFT TMSREG PC! ;
+: TMS!  TMSRAM PC! ;
+: TMS@  TMSRAM PC@ ;
+
+: TMSWRITE ( src dest count -- )
+  SWAP TMSWRADDR
+  0 DO DUP C@ TMS! 1+ LOOP  ;
+: TMSFILL ( dest count c -- )
+  ROT TMSWRADDR
+  SWAP  0 DO DUP TMS! LOOP  ;
+
 : RUN
     TMSPROBE? IF
         ." TMS9918A detected" CR
         /TMSTEXT
         ." TEXT MODE" CR
         1 TMSBG
-        4 TMSFG
+        5 TMSFG
         ." TEXT colours done" CR
         5 5 TMSAT-XY
         ." TEXT position done" CR

@@ -33,6 +33,12 @@ PUBLIC TmsTextPos
 PUBLIC TmsChrOut
 
 PUBLIC TmsIntDisable
+PUBLIC TmsIntEnable
+
+PUBLIC TmsSetPixel
+PUBLIC TmsClearPixel
+PUBLIC TmsPlotPixel
+PUBLIC TmsPixelOp
 ; ---------------------------------------------------------------------------
 ; configuration parameters; can be changed at runtime
 

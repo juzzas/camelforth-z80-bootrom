@@ -64,6 +64,24 @@ JT_TMSTEXTXY:
 JT_TMSEMIT:
     jp _TmsEmit
 
+; f01b TMSPLOT-XY  ( x y -- )
+JT_TMSPLOTXY:
+    jp _TmsPlotXY
+
+; f01e TMSCLR-XY  ( x y -- )
+JT_TMSCLRXY:
+    jp _TmsClrXY
+
+; f021 TMSINT+  ( -- )
+EXTERN TmsIntEnable
+JT_TMS_INTPLUS:
+    jp TmsIntEnable
+
+; f024 TMSINT-  ( -- )
+EXTERN TmsIntDisable
+JT_TMS_INTMINUS:
+    jp TmsIntDisable
+
 EXTERN TmsProbe
 _TmsProbe:
     call TmsProbe
@@ -125,3 +143,30 @@ _TmsEmit:
     rst 0x28
     ld  a, c
     jp TmsChrOut
+
+EXTERN TmsPlotPixel
+EXTERN TmsSetPixel
+EXTERN TmsPixelOp
+_TmsPlotXY:
+    ld hl, TmsSetPixel
+    call TmsPixelOp
+    rst 0x28   ;y
+    ld  e, c
+    rst 0x28   ;x
+    ld  a, c
+    jp TmsPlotPixel
+
+EXTERN TmsPlotPixel
+EXTERN TmsClearPixel
+EXTERN TmsPixelOp
+_TmsClrXY:
+    ld hl, TmsClearPixel
+    call TmsPixelOp
+    rst 0x28   ;y
+    ld  e, c
+    rst 0x28   ;x
+    ld  a, c
+    jp TmsPlotPixel
+
+
+
