@@ -105,20 +105,32 @@ _z80_rst_38h:
     ld hl, (intvec_ptr)
     ld a, h
     or l
-    call nz, jp_hl
+    jr z, int_skip
 
+    push de
+    push bc
+    push iy
+    push ix
+    ld ix, intvec_rp0
+    ld de, int_exit_xt
+    jp (hl)
+
+int_exit:
+    pop ix
+    pop iy
+    pop bc
+    pop de
+
+int_skip:
     pop af
     pop hl
     ei
     reti
 
-rom_init:
-    ld hl, 0
-    ld (intvec_ptr), hl
-    ld (nmivec_ptr), hl
-    call acia_init
-    ei
-    jp _main
+; simple forth thread to jump back to exit
+int_exit_xt:
+        DEFW  int_exit
+
 
 ALIGN 0x0066
 PUBLIC _z80_nmi
@@ -130,12 +142,40 @@ _z80_nmi:
     ld hl, (nmivec_ptr)
     ld a, h
     or l
-    call nz, jp_hl
+    jr z, nmi_skip
 
+    push de
+    push bc
+    push iy
+    push ix
+    ld ix, nmivec_rp0
+    ld de, nmi_exit_xt
+    jp (hl)
+
+nmi_exit:
+    pop ix
+    pop iy
+    pop bc
+    pop de
+
+nmi_skip:
     pop af
     pop hl
     ei
     retn
+
+; simple forth thread to jump back to exit
+nmi_exit_xt:
+        DEFW  nmi_exit
+
+rom_init:
+    ld hl, 0
+    ld (intvec_ptr), hl
+    ld (nmivec_ptr), hl
+    call acia_init
+    ei
+    jp _main
+
 
 SECTION data
 
@@ -143,8 +183,16 @@ PUBLIC intvec_ptr
 intvec_ptr:
         DEFS 2
 
+intvec_rp:
+        DEFS 32
+intvec_rp0:
+
 PUBLIC nmivec_ptr
 nmivec_ptr:
         DEFS 2
+
+nmivec_rp:
+        DEFS 32
+nmivec_rp0:
 
 
