@@ -37,21 +37,6 @@ EXTERN asm_z80_delay_tstate
 
 SECTION code_16k
 
-;Z /16KROM    init enhanced features
-    head(SLASH16KROM,``/16KROM'',docolon)
-        DW lit,VOCAB_WORDLIST_WID,lit,FORTH_WORDLIST_WID,lit,2,SET_ORDER
-        DW lit,FORTH_WORDLIST_WID,CURRENT,STORE
-        DW lit,VOCAB_WORDLIST_WID,VOCLINK,STORE
-        DW lit,NOOP,SECTWRVEC,STORE
-        DW lit,NOOP,SECTRDVEC,STORE
-        DW lit,0,lit,tempbuff_offset,STORE
-        DW SLASHBLKCTX
-        DW XSQUOTE
-        DB 10," - 16K ROM"
-        DW TYPE,CR
-        DW SLASHCFLASH
-        DW lit,0,DSK,STORE
-        dw EXIT
 
     ;Z BLK      -- a-addr     block number storage
     ;  20 USER BLK
@@ -63,25 +48,25 @@ SECTION code_16k
         head(DSK,DSK,douser)
             dw 22
 
-    ;Z BLKOFFSET    -- a-addr  1024byte block buffer
-    ;  24 USER BLKOFFSET
-        head(BLKOFFSET,BLKOFFSET,douser)
-            dw 24
+dnl    ;Z BLKOFFSET    -- a-addr  1024byte block buffer
+dnl    ;  24 USER BLKOFFSET
+dnl        head(BLKOFFSET,BLKOFFSET,douser)
+dnl            dw 24
 
-    ;Z BLKLIMIT    -- a-addr  block update flag storage
-    ;  26 USER BLKLIMIT
-        head(BLKLIMIT,BLKLIMIT,douser)
-            dw 26
+dnl    ;Z BLKLIMIT    -- a-addr  block update flag storage
+dnl    ;  26 USER BLKLIMIT
+dnl        head(BLKLIMIT,BLKLIMIT,douser)
+dnl            dw 26
 
-    ;Z SECTWRVEC   -- a-addr  if set, use XT to write sector
-    ;  28 USER SECTWRVEC   ( LBA-L LBA-H adrs )
-        head(SECTWRVEC,SECTWRVEC,douser)
-            dw 28
+dnl    ;Z SECTWRVEC   -- a-addr  if set, use XT to write sector
+dnl    ;  28 USER SECTWRVEC   ( LBA-L LBA-H adrs )
+dnl        head(SECTWRVEC,SECTWRVEC,douser)
+dnl            dw 28
 
-    ;Z SECTRDVEC   -- a-addr  if set, use XT to read sector
-    ;  30 USER SECTRDVEC    ( LBA-L LBA-H adrs )
-        head(SECTRDVEC,SECTRDVEC,douser)
-            dw 30
+dnl    ;Z SECTRDVEC   -- a-addr  if set, use XT to read sector
+dnl    ;  30 USER SECTRDVEC    ( LBA-L LBA-H adrs )
+dnl        head(SECTRDVEC,SECTRDVEC,douser)
+dnl            dw 30
 
     ;Z SCR          -- a-addr  last edited screen number
     ;  32 USER SCR
@@ -187,12 +172,12 @@ SECTION code_16k
 ; RC2014 EXTENSION output ====================
 
 
-;Z VT-ESC  ( --  emit escape character )
-;    27 EMIT [CHAR] [ EMIT ;
-    head(VT_ESC,VT-ESC,docolon)
-        dw lit,0x1b,EMIT
-        dw lit,'[',EMIT
-        dw EXIT
+dnl ;Z VT-ESC  ( --  emit escape character )
+dnl ;    27 EMIT [CHAR] [ EMIT ;
+dnl     head(VT_ESC,VT-ESC,docolon)
+dnl         dw lit,0x1b,EMIT
+dnl         dw lit,'[',EMIT
+dnl         dw EXIT
 
 ;C 2LITERAL  x1 x2 --    append double numeric literal
 ;   STATE @ IF ['] DLIT ,XT , , THEN ; IMMEDIATE
@@ -330,30 +315,30 @@ DMIN1:
 ;                 \ else which is shorter ?
 ;                 ELSE  <  IF  -1  ELSE  1  THEN  THEN
 ;            THEN    ;
-    head(COMPARE,COMPARE,docolon)
-        DW ROT,TWODUP,TWOTOR
-        DW MIN
-        DW sequal
-        DW QDUP,ZERONOTEQUAL,qbranch,COMPARE1
-
-        DW TWORFROM,TWODROP
-        DW EXIT
-
-COMPARE1:
-        DW TWORFROM,TWODUP,EQUAL,qbranch,COMPARE2
-
-        DW TWODROP,lit,0
-        DW EXIT
-
-COMPARE2:
-        DW LESS,qbranch,COMPARE3
-
-        DW lit,-1
-        DW EXIT
-
-COMPARE3:
-        DW lit,1
-        DW EXIT
+dnl    head(COMPARE,COMPARE,docolon)
+dnl        DW ROT,TWODUP,TWOTOR
+dnl        DW MIN
+dnl        DW sequal
+dnl        DW QDUP,ZERONOTEQUAL,qbranch,COMPARE1
+dnl
+dnl        DW TWORFROM,TWODROP
+dnl        DW EXIT
+dnl
+dnl COMPARE1:
+dnl         DW TWORFROM,TWODUP,EQUAL,qbranch,COMPARE2
+dnl 
+dnl         DW TWODROP,lit,0
+dnl         DW EXIT
+dnl 
+dnl COMPARE2:
+dnl         DW LESS,qbranch,COMPARE3
+dnl 
+dnl         DW lit,-1
+dnl         DW EXIT
+dnl 
+dnl COMPARE3:
+dnl         DW lit,1
+dnl         DW EXIT
 
 ;: prefix rot min tuck compare ; ( c1 u1 c2 u2 -- f )
 ;: search ( c1 u1 c2 u2 -- c3 u3 f : find c2/u2 in c1/u1 )
@@ -893,7 +878,8 @@ RESTOREORDER1:
 ;       THEN
 ;   0= UNTIL                   -- a len nfa  OR  a len 0
 ;      ;
-    head(FIND_NAME_IN,FIND-NAME-IN,docolon)
+FIND_NAME_IN:
+        call docolon
         DW WIDTONFA
         DW DUP,ZEROEQUAL,qbranch,FINDIN1
         DW DROP,lit,0,EXIT
@@ -991,7 +977,8 @@ FINDNG1:
         dw EXIT
 
 ; patch latest entry on VOCLINK with code from VOCDOES
-    head(XVOCDOES,(VOCDOES>),docolon)
+XVOCDOES:
+        call docolon
         DW RFROM,VOCLINK,FETCH,WIDTONFA,NFATOCFA,STORECF
         DW EXIT
 
@@ -1213,30 +1200,142 @@ BLKCTX_IDX:
 
 SECTION code_16k
 
+
+; DRIVE implementation ==========================
+
+; DRIVECTX structure
+;   Each context struct is drive device "driver"
+;    XT READ sector (1 cell)
+;    XT WRITE sector BLOCK number (1 cell)
+;    XT CAPACITY number of sectores (1 cell)
+
+DEFC DRIVECTX_SIZE = 8
+
+
+;Z DRIVE>READ  ( drive-id -- a-addr' )  get address of  READ xt
+    head(DRIVETOREAD,DRIVE>READ,docolon)
+        dw EXIT
+
+;Z DRIVE>WRITE  ( drive-id -- a-addr' )  get address of WRITE xt
+    head(DRIVETOWRITE,DRIVE>WRITE,docolon)
+        dw lit,2,PLUS
+        dw EXIT
+
+;Z DRIVE>CAPACITY  ( drive-id -- a-addr' )  get address of CAPACITY xt
+    head(DRIVETOCAPACITY,DRIVE>CAPACITY,docolon)
+        dw lit,4,PLUS
+        dw EXIT
+
+;Z DRIVE%  (  -- u )  size of stucture
+    head(DRIVESIZE,DRIVE%,docon)
+        dw DRIVECTX_SIZE
+
+
+
+; DISK implementation ==========================
+
+; DISKCTX structure
+;   Each context struct is drive device "driver"
+;    DRIVE-ID sector (1 cell)
+;    LBA OFFSET  (2 cells)
+;    LIMIT number of blocks (1 cell)
+;    BLOCK XLATE   xt of Block translation routine (1 cell)
+
+DEFC DISKCTX_SIZE = 10
+DEFC DISKCTX_NUM = 8
+
+
+;Z DISK>ID  ( disk-id -- a-addr' )  get address of drive ID for disk
+    head(DISKTODRIVE,DISK>DRIVE,docolon)
+        dw EXIT
+
+;Z DISK>OFFSET  ( disk-id -- a-addr' )  get address of LBA OFFSET for disk
+    head(DISKTOOFFSET,DISK>OFFSET,docolon)
+        dw lit,2,PLUS
+        dw EXIT
+
+;Z DISK>LIMIT  ( disk-id -- a-addr' )  get address of LIMIT for disk
+    head(DISKTOLIMIT,DISK>LIMIT,docolon)
+        dw lit,6,PLUS
+        dw EXIT
+
+;Z DISK>TRANSLATOR  ( disk-id -- a-addr' )  get address of XT to translate virtual to phys b blockss
+    head(DISKTOTRANSLATOR,DISK>TRANSLATOR,docolon)
+        dw lit,8,PLUS
+        dw EXIT
+
+;Z DISK%  (  -- u )  size of stucture
+    head(DISKSIZE,DISK%,docon)
+        dw DISKCTX_SIZE
+
+;Z #DISK  (  -- u )  number of DISK entries
+    head(NUMDISK,``#DISK'',docon)
+        dw DISKCTX_NUM
+
+;Z DISK  ( n -- disk-id | 0 )  get disk id from disk number. 0 if out of range
+    head(DISK,DISK,docolon)
+        dw DUP,lit,0,NUMDISK,WITHIN
+        dw qbranch,DISK1
+        dw DISKSIZE,STAR,lit,DISKCTX_PTR,PLUS
+        dw EXIT
+
+DISK1:
+        dw DROP,lit,0
+        dw EXIT
+
+
+SECTION data
+
+DISKCTX_PTR:
+        DEFS DISKCTX_SIZE * DISKCTX_NUM
+
+
+SECTION code_16k
+
+; DISK/DRIVE helpers ==========================
+
+
+SECTRDVEC:
+        call docolon
+        dw DSK,FETCH,DISK,DISKTODRIVE,FETCH,DRIVETOREAD
+        dw EXIT
+
+SECTWRVEC:
+        call docolon
+        dw DSK,FETCH,DISK,DISKTODRIVE,FETCH,DRIVETOWRITE
+        dw EXIT
+
+BLKLIMIT:
+        call docolon
+        dw DSK,FETCH,DISK,DISKTOLIMIT
+        dw EXIT
+
+
+
 EXTERN cflash_init
 EXTERN cflash_identify
-;Z /CFLASH   ( -- ) initialise the Compact Flash driver
+;Z /CFLASH   ( -- drive-id ) initialise the Compact Flash driver
 ;   clash_init CALL    ( f )
 ;   IF
-;      ' CF-SECTOR-READ  SECTRDVEC !
-;      ' CF-SECTOR-WRITE  SECTWRVEC !
 ;       ." CFLASH INITIALISED"
-;   ELSE ." NO CFLASH" THEN ;
+;       CF_DRIVE_CTX
+;   ELSE ." NO CFLASH" 0 THEN ;
     head(SLASHCFLASH,/CFLASH,docolon)
         dw lit,cflash_init,CALL
         dw qbranch,SLASHCFLASH1
-        dw lit,CF_SECTOR_READ,SECTRDVEC,STORE
-        dw lit,CF_SECTOR_WRITE,SECTWRVEC,STORE
         dw XSQUOTE
         db 20,"CFLASH INITIALISED ("
         dw TYPE,CF_CAPACITY,DTWOSLASH,DDOT
         dw XSQUOTE
         db 7,"blocks)"
-        dw TYPE,CR,EXIT
+        dw TYPE,CR
+        dw lit,CF_DRIVE_CTX
+        dw EXIT
 SLASHCFLASH1:
         dw XSQUOTE
         db 9,"NO CFLASH"
         dw TYPE
+        dw lit,0
         dw EXIT
 
 ;Z CF-CAPACITY  ( d -- )   Fetch Compact Flash capacity (sectors)
@@ -1293,14 +1392,21 @@ SECTOR_WRITE3:
         db 11,"WRITE ERROR"
         dw QABORT
         dw EXIT
-        dw EXIT
+
+
+CF_DRIVE_CTX:
+        dw CF_SECTOR_READ
+        dw CF_SECTOR_WRITE
+        dw CF_CAPACITY
+
 
 ;Z BLK2LBA   ( dsk blk -- LBA-L LBA-H )
 ;  DUP 8000 AND  IF 1 ELSE 0 THEN SWAP
 ;  2*   ( dsk cry blk' )
 ;  ROT ROT + ;
-    head(BLK2LBA,BLK2LBA,docolon)
-        ; TODO: fix to use 8MB slices instead of multiples of 64MB
+BLK2LBA:
+        call docolon
+        ; TODO: fix to use disk offset and limit
         dw DUP,lit,0x8000,AND,qbranch,B2LBA1
         dw lit,1
         dw branch,B2LBA2
@@ -1320,9 +1426,10 @@ B2LBA2:
 ;     CF_SECTOR_READ       ( LBA-L LBA-H ;  R: adrs )
 ;     1 S>D D+             ( LBA-L' LBA-H' ;  R: adrs )
 ;     R>  512 +            ( LBA-L' LBA-H' adrs' )
-;     CF_SECTOR_READ
+;     CF_SECTOR_READ       ( )
 ;     EXIT
-    head(BLOCK_READ,BLOCK-READ,docolon)
+BLOCK_READ:
+        call docolon
         dw TOR,BLK2LBA,TWODUP,RFETCH    ; convert block to LBA
         dw SECTRDVEC,FETCH,EXECUTE
         dw lit,1,STOD,DPLUS
@@ -1334,7 +1441,8 @@ B2LBA2:
 ; Writes the block to the Compact Flash card from memory
 ; address found at 'adrs'. 'dsk' and 'blk' are the disk
 ; and block numbers respectively
-    head(BLOCK_WRITE,BLOCK-WRITE,docolon)
+BLOCK_WRITE:
+        call docolon
         dw TOR,BLK2LBA,TWODUP,RFETCH    ; convert block to LBA
         dw SECTWRVEC,FETCH,EXECUTE
         dw SWOP,ONEPLUS,SWOP
@@ -1347,16 +1455,15 @@ B2LBA2:
 ;     >R >R
 ;     R@ BLKCTX>DISK @
 ;     R@ BLKCTX>BLOCK @
-;     BLKOFFSET @ +
 ;     R@ BLKCTX>BUFFER @
 ;     0 R@ BLKCTX>FLAGS !
 ;     R> DROP  R>      ( dsk blk adrs f )
 ;     IF BLOCK-WRITE ELSE BLOCK-READ ;
-    head(BLOCK_READWRITE,BLOCK-READWRITE,docolon)
+BLOCK_READWRITE:
+        call docolon
         dw TOR,TOR
         dw RFETCH,BLKCTXTODISK,FETCH
         dw RFETCH,BLKCTXTOBLOCK,FETCH
-        dw BLKOFFSET,FETCH,PLUS
         dw RFETCH,BLKCTXTOBUFFER,FETCH
         dw lit,0,RFETCH,BLKCTXTOFLAGS,STORE
         dw RFROM,DROP,RFROM
@@ -1373,7 +1480,8 @@ BLOCK_READWRITE2:
 ;     DSK @
 ;     BLKCTX-GET
 ;     ELSE  ABORT" BLOCK OUT OF RANGE" THEN ;
-    head(XBUFFER,(BUFFER),docolon)
+XBUFFER:
+        call docolon
         dw DUP,BLKLIMIT,FETCH,ULESS,qbranch,XBUFFER1
         dw DUP,BLK,STORE
         dw DSK,FETCH
@@ -1604,13 +1712,15 @@ PLUSTHRU1:
 
 ;Z (BLOCK)                 -- a-addr  load block in SCR
 ;     SCR @ BLOCK ;
-    head(XBLOCK,(BLOCK),docolon)
+XBLOCK:
+        call docolon
         dw SCR,FETCH,BLOCK
         dw EXIT
 
 ;Z (LINE)           line# -- c-addr   address of line in block
 ;     C/L * (BLOCK) + ;
-    head(XLINE,(LINE),docolon)
+XLINE:
+        call docolon
         dw C_L,STAR,XBLOCK,PLUS
         dw EXIT
 
@@ -1636,14 +1746,16 @@ TYPS5:  DW EXIT
 
 ;Z LL               line# --      List Line
 ;     (LINE) C/L TYPE CR ;
-    head(LL,LL,docolon)
+LL:
+        call docolon
         dw XLINE,C_L,TYPESTRING,CR
         dw EXIT
 
 
 ;Z  (LIST)            --    runtime for list screen
 ;     L/B 0 DO I 2 .R SPACE I LL LOOP ;
-    head(XLIST,(LIST),docolon)
+XLIST:
+        call docolon
         dw L_B,lit,0,xdo
 XLIST1:
         dw II,lit,2,DOTR,SPACE,II,LL,xloop,XLIST1
@@ -1691,19 +1803,23 @@ INDEX1:
 
 ;: #SNAPSHOT
 ;    128 CONSTANT #SNAPSHOT
-    head(NUMSNAPSHOT,``#SNAPSHOT'',docon)
+NUMSNAPSHOT:
+        call docon
         dw 128+16+34
 
 ;: SNAPSHOT.USER   ( snapaddr -- addr     ptr to user area in snapshot )
-    head(SNAPSHOTDOTUSER,SNAPSHOT.USER,docolon)
+SNAPSHOTDOTUSER:
+        call docolon
         dw EXIT
 
 ;: SNAPSHOT.LINKS   ( snapaddr -- addr     ptr to wordlists ROM links in snapshot )
-    head(SNAPSHOTDOTLINKS,SNAPSHOT.ORDER,docolon)
+SNAPSHOTDOTLINKS:
+        call docolon
         dw lit,0x80,PLUS,EXIT
 
 ;: SNAPSHOT.ORDER   ( snapaddr -- addr     ptr to wordlist order in snapshot )
-    head(SNAPSHOTDOTORDER,SNAPSHOT.ORDER,docolon)
+SNAPSHOTDOTORDER:
+        call docolon
         dw lit,0x90,PLUS,EXIT
 
 ;: >SNAPSHOT  ( snapaddr  -- )
@@ -1761,7 +1877,8 @@ defc SNAPSHOT_RST_LEN = 128-24
 ;    BUFFER                               ( c-addr u buffer )
 ;    SWAP MOVE
 ;    UPDATE  ;
-    head(XBSAVE,(BSAVE),docolon)
+XBSAVE:
+        call docolon
         dw BUFFER
         dw SWOP,MOVE
         dw UPDATE
@@ -1805,7 +1922,8 @@ BSAVE4:
 ; (BLOAD) ( c-addr u blk -- )  load block from disks
 ;    BLOCK                            ( c-addr u buffer )
 ;    ROT ROT MOVE    ;
-    head(XBLOAD,(BLOAD),docolon)
+XBLOAD:
+        call docolon
         dw BLOCK
         dw ROT,ROT,MOVE
         dw EXIT
@@ -1872,7 +1990,8 @@ defc BLK_DATA_SIZE   = 1024-BLK_HEADER_SIZE
 ;       SWAP MOVE UPDATE      ( c-addr u )
 ;       + 0                   ( c-addr' 0 )
 ;    THEN   FLUSH  ;
-    head(XSAVEHDR,(SAVEHDR),docolon)
+XSAVEHDR:
+        call docolon
         dw DUP,lit,BLK_HEADER_SIZE,ERASE
         dw lit,BLK_HEADER_SIZE,OVER,STORE
         dw CELLPLUS,TWODUP,STORE
@@ -2028,7 +2147,8 @@ REC_NULL_XT:
 ;   ROT ROT 2DUP 2>R ROT EXECUTE 2R> ROT
 ;   DUP RECTYPE-NULL =          ( -- i*x addr len RECTYPE-TOKEN f )
 ;   IF DROP 0 ELSE NIP NIP -1 THEN   ;
-    head(XRECOGNIZE,(RECOGNIZE),docolon)
+XRECOGNIZE:
+        call docolon
         dw ROT,ROT,TWODUP,TOR,TOR,ROT,EXECUTE,RFROM,RFROM,ROT
         dw DUP,RECTYPE_NULL
         dw EQUAL,qbranch,XRECOGNIZE1
@@ -2323,3 +2443,27 @@ NR2:    DW DROP
         DW SOURCE_ID,STORE
         DW REFILLVEC,STORE
         DW EXIT
+
+
+; RC2014 16K initialisation ====================
+
+
+;Z /16KROM    init enhanced features
+    head(SLASH16KROM,``/16KROM'',docolon)
+        DW lit,VOCAB_WORDLIST_WID,lit,FORTH_WORDLIST_WID,lit,2,SET_ORDER
+        DW lit,FORTH_WORDLIST_WID,CURRENT,STORE
+        DW lit,VOCAB_WORDLIST_WID,VOCLINK,STORE
+        DW lit,0,lit,tempbuff_offset,STORE
+        DW SLASHBLKCTX
+        DW XSQUOTE
+        DB 10," - 16K ROM"
+        DW TYPE,CR
+        DW SLASHCFLASH
+        DW lit,0,DISK
+        DW DUP,TOR,DISKTODRIVE,STORE
+        DW lit,0x2000,RFETCH,DISKTOLIMIT,STORE
+        DW lit,0,lit,0,RFETCH,DISKTOOFFSET,TWOSTORE
+        DW lit,NOOP,RFROM,DISKTOTRANSLATOR,STORE
+        DW lit,0,DSK,STORE
+        dw EXIT
+
