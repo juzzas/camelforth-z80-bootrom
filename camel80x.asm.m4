@@ -1486,7 +1486,7 @@ BLOCK_READWRITE2:
 ;     DUP BLK !
 ;     DSK @
 ;     BLKCTX-GET
-;     ELSE  ABORT" BLOCK OUT OF RANGE" THEN ;
+;     ELSE  -35 THROW THEN ;
 XBUFFER:
         call docolon
         dw DUP,BLKLIMIT,FETCH,ULESS,qbranch,XBUFFER1
@@ -1495,10 +1495,8 @@ XBUFFER:
         dw BLKCTX_GET
         dw EXIT
 XBUFFER1:
-        dw XSQUOTE
-        db 18,"BLOCK OUT OF RANGE"
-        DW TYPE
-        dw ABORT
+        dw lit,-35,THROW
+        dw EXIT
 
 
 ;C BUFFER        n -- addr         push buffer address
