@@ -1047,12 +1047,25 @@ DEFC BLOCKCTX_NUM = 4
 DEFC BLOCK_FIRST = 0xE000
 
 ;Z /BLKCTX   ( -- ) initialise the block contexts
-;    BLKCTX_PTR  BLKCTX% BLKCTX# *  0 FILL
-;    0 BLKCTX_IDX !    ;
+;    BLKCTX_PTR BLKCTX# 0 DO   ( ctx[i] )
+;       0xffff OVER BLKCTX>BLOCK !  ( ctx[i] )
+;       0xffff OVER BLKCTX>DISK !  ( ctx[i] )
+;       0x0000 OVER BLKCTX>BUFFER !  ( ctx[i] )
+;       0x0000 OVER BLKCTX>FLAGS !  ( ctx[i] )
+;       BLOCKCTX_SIZE +             ( ctx[i+1 ]
+;    LOOP
+;    DROP  0 BLKCTX_IDX !  ;
 SLASHBLKCTX:
         call docolon
-        dw lit,BLKCTX_PTR
-        dw BLKCTXSIZE,BLKCTXNUM,STAR,lit,0,FILL
+        dw lit,BLKCTX_PTR,BLKCTXNUM,lit,0,xdo
+SLASHBLKCTX1:
+        dw lit,0xffff,OVER,BLKCTXTOBLOCK,STORE
+        dw lit,0xffff,OVER,BLKCTXTODISK,STORE
+        dw lit,0x0000,OVER,BLKCTXTOBUFFER,STORE
+        dw lit,0x0000,OVER,BLKCTXTOFLAGS,STORE
+        dw BLKCTXSIZE,PLUS
+        dw xloop,SLASHBLKCTX1
+        dw DROP
         dw lit,0,lit,BLKCTX_IDX,STORE
         dw EXIT
 
@@ -1310,6 +1323,16 @@ BLKLIMIT:
         dw DSK,FETCH,DISK,DISKTOLIMIT
         dw EXIT
 
+;Z BLK2LBA   ( dsk blk -- LBA-L LBA-H )
+;  S>D D2*   ( dsk LBA-L LBA-H )
+;  ROT DISK   ( LBA-L LBA-H  disk-id )
+;  DISK>OFFSET 2@ D+ ;  ( LBA-L' LBA-H' )
+BLK2LBA:
+        call docolon
+        dw STOD,DTWOSTAR
+        dw ROT,DISK
+        dw DISKTOOFFSET,TWOFETCH,DPLUS
+        dw EXIT
 
 
 EXTERN cflash_init
@@ -1400,22 +1423,6 @@ CF_DRIVE_CTX:
         dw CF_CAPACITY
 
 
-;Z BLK2LBA   ( dsk blk -- LBA-L LBA-H )
-;  DUP 8000 AND  IF 1 ELSE 0 THEN SWAP
-;  2*   ( dsk cry blk' )
-;  ROT ROT + ;
-BLK2LBA:
-        call docolon
-        ; TODO: fix to use disk offset and limit
-        dw DUP,lit,0x8000,AND,qbranch,B2LBA1
-        dw lit,1
-        dw branch,B2LBA2
-B2LBA1:
-        dw lit,0
-B2LBA2:
-        dw SWOP,TWOSTAR
-        dw ROT,ROT,PLUS
-        dw EXIT
 
 
 ;Z BLOCK-READ  ( dsk blk adrs -- )  Compact Flash read BLK and DSK
@@ -1596,7 +1603,6 @@ SECTION code_16k
 
 
 
-; ( tloader - load text files embedded into blocks          1 / n)
 ; : load-refill  ( -- flag )
 ;     load-index @ 1023 > IF 
 ;         -1 load-blk# +!
@@ -1651,6 +1657,7 @@ XLOAD2:
 
 
 ;C  LOAD ( blk -- )
+;    DUP 0= IF -35 THROW THEN
 ;    load-index @ >R   0 load-index !
 ;    load-blk# @ >R    1 load-blk# !
 ;    REFILLVEC @ >R    ['] load-refill REFILLVEC !
@@ -1662,6 +1669,9 @@ XLOAD2:
 ;    R> load-blk# !
 ;    R> load-index ! ;
     head(LOAD,LOAD,docolon)
+        dw DUP,ZEROEQUAL,qbranch,LOAD1
+        dw lit,-35,THROW
+LOAD1:
         dw lit,load_index,FETCH,TOR,lit,0,lit,load_index,STORE
         dw lit,load_blknum,FETCH,TOR,lit,1,lit,load_blknum,STORE
         dw REFILLVEC,FETCH,TOR,lit,LOAD_REFILL,REFILLVEC,STORE
@@ -1688,7 +1698,7 @@ XLOAD2:
     head(THRU,THRU,docolon)
         dw ONEPLUS,SWOP,xdo
 THRU1:
-        dw II,DUP,DOT,LOAD,xloop,THRU1
+        dw II,DUP,LOAD,xloop,THRU1
         dw EXIT
 
 ;C +THRU            n1 n2  --    load blocks BLK+n1 to BLK+n2
@@ -1696,7 +1706,7 @@ THRU1:
     head(PLUSTHRU,+THRU,docolon)
         dw ONEPLUS,SWOP,xdo
 PLUSTHRU1:
-        dw II,DUP,DOT,PLUSLOAD,xloop,PLUSTHRU1
+        dw II,DUP,PLUSLOAD,xloop,PLUSTHRU1
         dw EXIT
 
 ;C COPY            n1 n2  --    copy block n1 to n2
