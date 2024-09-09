@@ -127,6 +127,26 @@ pico_wait002:
 
 
 pico_waitend:
+    ; probe
+    ; $AA -> LBA0
+    ld  A,0xAA
+    out (__IO_CF_IDE_LBA0),a
+
+    ; $55 => LBA1
+    ld a,0x55
+    out (__IO_CF_IDE_LBA1),a
+
+    ; TEST LBA0 == $AA
+    in a, (__IO_CF_IDE_LBA0)
+    cp 0xaa
+    jr nz, init_error
+
+    ; TEST LBA1 == $55
+    in a, (__IO_CF_IDE_LBA1)
+    cp 0x55
+    jr nz, init_error
+
+
     call ide_wait_ready         ;make sure drive is ready to proceed
 
     ; Set 8-bit mode
@@ -154,6 +174,7 @@ init_error:
     ld bc, 0x0000
     rst 0x20
     ret
+
 
 
 PUBLIC cflash_identify
