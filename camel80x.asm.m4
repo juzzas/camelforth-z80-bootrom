@@ -48,25 +48,6 @@ SECTION code_16k
         head(DSK,DSK,douser)
             dw 22
 
-dnl    ;Z BLKOFFSET    -- a-addr  1024byte block buffer
-dnl    ;  24 USER BLKOFFSET
-dnl        head(BLKOFFSET,BLKOFFSET,douser)
-dnl            dw 24
-
-dnl    ;Z BLKLIMIT    -- a-addr  block update flag storage
-dnl    ;  26 USER BLKLIMIT
-dnl        head(BLKLIMIT,BLKLIMIT,douser)
-dnl            dw 26
-
-dnl    ;Z SECTWRVEC   -- a-addr  if set, use XT to write sector
-dnl    ;  28 USER SECTWRVEC   ( LBA-L LBA-H adrs )
-dnl        head(SECTWRVEC,SECTWRVEC,douser)
-dnl            dw 28
-
-dnl    ;Z SECTRDVEC   -- a-addr  if set, use XT to read sector
-dnl    ;  30 USER SECTRDVEC    ( LBA-L LBA-H adrs )
-dnl        head(SECTRDVEC,SECTRDVEC,douser)
-dnl            dw 30
 
     ;Z SCR          -- a-addr  last edited screen number
     ;  32 USER SCR
@@ -253,24 +234,25 @@ DLESS2:
     head(DZEROEQUAL,D0=,docolon)
         DW OR,ZEROEQUAL,EXIT
 
-;: d2/ dup 1 and >r 2/ swap 2/ r>    if #msb or then swap ;
-    head(DTWOSLASH,D2/,docolon)
-       DW DUP,lit,1,AND,TOR,TWOSLASH,SWOP,TWOSLASH,RFROM
-       DW qbranch,DTWOSLASH1
-       DW lit,0x8000,OR
+;: d2/     ( d -- d     shift double number right, perserving most-significant bit )
+    head(DTWOSLASH,D2/,docode)
+        pop hl
+        sra b
+        rr c
+        rr h
+        rr l
+        push hl
+        next
 
-DTWOSLASH1:
-       DW SWOP
-       DW EXIT
-
-;: d2* over #msb and >r 2* swap 2* swap r>  if 1 or then ;
-    head(DTWOSTAR,D2*,docolon)
-       DW OVER,lit,0x8000,AND,TOR,TWOSTAR,SWOP,TWOSTAR,SWOP,RFROM
-       DW qbranch,DTWOSTAR1
-       DW lit,1,OR
-DTWOSTAR1:
-       DW EXIT
-
+;: d2*     ( d -- d     shift double left )
+    head(DTWOSTAR,D2*,docode)
+       pop hl 
+       sla b
+       rl c
+       rl h
+       rl l
+       push hl
+       next
 
 
 ;: dmax 2over 2over d< if 2swap then 2drop ; ( d1 d2 -- d )
@@ -374,6 +356,10 @@ dnl         DW EXIT
 
 ;C ;CODE   --      end a code definition
     head(SEMICODE,;CODE,docolon)
+        DW EXIT
+
+;C NEXT,   --      compile forth NEXT word to code definition
+    head(NEXTCOMMA,``NEXT,'',docolon)
         DW lit,semicode_block,HERE
         DW lit,semicode_block_len,MOVE
         DW lit,semicode_block_len,ALLOT
@@ -878,8 +864,7 @@ RESTOREORDER1:
 ;       THEN
 ;   0= UNTIL                   -- a len nfa  OR  a len 0
 ;      ;
-FIND_NAME_IN:
-        call docolon
+    head(FIND_NAME_IN,FIND-NAME-IN,docolon)
         DW WIDTONFA
         DW DUP,ZEROEQUAL,qbranch,FINDIN1
         DW DROP,lit,0,EXIT
@@ -1258,7 +1243,7 @@ DEFC DISKCTX_SIZE = 10
 DEFC DISKCTX_NUM = 8
 
 
-;Z DISK>ID  ( disk-id -- a-addr' )  get address of drive ID for disk
+;Z DISK>DRIVE  ( disk-id -- a-addr' )  get address of drive ID for disk
     head(DISKTODRIVE,DISK>DRIVE,docolon)
         dw EXIT
 
@@ -1297,6 +1282,31 @@ DISK1:
         dw EXIT
 
 
+        DEFC SLICE_SECTORS = 8192*2
+;Z SLICE  ( n -- )     set LBA offset to current DSK (n * 8MB)
+;  CURRDISKID >R SLICE_SECTORS UM*                ( lba-offset ; disk-id )
+;  2DUP R@ DISK>DRIVE @ DRIVE>CAPACITY @ EXECUTE  ( lba-offset lba-offset capacity )
+;  2OVER 2OVER  D<  IF                            ( lba-offset lba-offset capacity )
+;  2SWAP SLICE_SECTORS M+  DMIN                   ( lba-offset lba-end )
+;  2OVER  D-  D2/  D>S                            ( lba-offset limit )
+;  R@ DISK>LIMIT !
+;  R> DISK>OFFSET 2!
+;  ELSE  -257 THROW THEN   ;
+    head(SLICE,SLICE,docolon)
+        DW FLUSH
+        DW CURRDISKID,TOR,lit,SLICE_SECTORS,UMSTAR
+        DW TWODUP,RFETCH,DISKTODRIVE,FETCH,DRIVETOCAPACITY,FETCH,EXECUTE
+        DW TWOOVER,TWOOVER,DLESS,qbranch,SLICE1
+        DW TWOSWAP,lit,SLICE_SECTORS,MPLUS
+        DW DMIN
+        DW TWOOVER,DMINUS,DTWOSLASH,DROP
+        DW RFETCH,DISKTOLIMIT,STORE
+        DW RFROM,DISKTOOFFSET,TWOSTORE,EXIT
+SLICE1:
+        DW lit,-257,THROW
+        DW EXIT
+
+
 SECTION data
 
 DISKCTX_PTR:
@@ -1323,6 +1333,14 @@ BLKLIMIT:
         dw DSK,FETCH,DISK,DISKTOLIMIT
         dw EXIT
 
+CURRDISKID:
+        call docolon
+        DW DSK,FETCH,DISK
+        DW DUP,ZEROEQUAL,qbranch,CURRDISK1
+        DW lit,-256,THROW
+CURRDISK1:
+        DW EXIT
+
 ;Z BLK2LBA   ( dsk blk -- LBA-L LBA-H )
 ;  S>D D2*   ( dsk LBA-L LBA-H )
 ;  ROT DISK   ( LBA-L LBA-H  disk-id )
@@ -1341,7 +1359,7 @@ EXTERN cflash_identify
 ;   clash_init CALL    ( f )
 ;   IF
 ;       ." CFLASH INITIALISED"
-;       CF_DRIVE_CTX
+;       CF_DRIVE-ID
 ;   ELSE ." NO CFLASH" 0 THEN ;
     head(SLASHCFLASH,/CFLASH,docolon)
         dw lit,cflash_init,CALL
@@ -1352,7 +1370,7 @@ EXTERN cflash_identify
         dw XSQUOTE
         db 7,"blocks)"
         dw TYPE,CR
-        dw lit,CF_DRIVE_CTX
+        dw CF_DRIVE_ID
         dw EXIT
 SLASHCFLASH1:
         dw XSQUOTE
@@ -1417,7 +1435,7 @@ SECTOR_WRITE3:
         dw EXIT
 
 
-CF_DRIVE_CTX:
+    head(CF_DRIVE_ID,CF_DRIVE-ID,docreate)
         dw CF_SECTOR_READ
         dw CF_SECTOR_WRITE
         dw CF_CAPACITY
@@ -1431,7 +1449,7 @@ CF_DRIVE_CTX:
 ; and block numbers respectively
 ;     >R BLK2LBA 2DUP R@   ( LBA-L LBA-H LBA-L LBA-H adrs ;  R: adrs )
 ;     CF_SECTOR_READ       ( LBA-L LBA-H ;  R: adrs )
-;     1 S>D D+             ( LBA-L' LBA-H' ;  R: adrs )
+;     1 M+                 ( LBA-L' LBA-H' ;  R: adrs )
 ;     R>  512 +            ( LBA-L' LBA-H' adrs' )
 ;     CF_SECTOR_READ       ( )
 ;     EXIT
@@ -1439,7 +1457,7 @@ BLOCK_READ:
         call docolon
         dw TOR,BLK2LBA,TWODUP,RFETCH    ; convert block to LBA
         dw SECTRDVEC,FETCH,EXECUTE
-        dw lit,1,STOD,DPLUS
+        dw lit,1,MPLUS
         dw RFROM,lit,512,PLUS
         dw SECTRDVEC,FETCH,EXECUTE
         dw EXIT
@@ -1783,7 +1801,7 @@ XLIST1:
     head(INDEX,INDEX,docolon)
         dw CR,ONEPLUS,SWOP,xdo
 INDEX1:
-        dw II,lit,2,DOTR,SPACE
+        dw II,lit,5,DOTR,SPACE
         dw II,DUP,SCR,STORE,BLOCK,DROP
         dw lit,0,LL,xloop,INDEX1
         dw EXIT

@@ -89,6 +89,7 @@ Code
 
 Additional CamelForth exception values are in the rang -256 and -512, and are listed below:
 
-none.
+-256 invalid DISK
+-257 invalid SLICE
 
 
