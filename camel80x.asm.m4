@@ -392,43 +392,59 @@ dnl ;   DOES>  ;
         dw EXIT
 
 ; Push number onto STACK
-; : >STACK ( n lifo -- )
+; : >S ( n lifo -- )
 ;      SWAP OVER @ ! CELL SWAP +! ;
-    head(TOSTACK,>STACK,docolon)
+    head(TOSTACK,>S,docolon)
         DW SWOP,OVER,FETCH,STORE,CELL,SWOP,PLUSSTORE
         DW EXIT
 
 ; Pop number from STACK
-; : STACK> ( lifo -- x )
+; : S> ( lifo -- x )
 ;      CELL NEGATE    ( lifo -2 )
 ;      OVER           ( lifo -2 lifo )
 ;      +!             ( lifo )
 ;      @ ;
-    head(STACKFROM,STACK>,docolon)
+    head(STACKFROM,S>,docolon)
         DW CELL,NEGATE,OVER,PLUSSTORE,FETCH
         DW EXIT
 
 ; Fetch the value at the top of the STACK
-; : STACK@ ( lifo -- x )
+; : S@ ( lifo -- x )
 ;      @ CELL- @ ;
-    head(STACKFETCH,STACK@,docolon)
+    head(STACKFETCH,S@,docolon)
         DW FETCH,CELLMINUS,FETCH
         DW EXIT
 
 ; Replace the value at the top of the STACK
-; : STACK! ( x lifo -- )
+; : S! ( x lifo -- )
 ;      @ CELL- ! ;
-    head(STACKSTORE,STACK!,docolon)
+    head(STACKSTORE,S!,docolon)
         DW FETCH,CELLMINUS,STORE
         DW EXIT
 
+; Duplicate the value at the top of the STACK
+; : SDUP ( lifo -- )
+;      DUP S@ SWAP S> ;
+    head(STACKDUP,SDUP,docolon)
+        DW DUP,STACKFETCH,SWOP,TOSTACK
+        DW EXIT
+
+; Duplicate the value at the top of the STACK
+; : SOVER ( lifo -- )
+;      DUP >R  ( lilo   r: lifo );
+;      S> R@ S> SWAP R@ >S R> >S ;
+    head(STACKOVER,SOVER,docolon)
+        DW DUP,TOR,STACKFROM
+        DW RFETCH,STACKFROM,SWOP,RFETCH,TOSTACK,RFROM,TOSTACK
+        DW EXIT
+
 ; Clear STACK
-; : STACK-CLEAR ( lifo -- )
+; : /STACK ( lifo -- )
 ;      DUP    ( lifo lifo )
 ;      CELL+  ( lifo lifo+2 )
 ;      SWAP   ( lifo+2 lifo )
 ;      !     ;
-    head(STACKCLEAR,STACK-CLEAR,docolon)
+    head(STACKCLEAR,/STACK,docolon)
         DW DUP,CELLPLUS,SWOP,STORE
         DW EXIT
 
@@ -967,13 +983,12 @@ XVOCDOES:
         DW RFROM,VOCLINK,FETCH,WIDTONFA,NFATOCFA,STORECF
         DW EXIT
 
-;: ALSO  ( -- )  STACK_WORDLISTS DUP STACK@ >STACK ;
+;: ALSO  ( -- )  STACK_WORDLISTS STACK-DUP ;
     head(ALSO,ALSO,docolon)
-        dw lit,STACK_WORDLISTS,STACKFETCH
-        dw lit,STACK_WORDLISTS,TOSTACK
+        dw lit,STACK_WORDLISTS,STACKDUP
         dw EXIT
 
-;: PREVIOUS  ( --  )  STACK_WORDLISTS >STACK, DROP ;
+;: PREVIOUS  ( --  )  STACK_WORDLISTS STACK> DROP ;
     head(PREVIOUS,PREVIOUS,docolon)
         dw lit,STACK_WORDLISTS,STACKFROM,DROP
         dw EXIT
