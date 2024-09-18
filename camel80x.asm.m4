@@ -775,19 +775,16 @@ WORDLIST1:
 ; Return wid, the identifier of the word list that includes all standard
 ; words provided by the implementation. This word list is initially the
 ; compilation word list and is part of the initial search order.
-        head(FORTH_WORDLIST,FORTH-WORDLIST,docolon)
-            dw lit,FORTH_WORDLIST_WID
-            dw EXIT
+        head(FORTH_WORDLIST,FORTH-WORDLIST,docon)
+            dw FORTH_WORDLIST_WID
 
 ;: EDITOR-WORDLIST ( -- wid )
-        head(EDITOR_WORDLIST,EDITOR-WORDLIST,docolon)
-            dw lit,EDITOR_WORDLIST_WID
-            dw EXIT
+        head(EDITOR_WORDLIST,EDITOR-WORDLIST,docon)
+            dw EDITOR_WORDLIST_WID
 
 ;: VOCAB-WORDLIST ( -- wid )
-        head(VOCAB_WORDLIST,VOCAB-WORDLIST,docolon)
-            dw lit,VOCAB_WORDLIST_WID
-            dw EXIT
+        head(VOCAB_WORDLIST,VOCAB-WORDLIST,docon)
+            dw VOCAB_WORDLIST_WID
 
 ;: GET-ORDER  ( -- wid1 .. widn n )
         head(GET_ORDER,GET-ORDER,docolon)
