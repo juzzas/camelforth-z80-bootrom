@@ -1451,7 +1451,7 @@ WARM1:
 ;       WORDLISTS DUP @ + @    ;
         head(WIDTONFA,WID>NFA,docolon)
             dw lit,flag_rom16k,FETCH,qbranch,WIDTONFA1
-            dw CELLS,WORDLISTS,PLUS,FETCH
+            dw FETCH
             dw EXIT
 WIDTONFA1:
             dw DROP,LATEST,FETCH
@@ -1462,7 +1462,7 @@ WIDTONFA1:
 ;       CELLS,WORDLISTS DUP @ CELLS + !    ;
         head(WIDTONFASTORE,WID>NFA!,docolon)
             dw lit,flag_rom16k,FETCH,qbranch,WIDTONFASTOR1
-            dw CELLS,WORDLISTS,PLUS,STORE
+            dw STORE
             dw EXIT
 WIDTONFASTOR1:
             dw DROP,LATEST,STORE
@@ -1475,7 +1475,7 @@ WIDTONFASTOR1:
             dw lit,STACK_WORDLISTS,STACKFETCH
             dw EXIT
 CONTEXT1:
-            dw lit,FORTH_WORDLIST_WID
+            dw LATEST
             dw EXIT
 
 

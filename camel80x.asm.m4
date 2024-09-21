@@ -64,11 +64,20 @@ SECTION code_16k
         head(VOCLINK,VOCLINK,douser)
             dw 38
 
-    ;Z WORDLISTS      -- addr    address of WORDLIST list
-    ; one cell for count, then 8 cells for LFA's of wordlists
-    ;  48 USER WORDLISTS
-        head(WORDLISTS,WORDLISTS,douser)
-            dw 48
+;: FORTH-WORDLIST ( -- wid )
+; Return wid, the identifier of the word list that includes all standard
+; words provided by the implementation. This word list is initially the
+; compilation word list and is part of the initial search order.
+        head(FORTH_WORDLIST,FORTH-WORDLIST,docolon)
+            dw LATEST,EXIT
+
+;: EDITOR-WORDLIST ( -- wid )
+        head(EDITOR_WORDLIST,EDITOR-WORDLIST,douser)
+            dw 52
+
+;: VOCAB-WORDLIST ( -- wid )
+        head(VOCAB_WORDLIST,VOCAB-WORDLIST,douser)
+            dw 54
 
 EXTERN intvec_ptr
 ;Z INTVEC      -- a-addr   pointer to address holding interrupt vector
@@ -756,13 +765,7 @@ SECTION code_16k
 ;           DUP 0 SWAP WID>NFA!
 ;       THEN ;
         head(WORDLIST,WORDLIST,docolon)
-            dw WORDLISTS,FETCH,ONEPLUS,DUP,lit,8,GREATER,qbranch,WORDLIST1
-            dw XSQUOTE
-            db 9,"ERROR:WID"
-            dw COUNT,TYPE,ABORT
-WORDLIST1:
-            dw DUP,WORDLISTS,STORE
-            dw DUP,lit,0,SWOP,WIDTONFASTORE
+            dw HERE,lit,0,COMMA
             dw EXIT
 
 ;: SEARCH-WORDLIST ( c-addr u wid -- 0 | xt 1 | xt -1 )
@@ -770,21 +773,6 @@ WORDLIST1:
 ; identified by wid. If the definition is not found, return zero. If the
 ; definition is found, return its execution token xt and one (1) if the
 ; definition is immediate, minus-one (-1) otherwise.
-
-;: FORTH-WORDLIST ( -- wid )
-; Return wid, the identifier of the word list that includes all standard
-; words provided by the implementation. This word list is initially the
-; compilation word list and is part of the initial search order.
-        head(FORTH_WORDLIST,FORTH-WORDLIST,docon)
-            dw FORTH_WORDLIST_WID
-
-;: EDITOR-WORDLIST ( -- wid )
-        head(EDITOR_WORDLIST,EDITOR-WORDLIST,docon)
-            dw EDITOR_WORDLIST_WID
-
-;: VOCAB-WORDLIST ( -- wid )
-        head(VOCAB_WORDLIST,VOCAB-WORDLIST,docon)
-            dw VOCAB_WORDLIST_WID
 
 ;: GET-ORDER  ( -- wid1 .. widn n )
         head(GET_ORDER,GET-ORDER,docolon)
@@ -971,7 +959,7 @@ FINDNG1:
 
         dw XVOCDOES
         call dodoes
-        DW FETCH,lit,STACK_WORDLISTS,STACKSTORE
+        DW lit,STACK_WORDLISTS,STACKSTORE
         dw EXIT
 
 ; patch latest entry on VOCLINK with code from VOCDOES
@@ -2488,9 +2476,9 @@ NR2:    DW DROP
 
 ;Z /16KROM    init enhanced features
     head(SLASH16KROM,``/16KROM'',docolon)
-        DW lit,VOCAB_WORDLIST_WID,lit,FORTH_WORDLIST_WID,lit,2,SET_ORDER
-        DW lit,FORTH_WORDLIST_WID,CURRENT,STORE
-        DW lit,VOCAB_WORDLIST_WID,VOCLINK,STORE
+        DW VOCAB_WORDLIST,FORTH_WORDLIST,lit,2,SET_ORDER
+        DW FORTH_WORDLIST,CURRENT,STORE
+        DW VOCAB_WORDLIST,VOCLINK,STORE
         DW lit,0,lit,tempbuff_offset,STORE
         DW SLASHBLKCTX
         DW XSQUOTE

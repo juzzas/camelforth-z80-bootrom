@@ -1103,6 +1103,3 @@ camel80_16k_tail:
         defc vocab_lastword=link_vocab    ; nfa of last word in VOCAB wordlist.
         defc enddict=WRKSPC       ; user's code starts here
 
-        defc FORTH_WORDLIST_WID=1
-        defc EDITOR_WORDLIST_WID=2
-        defc VOCAB_WORDLIST_WID=3
