@@ -128,35 +128,49 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
         pop bc
         next
 
-; TEMPBUFF reserves 256byte buffers as a stack
+; TEMPBUFF reserves chucks of 
+;Z   /TEMPBUFF  ( -- )
+    head(SLASHTEMPBUFF,/TEMPBUFF,docolon)
+        DW lit,STACK_TEMPBUFF,STACKCLEAR
+        DW EXIT
+
 ;Z   TEMPBUFF-BASE  ( -- addr )  addr of base of tempbuffers
     head(TEMPBUFF_BASE,TEMPBUFF-BASE,docolon)
-        dw BLKFIRST,lit,tempbuff_offset,FETCH,MINUS
-        dw EXIT
+        DW BLKFIRST
+        DW lit,STACK_TEMPBUFF,STACKEMPTYQ,INVERT,qbranch,TEMPBUFF_BASE1
+        DW lit,STACK_TEMPBUFF,STACKFETCH,MINUS
+TEMPBUFF_BASE1:
+        DW EXIT
 
-;Z   TEMPBUFF-ALLOC  ( -- addr ) allocates 256byte buffer
+;Z   TEMPBUFF-ALLOC  ( u -- addr ) allocates u byte buffer
     head(TEMPBUFF_ALLOC,TEMPBUFF-ALLOC,docolon)
-        dw lit,256,lit,tempbuff_offset,PLUSSTORE
-        dw TEMPBUFF_BASE
+        DW lit,STACK_TEMPBUFF,STACKEMPTYQ,INVERT,qbranch,TEMPBUFF_ALLOC1
+        DW lit,STACK_TEMPBUFF,STACKFETCH,PLUS
+TEMPBUFF_ALLOC1:
+        DW lit,STACK_TEMPBUFF,TOSTACK
+        DW TEMPBUFF_BASE
         dw EXIT
 
 ;Z   TEMPBUFF-FREE  ( --  ) frees last 256byte buffer
     head(TEMPBUFF_FREE,TEMPBUFF-FREE,docolon)
-        dw lit,-256,lit,tempbuff_offset,PLUSSTORE
+        DW lit,STACK_TEMPBUFF,STACKEMPTYQ,INVERT,qbranch,TEMPBUFF_FREE1
+        DW lit,STACK_TEMPBUFF,STACKDROP
+TEMPBUFF_FREE1:
         dw EXIT
+
+SECTION data
+
+STACK_TEMPBUFF:
+        ds 34    ; 16 cells + stack top pointer
+
+SECTION code_16k
+
 
 ;C   UNUSED  ( -- u )  return unused space in data area
     head(UNUSED,UNUSED,docolon)
         dw TEMPBUFF_BASE,HERE,MINUS
         dw EXIT
 
-
-SECTION data
-
-tempbuff_offset:
-        defs 2
-
-SECTION code_16k
 
 
 ; RC2014 EXTENSION output ====================
@@ -431,9 +445,16 @@ dnl ;   DOES>  ;
         DW FETCH,CELLMINUS,STORE
         DW EXIT
 
+; Drop the value at the top of the STACK
+; : SDROP ( lifo -- )
+;      S> DROP ;
+    head(STACKDROP,SDROP,docolon)
+        DW STACKFROM,DROP
+        DW EXIT
+
 ; Duplicate the value at the top of the STACK
 ; : SDUP ( lifo -- )
-;      DUP S@ SWAP S> ;
+;      DUP S@ SWAP >S ;
     head(STACKDUP,SDUP,docolon)
         DW DUP,STACKFETCH,SWOP,TOSTACK
         DW EXIT
@@ -1381,11 +1402,11 @@ SLASHCFLASH1:
 
 ;Z CF-CAPACITY  ( d -- )   Fetch Compact Flash capacity (sectors)
     head(CF_CAPACITY,CF_CAPACITY,docolon)
-        dw TEMPBUFF_ALLOC,DROP,TEMPBUFF_ALLOC,DUP,TOR,lit,cflash_identify,CALL
+        dw lit,512,TEMPBUFF_ALLOC,DUP,TOR,lit,cflash_identify,CALL
 ;        dw RFETCH,lit,256,MEMDUMP
         dw RFETCH,lit,120,PLUS,FETCH      ; low word of max LBA
         dw RFROM,lit,122,PLUS,FETCH       ; high word of max LBA
-        dw TEMPBUFF_FREE,TEMPBUFF_FREE
+        dw TEMPBUFF_FREE
         DW EXIT
 
 
@@ -2479,8 +2500,8 @@ NR2:    DW DROP
         DW VOCAB_WORDLIST,FORTH_WORDLIST,lit,2,SET_ORDER
         DW FORTH_WORDLIST,CURRENT,STORE
         DW VOCAB_WORDLIST,VOCLINK,STORE
-        DW lit,0,lit,tempbuff_offset,STORE
         DW SLASHBLKCTX
+        DW SLASHTEMPBUFF
         DW XSQUOTE
         DB 10," - 16K ROM"
         DW TYPE,CR
