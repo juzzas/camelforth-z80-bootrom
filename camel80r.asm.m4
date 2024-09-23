@@ -217,16 +217,21 @@ QIHXCRC:
 
 ;Z (IHXBYTE)  ( tib-ptr -- u tib-ptr )
 ;    BASE @ >R HEX
-;    >R 0 S>D R> 2
+;    R@ 0 S>D R> 2
 ;    >NUMBER       ( du tib-ptr u )
 ;    DROP NIP      ( u tib-ptr )
+;    DUP RFROM = IF -1 THROW THEN
 ;    R> BASE !    ;
 XIHXBYTE:
         call docolon
         DW BASE,FETCH,TOR,HEX
-        DW TOR,lit,0,STOD,RFROM,lit,2
+        DW TOR,lit,0,STOD,RFETCH,lit,2
         DW TONUMBER
         DW DROP,NIP
+        DW DUP,RFROM,EQUAL,qbranch,XIHXBYTE1
+        DW lit,-1,THROW
+
+XIHXBYTE1:
         DW RFROM,BASE,STORE
         DW EXIT
 
@@ -315,37 +320,53 @@ IHXCRC:
 ;    ELSE
 ;        0   ( flag not recognised )
 ;    THEN  ;
-    head(IHEXQ,IHEX?,docolon)
+XIHEXQ:
+        call docolon
         DW DROP
         DW lit,0,IHXCRC,STORE
-        DW DUP,CFETCH,lit,58,NOTEQUAL,qbranch,IHEXQ1
+        DW DUP,CFETCH,lit,58,NOTEQUAL,qbranch,XIHEXQ1
         DW DROP,lit,0,EXIT
 
-IHEXQ1:
+XIHEXQ1:
         DW CHARPLUS
         DW IHXBYTE,OVER,PAD,CELLPLUS,STORE
         DW IHXWORD,SWOP,PAD,STORE
         DW PAD,CELLPLUS,CELLPLUS,SWOP
         DW IHXBYTE
 
-        DW OVER,ZEROEQUAL,qbranch,IHEXQ2
+        DW OVER,ZEROEQUAL,qbranch,XIHEXQ2
         DW NIP,IHXRECSTORE,XIHXBYTE,DROP,NIP
-        DW branch,IHEXQ3
-IHEXQ2:
+        DW branch,XIHEXQ3
+XIHEXQ2:
         DW DROP,NIP,NIP
-        DW lit,1,EQUAL,qbranch,IHEXQ2a
+        DW lit,1,EQUAL,qbranch,XIHEXQ2a
         DW lit,1,EXIT
-IHEXQ2a:
+XIHEXQ2a:
         DW lit,0,EXIT
 
-IHEXQ3:
-        DW QIHXCRC,qbranch,IHEXQ4
+XIHEXQ3:
+        DW QIHXCRC,qbranch,XIHEXQ4
         DW PAD,CELLPLUS,CELLPLUS
         DW PAD,FETCH
         DW PAD,CELLPLUS,FETCH,lit,-1
         DW EXIT
-IHEXQ4:
+XIHEXQ4:
         DW lit,0,EXIT
+
+
+;Z IHEX?
+;    ['] (IHEXQ?) CATCH
+;       0<> IF  0  THEN  EXIT  ;
+
+    head(IHEXQ,IHEX?,docolon)
+        DW lit,XIHEXQ,CATCH
+        DW qbranch,IHEXQ1
+        DW lit,0,EXIT
+
+IHEXQ1:
+        DW EXIT
+
+
 
 ; (IHEX)                   ( src dest len -- runtime action )
 ;     IHEX_START @ 0= IF OVER IHEX_START ! THEN
