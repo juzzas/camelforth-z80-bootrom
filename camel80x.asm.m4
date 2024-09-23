@@ -1714,7 +1714,7 @@ LOAD1:
     head(THRU,THRU,docolon)
         dw ONEPLUS,SWOP,xdo
 THRU1:
-        dw II,DUP,LOAD,xloop,THRU1
+        dw II,LOAD,xloop,THRU1
         dw EXIT
 
 ;C +THRU            n1 n2  --    load blocks BLK+n1 to BLK+n2
@@ -1722,7 +1722,7 @@ THRU1:
     head(PLUSTHRU,+THRU,docolon)
         dw ONEPLUS,SWOP,xdo
 PLUSTHRU1:
-        dw II,DUP,PLUSLOAD,xloop,PLUSTHRU1
+        dw II,PLUSLOAD,xloop,PLUSTHRU1
         dw EXIT
 
 ;C COPY            n1 n2  --    copy block n1 to n2
