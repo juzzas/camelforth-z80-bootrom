@@ -160,6 +160,11 @@ BACKSLASH:
     DW SOURCE,TOIN,STORE,DROP
     DW EXIT
 
+;C .(    --                     emit input until )
+;   [ HEX ] 29 WORD COUNT TYPE ; IMMEDIATE
+    immed(DOTPAREN,``.('',docolon)
+        DW lit,29H,WORD,COUNT,TYPE,EXIT
+
 ;X SLITERAL    c-addr u --    compile string literal
 ;    ['] (S") ,XT
 ;    DUP C,     ( store size )

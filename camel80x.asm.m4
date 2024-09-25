@@ -766,6 +766,9 @@ XDDOTW2:
 
 ; https://www.taygeta.com/forth/dpans16.htm#16.6.2.1965
 
+        head(WORDLISTS,WORDLISTS,docon)
+            DW STACK_WORDLISTS
+
 SECTION data
 
 STACK_WORDLISTS:
@@ -779,12 +782,7 @@ SECTION code_16k
 ; or may be dynamically allocated in data space. A system shall allow the
 ; creation of at least 8 new word lists in addition to any provided as part
 ; of the system.
-;       WORDLISTS @ 1+ DUP 8 > IF
-;           ABORT" ERROR:WID"
-;       ELSE
-;           DUP WORDLISTS !
-;           DUP 0 SWAP WID>NFA!
-;       THEN ;
+;   HERE  0 , ;
         head(WORDLIST,WORDLIST,docolon)
             dw HERE,lit,0,COMMA
             dw EXIT
@@ -797,12 +795,12 @@ SECTION code_16k
 
 ;: GET-ORDER  ( -- wid1 .. widn n )
         head(GET_ORDER,GET-ORDER,docolon)
-            dw lit,STACK_WORDLISTS,STACKGET
+            dw WORDLISTS,STACKGET
             dw EXIT
 
 ;: SET-ORDER  ( wid1 .. widn n -- )
         head(SET_ORDER,SET-ORDER,docolon)
-            dw lit,STACK_WORDLISTS,STACKSET
+            dw WORDLISTS,STACKSET
             dw EXIT
 
 ;: SAVE-ORDER       (addr -- )
@@ -852,7 +850,7 @@ RESTOREORDER1:
 
 ;: >ORDER  ( wid1 .. widn n -- )
         head(TOORDER,>ORDER,docolon)
-            dw lit,STACK_WORDLISTS,TOSTACK
+            dw WORDLISTS,TOSTACK
             dw EXIT
 
 ;: SET-CURRENT  ( wid -- )
@@ -909,12 +907,12 @@ FINDIN5:
 
 ;C FIND-NAME   c-addr len      -- 0   if not found
 ;C                                nt  if found
-;    ' FIND-NAME-IN STACK_WORDLISTS STACK.UNTIL
+;    ' FIND-NAME-IN WORDLISTS STACK.UNTIL
 ;                         ( c-addr len 0       if not found )
 ;                         ( c-addr len nfa     if found )
 ;    NIP NIP ;
     head(FIND_NAME,FIND-NAME,docolon)
-        DW lit,FIND_NAME_IN,lit,STACK_WORDLISTS,STACKUNTIL
+        DW lit,FIND_NAME_IN,WORDLISTS,STACKUNTIL
         DW NIP,NIP
         DW EXIT
 
@@ -952,13 +950,13 @@ FINDNG1:
 ;CREATE FORTH  FORTH-WORDLIST , DO-VOCABULARY
     head_vocab(FORTH,FORTH,docolon)
         dw FORTH_WORDLIST
-        dw lit,STACK_WORDLISTS,STACKSTORE
+        dw WORDLISTS,STACKSTORE
         dw EXIT
 
 ;CREATE EDITOR  EDITOR-WORDLIST , DO-VOCABULARY
     head_vocab(EDITOR,EDITOR,docolon)
         dw EDITOR_WORDLIST
-        dw lit,STACK_WORDLISTS,STACKSTORE
+        dw WORDLISTS,STACKSTORE
         dw EXIT
 
 
@@ -969,7 +967,7 @@ FINDNG1:
 ;   docreate ,CF                code field
 ;   WORDLIST ,
 ;
-;    DOES>  @ STACK_WORDLISTS TOSTACK
+;    DOES>  @ WORDLISTS TOSTACK
 ;  ;
     head(VOCABULARY,VOCABULARY,docolon)
         dw VOCLINK,FETCH,WIDTONFA,COMMA,lit,0,CCOMMA
@@ -980,7 +978,7 @@ FINDNG1:
 
         dw XVOCDOES
         call dodoes
-        DW lit,STACK_WORDLISTS,STACKSTORE
+        DW WORDLISTS,STACKSTORE
         dw EXIT
 
 ; patch latest entry on VOCLINK with code from VOCDOES
@@ -989,19 +987,19 @@ XVOCDOES:
         DW RFROM,VOCLINK,FETCH,WIDTONFA,NFATOCFA,STORECF
         DW EXIT
 
-;: ALSO  ( -- )  STACK_WORDLISTS STACK-DUP ;
+;: ALSO  ( -- )  WORDLISTS STACK-DUP ;
     head(ALSO,ALSO,docolon)
-        dw lit,STACK_WORDLISTS,STACKDUP
+        dw WORDLISTS,STACKDUP
         dw EXIT
 
-;: PREVIOUS  ( --  )  STACK_WORDLISTS STACK> DROP ;
+;: PREVIOUS  ( --  )  WORDLISTS STACK> DROP ;
     head(PREVIOUS,PREVIOUS,docolon)
-        dw lit,STACK_WORDLISTS,STACKFROM,DROP
+        dw WORDLISTS,STACKFROM,DROP
         dw EXIT
 
-;: DEFINITIONS  ( -- )  STACK_WORDLISTS STACK@ SET-CURRENT ;
+;: DEFINITIONS  ( -- )  WORDLISTS STACK@ SET-CURRENT ;
     head(DEFINITIONS,DEFINITIONS,docolon)
-        dw lit,STACK_WORDLISTS,STACKFETCH,SET_CURRENT
+        dw WORDLISTS,STACKFETCH,SET_CURRENT
         dw EXIT
 
 ;: ONLY ( -- )  FORTH-WORDLIST 1 SET-ORDER ;
@@ -1015,10 +1013,10 @@ XVOCDOES:
         DW VOCLINK,FETCH,XWORDS,EXIT
 
 ;Z WORDS_16K ( -- )      list all words in search order
-;   ['] (WORDS) STACK_WORDLISTS STACK.MAP ;
+;   ['] (WORDS) WORDLISTS STACK.MAP ;
 WORDS_16K:
         call docolon
-        DW lit,XWORDS,lit,STACK_WORDLISTS,STACKMAP
+        DW lit,XWORDS,WORDLISTS,STACKMAP
         DW EXIT
 
 ;Z VLIST  ( -- )      list all words in current context
@@ -1245,8 +1243,8 @@ DEFC DRIVECTX_SIZE = 8
         dw lit,4,PLUS
         dw EXIT
 
-;Z DRIVE%  (  -- u )  size of stucture
-    head(DRIVESIZE,DRIVE%,docon)
+;Z DRIVECTX  (  -- u )  size of stucture
+    head(DRIVECTX,DRIVECTX,docon)
         dw DRIVECTX_SIZE
 
 
@@ -1283,8 +1281,9 @@ DEFC DISKCTX_NUM = 8
         dw lit,8,PLUS
         dw EXIT
 
-;Z DISK%  (  -- u )  size of stucture
-    head(DISKSIZE,DISK%,docon)
+;Z DISKCTX  (  -- u )  size of stucture
+DISKCTX:
+        call docon
         dw DISKCTX_SIZE
 
 ;Z #DISK  (  -- u )  number of DISK entries
@@ -1295,7 +1294,7 @@ DEFC DISKCTX_NUM = 8
     head(DISK,DISK,docolon)
         dw DUP,lit,0,NUMDISK,WITHIN
         dw qbranch,DISK1
-        dw DISKSIZE,STAR,lit,DISKCTX_PTR,PLUS
+        dw DISKCTX,STAR,lit,DISKCTX_PTR,PLUS
         dw EXIT
 
 DISK1:
@@ -1614,21 +1613,6 @@ FLUSH1:
         dw SAVE_BUFFERS, SLASHBLKCTX
         dw EXIT
 
-;Z block-refill
-;    VARIABLE block-parse-line
-;
-
-;Z parse-block           c-addr -- address of block buffer to parse
-;   16 0 DO     c-addr
-;      DUP B/L INTERPRET
-
-
-; VARIABLE load-blk#
-; VARIABLE load-index
-; VARIABLE load-buff
-; -1 CONSTANT TRUE
-; 0 CONSTANT FALSE
-
 
 SECTION data
 
@@ -1636,8 +1620,6 @@ load_index: DS 2
 load_blknum: DS 2
 
 SECTION code_16k
-
-
 
 
 ; : load-refill  ( -- flag )
@@ -1673,12 +1655,10 @@ LOAD_REFILL2:
         dw C_L,lit,load_index,PLUSSTORE,lit,-1
         dw EXIT
 
-
-
 ; : (LOAD)  ( -- )
 ;    BEGIN
 ;      REFILL  IF
-;        SOURCE TYPE  CR  INTERPRET
+;        ( SOURCE TYPE CR )  INTERPRET
 ;      ELSE   EXIT
 ;      THEN
 ;    AGAIN  ;
@@ -1686,7 +1666,8 @@ XLOAD:
         call docolon
 XLOAD1:
         dw REFILL,qbranch,XLOAD2
-        dw SOURCE,TYPE,CR,INTERPRET
+        ; DEBUG  dw SOURCE,TYPE,CR
+        dw INTERPRET
         dw branch,XLOAD1
 
 XLOAD2:
@@ -2148,6 +2129,16 @@ RESTORE4:
 
 ; 4 STACK VALUE FORTH-RECOGNIZER
 
+        head(RECOGNIZERS,RECOGNIZERS,docon)
+            DW STACK_RECOGNIZERS
+
+SECTION data
+
+STACK_RECOGNIZERS:
+        ds 34    ; 16 cells + stack top pointer
+
+SECTION code_16k
+
 ; define a recognizer with three actions. Suggesting RECTYPE-* names
 ;: RECTYPE: ( XT-INTERPRET XT-COMPILE XT-POSTPONE "<spaces>name" -- )
 ;  CREATE SWAP ROT , , ,
@@ -2236,13 +2227,6 @@ XRECOGNIZE2:
 RECOGNIZE1:
         DW EXIT
 
-    head(STACK_RECOGNIZER,STACK-RECOGNIZER,docreate)
-        DW STACK_RECOGNIZER_END
-        DW REC_IHEX
-        DW REC_NUMBER
-        DW REC_USER
-        DW REC_FIND
-STACK_RECOGNIZER_END:
 
 ;: REC-FIND ( addr len -- XT flags RECTYPE_XT  |  RECTYPE_NULL )
 ;    FIND-NAME            ( 0       if not found )
@@ -2337,7 +2321,7 @@ RECNUM4:
 ; : POSTPONE ( "name" -- )  \ COMPILE
 ; This is the 16K ROM Next Generation version
 ;   BL WORD  COUNT
-;     STACK_RECOGNIZER RECOGNIZE   ( xt flags RECTYPE_XT | RECTYPE_NULL )
+;     RECOGNIZERS RECOGNIZE   ( xt flags RECTYPE_XT | RECTYPE_NULL )
 ;     DUP
 ;     >R                 ( call POST action )
 ;     RECTYPE>POST EXECUTE
@@ -2346,7 +2330,7 @@ RECNUM4:
 POSTPONE_16K:
         call docolon
         DW BL,WORD,COUNT
-        DW STACK_RECOGNIZER,RECOGNIZE
+        DW RECOGNIZERS,RECOGNIZE
         DW DUP,TOR
         DW RECTYPETOPOST,EXECUTE
         DW RFROM,RECTYPETOCOMP,COMMA
@@ -2361,7 +2345,7 @@ POSTPONE_16K:
 ;   BEGIN
 ;   BL WORD DUP C@ WHILE        -- textadr
 ;       DUP >R COUNT            -- c-addr n  ; textadr
-;       STACK_RECOGNIZER RECOGNIZE   ( i*x RECTYPE_XXX | RECTYPE_NULL )
+;       RECOGNIZERS RECOGNIZE   ( i*x RECTYPE_XXX | RECTYPE_NULL )
 ;       DUP RECTYPE_NULL <> IF  -- i*x RECTYPE_XXX
 ;           STATE @ IF
 ;             RECTYPE>COMP EXECUTE
@@ -2377,7 +2361,7 @@ INTERPRET_16K:
         call docolon
 INTRP_NG1: DW BL,WORD,DUP,CFETCH,qbranch,INTRP_NG9
            DW DUP,TOR,COUNT
-           DW STACK_RECOGNIZER,RECOGNIZE
+           DW RECOGNIZERS,RECOGNIZE
            DW DUP,RECTYPE_NULL,NOTEQUAL,qbranch,INTRP_NG2
            DW STATE,FETCH,qbranch,INTRP_NG3
            DW RECTYPETOCOMP,EXECUTE
@@ -2437,20 +2421,6 @@ REC_IHEX2:
         DW DROP,RECTYPE_IHEX,EXIT
 
 
-;: REC-USER ( addr len -- j*x RECTYPE_xxx   if ok, RECTYPE_NULL if not recognised )
-;     REC-USERVEC @ ?DUP IF
-;         EXECUTE
-;     ELSE
-;         2DROP RECTYPE_NULL
-;     THEN ;
-    head(REC_USER,REC-USER,docolon)
-        DW REC_USERVEC,FETCH,QDUP,qbranch,RECUSER1
-        DW EXECUTE
-        DW EXIT
-RECUSER1:
-        DW TWODROP,RECTYPE_NULL
-        DW EXIT
-
 ;Z SAVE-INPUT
 ;   REFILL-VEC @ SOURCE-ID @ BLK @ 'SOURCE 2@  >IN @  4 N>R  ;
     head(SAVE_INPUT,SAVE-INPUT,docolon)
@@ -2498,6 +2468,7 @@ NR2:    DW DROP
 ;Z /16KROM    init enhanced features
     head(SLASH16KROM,``/16KROM'',docolon)
         DW VOCAB_WORDLIST,FORTH_WORDLIST,lit,2,SET_ORDER
+        DW lit,REC_IHEX,lit,REC_NUMBER,lit,REC_FIND,lit,3,RECOGNIZERS,STACKSET
         DW FORTH_WORDLIST,CURRENT,STORE
         DW VOCAB_WORDLIST,VOCLINK,STORE
         DW SLASHBLKCTX
