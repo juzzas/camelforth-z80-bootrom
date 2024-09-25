@@ -1618,6 +1618,7 @@ SECTION data
 
 load_index: DS 2
 load_blknum: DS 2
+load_buffer: DS 2
 
 SECTION code_16k
 
@@ -1632,7 +1633,9 @@ SECTION code_16k
 ; 
 ;     BLK @ BLOCK    ( addr )
 ;     load-index @ +  ( index )
-;         C/L 'SOURCE 2!
+;         load_buffer @  C/L MOVE
+;
+;     load_buffer @ C/L  'SOURCE 2!
 ; 
 ;     0 >IN !
 ;     C/L load-index  +! TRUE    ;
@@ -1649,33 +1652,40 @@ LOAD_REFILL1:
 
 LOAD_REFILL2:
         dw BLK,FETCH,BLOCK
-        dw lit,load_index,FETCH,PLUS,C_L,TICKSOURCE,TWOSTORE
+        dw lit,load_index,FETCH,PLUS
+        dw lit,load_buffer,FETCH,C_L,MOVE
+
+        dw lit,load_buffer,FETCH,C_L,TICKSOURCE,TWOSTORE
 
         dw lit,0,TOIN,STORE
         dw C_L,lit,load_index,PLUSSTORE,lit,-1
         dw EXIT
 
 ; : (LOAD)  ( -- )
+;    64  TEMPBUFF-ALLOC  load_buffer   !
 ;    BEGIN
 ;      REFILL  IF
 ;        ( SOURCE TYPE CR )  INTERPRET
-;      ELSE   EXIT
+;      ELSE  TEMPBUFF-FREE  EXIT
 ;      THEN
 ;    AGAIN  ;
 XLOAD:
         call docolon
+        dw lit,64,TEMPBUFF_ALLOC,lit,load_buffer,STORE
 XLOAD1:
         dw REFILL,qbranch,XLOAD2
-        ; DEBUG  dw SOURCE,TYPE,CR
+        ; dw SOURCE,TYPE,CR
         dw INTERPRET
         dw branch,XLOAD1
 
 XLOAD2:
+        dw TEMPBUFF_FREE
         dw EXIT
 
 
 ;C  LOAD ( blk -- )
 ;    DUP 0= IF -35 THROW THEN
+;    load-buffer @ >R 
 ;    load-index @ >R   0 load-index !
 ;    load-blk# @ >R    1 load-blk# !
 ;    REFILLVEC @ >R    ['] load-refill REFILLVEC !
@@ -1685,11 +1695,13 @@ XLOAD2:
 ;    RESTORE-INPUT
 ;    R> REFILLVEC !  
 ;    R> load-blk# !
-;    R> load-index ! ;
+;    R> load-index ! 
+;    R> load-buffer !;
     head(LOAD,LOAD,docolon)
         dw DUP,ZEROEQUAL,qbranch,LOAD1
         dw lit,-35,THROW
 LOAD1:
+        dw lit,load_buffer,FETCH,TOR
         dw lit,load_index,FETCH,TOR,lit,0,lit,load_index,STORE
         dw lit,load_blknum,FETCH,TOR,lit,1,lit,load_blknum,STORE
         dw REFILLVEC,FETCH,TOR,lit,LOAD_REFILL,REFILLVEC,STORE
@@ -1700,6 +1712,7 @@ LOAD1:
         dw RFROM,REFILLVEC,STORE
         dw RFROM,lit,load_blknum,STORE
         dw RFROM,lit,load_index,STORE
+        dw RFROM,lit,load_buffer,STORE
 
         dw EXIT
 
