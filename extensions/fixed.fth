@@ -1,21 +1,11 @@
 \ FIXED.SCR                                  hhh 12:30 02/09/97
-  written using LMI PC/FORTH 3.2
-  Heinrich Hohl, Lucent Technologies
 
-This package facilitates the use of fixed point double length
-numbers (fd). These are double length numbers containing an
-implied decimal point at a known, fixed position. The following
-words allow easy handling of fixed point numbers:
 
-PLACES ................ determine position of decimal point
-(FD.) FD. FD.R ........ used to display fd numbers
-FIXED ................. convert any input d number to fd number
-D+ D- D* D/ ........... calculate with d or fd numbers
-T* T/ TU* TU/ TU// .... basic triple length number operators
-D*/ DU*/ DU*// ........ scale d or fd numbers; triple length
-                        intermediate results are used
-( load screen                                hhh 14:16 02/08/97)
-FORTH DEFINITIONS  DECIMAL
+.( Loading fixed point decimal definitions... )
+
+FORTH DEFINITIONS
+DECIMAL
+1 6 +THRU
 
 
 
@@ -24,13 +14,22 @@ FORTH DEFINITIONS  DECIMAL
 
 
 
-
-
-
-
-
-
-( variables                                  hhh 14:02 02/08/97)
+   \ FIXED.SCR    --- readme                 hhh 12:30 02/09/97
+\  written using LMI PC/FORTH 3.2
+\  Heinrich Hohl, Lucent Technologies
+\ 
+\ This package facilitates the use of fixed point double length
+\ numbers (fd). These are double length numbers containing an
+\ implied decimal point at a known, fixed position. The 
+\ following words allow easy handling of fixed point numbers:
+\ PLACES ................ determine position of decimal point
+\ (FD.) FD. FD.R ........ used to display fd numbers
+\ FIXED ................. convert any d number to fd number
+\ D+ D- D* D/ ........... calculate with d or fd numbers
+\ T* T/ TU* TU/ TU// .... basic triple length number operators
+\ D*/ DU*/ DU*// ........ scale d or fd numbers; triple length
+\                         intermediate results are used
+   \ FIXED.SCR    --- variables              hhh 12:30 02/09/97
 VARIABLE places        ( number of digits behind decimal point )
 
 
@@ -46,7 +45,7 @@ VARIABLE places        ( number of digits behind decimal point )
 
 
 
-( number input                              hhh 14:00 02/08/97 )
+   \ FIXED.SCR    --- number input           hhh 12:30 02/09/97
 ( specify number of places behind the decimal point )
 : PLACES ( n -- )  0 MAX  places ! ;
 
@@ -62,7 +61,7 @@ VARIABLE places        ( number of digits behind decimal point )
   places @  DPL @ 0 MAX -  DSHIFT ;
 
 
-( formatted output                          hhh 13:58 02/08/97 )
+   \ FIXED.SCR    --- formatted output       hhh 12:30 02/09/97
 ( convert fixed point double length number to formatted string )
 : (FD.) ( fd -- addr len)
   TUCK DABS
@@ -78,7 +77,7 @@ VARIABLE places        ( number of digits behind decimal point )
 
 
 
-( extended arithmetics                          12:31 02/09/97 )
+   \ FIXED.SCR    --- extended arithmetics   hhh 12:30 02/09/97
 : UM/ ( ud u -- u')  UM/MOD NIP ;
 
 ( multiply or divide signed long number by 0 <= v <= 7FFF )
@@ -94,7 +93,7 @@ VARIABLE places        ( number of digits behind decimal point )
   DUP 1+
   DUP >R UM/ R> SWAP >R TU/ R> UM/ ;
 
-( scaling                                   hhh 14:05 02/08/97 )
+   \ FIXED.SCR    --- scaling                hhh 12:30 02/09/97
 ( scale double length number d according to the unsigned )
 ( numbers v1 and v2 of range 0 <= v <= 7FFF: (d*v1)/v2 = d' )
 : D*/ ( d v1 v2 -- d')  >R T* R> T/ ;

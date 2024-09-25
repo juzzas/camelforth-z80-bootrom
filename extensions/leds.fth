@@ -1,4 +1,20 @@
-( DEBUG LED implementation                               1 / 2 )
+\ DEBUG LED implementation                               0 / 2
+
+.( Loading RC2014 Debug LED definitions... )
+
+
+1 2 THRU
+
+
+
+
+
+
+
+
+
+
+   \ DEBUG LED implementation                            1 / 2
 
 VARIABLE LED-STATE     VARIABLE LED-PORT
 
@@ -14,7 +30,7 @@ VARIABLE LED-STATE     VARIABLE LED-PORT
    DUP LED-STATE C!   LED-PORT @ PC! ;
 
 
-( DEBUG LED implementation                               2 / 2 )
+   \ DEBUG LED implementation                            2 / 2
 : +LED ( n --                        enable LED n )
    DUP 0 8 WITHIN IF
        1 SWAP LSHIFT LED@ OR LED!

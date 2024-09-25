@@ -62,6 +62,11 @@ class Processor(object):
 
         return self._outfile.name
 
+    def seek(self, blocks):
+        logger = logging.getLogger(__name__)
+        logger.info("block seek: {}".format(blocks))
+        self._outfile.seek(blocks * 1024)
+
     def process(self, logger):
         """ Process infile to outfile."""
         pass
@@ -85,7 +90,7 @@ class ProcessBlocks(Processor):
             else:
                 padded_line = line.ljust(64, ' ')
 
-            self._outfile.write(padded_line)
+            self._outfile.write(bytes(padded_line, 'utf-8'))
 
             if padlines_cnt % 16 == 0:
                 logger.debug("Block {0:d}: ".format(int(padlines_cnt / 16) + 1) + ('-' * 64))
@@ -99,7 +104,7 @@ class ProcessBlocks(Processor):
         logger.info("line count: {}".format(padlines_cnt))
 
         while padlines_cnt % 16 != 0:
-            self._outfile.write(' ' * 64)
+            self._outfile.write(b' ' * 64)
             padlines_cnt += 1
 
         logger.info("blocks count: {0:d}".format(int(padlines_cnt / 16)))
@@ -114,19 +119,20 @@ class ProcessText(Processor):
         """ Process infile to outfile."""
         bytecount = 0
         linecount = 0
+        pad_char = 26
         for line in self._infile:
             line = line.rstrip('\r\n')
 
-            self._outfile.write(line)
-            self._outfile.write('\r')
+            self._outfile.write(bytes(line, 'utf-8'))
+            self._outfile.write(b'\r')
             bytecount += len(line) + 1
             linecount += 1
 
-        self._outfile.write(chr(26))
+        self._outfile.write(pad_char.to_bytes(1, 'little'))
         bytecount += 1
 
         padding = 1024 - (bytecount % 1024)
-        self._outfile.write(chr(26) * padding)
+        self._outfile.write(pad_char.to_bytes(1, 'little') * padding)
         bytecount += padding
 
         logger.info("line count: {}".format(linecount))
@@ -134,9 +140,20 @@ class ProcessText(Processor):
 
 
 def signal_handler(signal, frame):
-    logger = logger.getLogger(__name__)
+    logger = logging.getLogger(__name__)
     logger.debug("term received")
     sys.exit(0)
+
+def create_block_file(outfile, blocks):
+    logger = logging.getLogger(__name__)
+    outfile.seek(0)
+
+    for i in range(0, blocks):
+        outfile.write(b' ' * 1024)
+
+    outfile.truncate()
+
+    logger.info("blocks count: {0:d}".format(blocks))
 
 
 def main(arguments):
@@ -146,14 +163,24 @@ def main(arguments):
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-c', "--create", action="store_true")
+    group.add_argument('-w', "--write", action='store_true')
+
     parser.add_argument('infile', nargs='?', help="input file",
                         default=sys.stdin, type=argparse.FileType('r'))
     parser.add_argument('-o', '--outfile', help="output file",
-                        default=sys.stdout, type=argparse.FileType('w'))
+                        default=sys.stdout, type=argparse.FileType('r+b'))
+
     parser.add_argument("-v", "--verbose", action="count",
                         help="increase output verbosity", default=0)
+    parser.add_argument("-s", "--seek", type=int,
+                        help="seek offset (blocks)")
+
     parser.add_argument("-t", "--text", action="store_true",
                         help="input file is text")
+    parser.add_argument("-b", "--binary", action="store_true",
+                        help="input file is binary blob")
 
     args = parser.parse_args(arguments)
 
@@ -183,18 +210,23 @@ def main(arguments):
     try:
         exit_code = 0;
 
-        if args.text:
-            processor = ProcessText(args.infile, args.outfile)
-        else:
-            processor = ProcessBlocks(args.infile, args.outfile)
+        if args.create:
+            create_block_file(args.outfile, args.seek)
 
-        if not processor:
-            logger.critical("unable to process")
-            exit(2)
+        elif args.write:
+            if args.text:
+                processor = ProcessText(args.infile, args.outfile)
+            else:
+                processor = ProcessBlocks(args.infile, args.outfile)
 
-        logger.info("Processing {} to {}".format(processor.infile, processor.outfile))
+            if not processor:
+                logger.critical("unable to process")
+                exit(2)
 
-        processor.process(logger)
+            logger.info("Processing {} to {}".format(processor.infile, processor.outfile))
+
+            processor.seek(args.seek)
+            processor.process(logger)
 
     except KeyboardInterrupt:
         logger.debug("quit")

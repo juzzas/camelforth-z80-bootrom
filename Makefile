@@ -19,15 +19,29 @@ $(TARGET):
 
 
 blk:
-	./blocks.py -v -o build/ttester.blk examples/ttester.fth
-	./blocks.py -v -o build/fixed.blk examples/fixed.fth
-	./blocks.py -v -o build/cffs.blk examples/cffs.fth
-	./blocks.py -v -o build/callxt_test.blk examples/callxt_test.fth
-	./blocks.py -v -o build/hexload_test2.blk examples/hexload_test2.fth
-
-	dd if=build/ttester.blk of=camelforth.ide bs=1024 seek=1 conv=notrunc
-	dd if=build/fixed.blk of=camelforth.ide bs=1024 seek=11 conv=notrunc
-	dd if=build/cffs.blk of=camelforth.ide bs=1024 seek=21 conv=notrunc
-	dd if=build/callxt_test.blk of=camelforth.ide bs=1024 seek=9 conv=notrunc
-	dd if=build/hexload_test2.blk of=camelforth.ide bs=1024 seek=10 conv=notrunc
-
+	./blocks.py -v -c -s 8192 -o build/cf-image.blk 
+	./blocks.py -v -w -s 0 -o build/cf-image.blk extensions/00system.fth
+	./blocks.py -v -w -s 9 -o build/cf-image.blk extensions/assembler.fth
+	./blocks.py -v -w -s 12 -o build/cf-image.blk extensions/tload.fth
+	
+	./blocks.py -v -w -s 30 -o build/cf-image.blk extensions/forth2012.fth
+	./blocks.py -v -w -s 33 -o build/cf-image.blk extensions/core-ext.fth
+	./blocks.py -v -w -s 36 -o build/cf-image.blk extensions/facility-ext.fth
+	./blocks.py -v -w -s 39 -o build/cf-image.blk extensions/double.fth
+	./blocks.py -v -w -s 42 -o build/cf-image.blk extensions/string.fth
+	./blocks.py -v -w -s 45 -o build/cf-image.blk extensions/tools-ext.fth
+	./blocks.py -v -w -s 54 -o build/cf-image.blk extensions/memory.fth
+	
+	./blocks.py -v -w -s 60 -o build/cf-image.blk extensions/ttester.fth
+	./blocks.py -v -w -s 69 -o build/cf-image.blk extensions/fixed.fth
+	./blocks.py -v -w -s 78 -o build/cf-image.blk extensions/random.fth
+	./blocks.py -v -w -s 81 -o build/cf-image.blk extensions/ansi.fth
+	./blocks.py -v -w -s 87 -o build/cf-image.blk extensions/leds.fth
+	
+	./blocks.py -v -w -s 90 -o build/cf-image.blk extensions/testsuite.fth
+	./blocks.py -v -w -s 93 -t -o build/cf-image.blk forth2012-test-suite/src/prelimtest.fth
+	./blocks.py -v -w -s 105 -t -o build/cf-image.blk forth2012-test-suite/src/core.fr
+	
+	./blocks.py -v -w -s 300 -o build/cf-image.blk examples/hexload_test.fth
+	./blocks.py -v -w -s 312 -o build/cf-image.blk examples/hexload_test2.fth
+	dd if=build/cf-image.blk of=camelforth.ide bs=1024 seek=1 conv=notrunc

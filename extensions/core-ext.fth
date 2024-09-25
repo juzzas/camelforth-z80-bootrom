@@ -1,3 +1,20 @@
+\ Forth 2012 Core extensions for CamelForth BootROM
+
+.( Loading core-ext definitions ) CR
+
+FORTH DEFINITIONS
+1 2 +THRU
+
+
+
+
+
+
+
+
+
+
+   \ Forth 2012 Core-ext -- CASE/ENDCASE
 : CASE ( -- 0 ) 0 ; IMMEDIATE
 : OF ( -- )
     POSTPONE OVER POSTPONE =
@@ -8,11 +25,11 @@
     BEGIN ?DUP WHILE POSTPONE THEN REPEAT ; IMMEDIATE
 
 
-: test1  ( n -- )
-    CASE
-        1 OF ." ONE" ENDOF
-        2 OF ." TWO" ENDOF
-        3 OF ." THREE" ENDOF
-        ." DEFAULT"
-    ENDCASE
-    CR ;
+
+
+
+
+
+: TRUE -1 ;
+: FALSE 0 ;
+: 2NIP  2SWAP 2DROP  ;

@@ -1,4 +1,4 @@
-( ttester is based on the original tester suite by Hayes: 1/6  )
+( ttester is based on the original tester suite by Hayes: 0/5  )
 
 \ Usage:
 \ The basic usage takes the form:
@@ -12,9 +12,9 @@
 \               INCORRECT RESULT: T{ 1 2 3 SWAP -> 1 2 2 }T OK
 \     T{ 1 2 3 SWAP -> 1 2 }T
 \          WRONG NUMBER OF RESULTS: T{ 1 2 3 SWAP -> 1 2 }T OK
-
-
-( ttester is based on the original tester suite by Hayes: 2/6  )
+DECIMAL  FORTH DEFINITIONS
+1 5 +THRU
+( ttester is based on the original tester suite by Hayes: 1/5  )
 VARIABLE ACTUAL-DEPTH
 CREATE ACTUAL-RESULTS 32 CELLS ALLOT
 VARIABLE START-DEPTH
@@ -30,7 +30,7 @@ VARIABLE VERBOSE
 
 
 
-( ttester is based on the original tester suite by Hayes: 3/6  )
+( ttester is based on the original tester suite by Hayes: 2/5  )
 : ERROR 1 #ERRORS +! ERROR-XT @ EXECUTE ;   ( for vector )
 : EMPTY-STACK      ( ... -- )         ( empty stack; handles   )
     DEPTH START-DEPTH @ < IF          ( underflowed stack too. )
@@ -46,7 +46,7 @@ VARIABLE VERBOSE
 
 ' ERROR1 ERROR-XT !
 
-( ttester is based on the original tester suite by Hayes: 4/6  )
+( ttester is based on the original tester suite by Hayes: 3/5  )
 : T{   ( -- )
    DEPTH START-DEPTH ! 0 XCURSOR ! ;
 
@@ -62,7 +62,7 @@ VARIABLE VERBOSE
 
 
 
-( ttester is based on the original tester suite by Hayes: 5/6  )
+( ttester is based on the original tester suite by Hayes: 4/5  )
 : }T    ( ... -- )    ( COMPARE STACK "EXPECTED" CONTENTS WITH )
                       ( SAVED  "ACTUAL"  CONTENTS. )
    DEPTH ACTUAL-DEPTH @ = IF       ( if depths match )
@@ -78,14 +78,14 @@ VARIABLE VERBOSE
    THEN   ;
 
 
-( ttester is based on the original tester suite by Hayes: 6/6  )
+( ttester is based on the original tester suite by Hayes: 5/5  )
 : TESTING        ( -- ) ( TALKING COMMENT. )
    SOURCE VERBOSE @
    IF DUP >R  CR TYPE SPACE  R> >IN !
    ELSE >IN ! DROP
    THEN ;
 
-TESTING simple test
-T{ 1 2 3 SWAP -> 1 3 2 }T
-T{ 1 2 3 SWAP -> 1 2 2 }T
-T{ 1 2 3 SWAP -> 1 2 }T
+\ TESTING simple test
+\ T{ 1 2 3 SWAP -> 1 3 2 }T
+\ T{ 1 2 3 SWAP -> 1 2 2 }T
+\ T{ 1 2 3 SWAP -> 1 2 }T
