@@ -1,4 +1,4 @@
-\ forth2012 string wordlist                           jps  0 / 4
+\ forth2012 string wordlist                          jps  0 / 2
 .( Loading string definitions... ) CR
 FORTH DEFINITIONS
 1 2 +THRU
@@ -14,7 +14,7 @@ FORTH DEFINITIONS
 
 
 
-   \ forth2012 string wordlist                     jps  1 / 4
+   \ forth2012 string wordlist                     jps  1 / 2
 : COMPARE  ( c-addr1 u1 caddr2 u2 -- n )
    ROT 2DUP 2>R  ( c-addr1 u1 caddr2 u2 u1 ; u2 u1 )
    MIN           ( c-addr1 caddr2 u'  ; u2 u1 )
@@ -30,9 +30,9 @@ FORTH DEFINITIONS
 
 
 
-   \ forth2012 string wordlist                     jps  1 / 4
+   \ forth2012 string wordlist                     jps  2 / 2
 : SEARCH  ( caddr1 u1 caddr2 u2 -- caddr3 u3 flag)
-   BEGIN 
+    BEGIN 
       DUP
    WHILE 
      2OVER  3 PICK  OVER  COMPARE

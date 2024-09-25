@@ -14,7 +14,6 @@ FORTH DEFINITIONS
 
 
 
-
    \ Version of Klaus Schleisiek's dynamic memory alloc.  1 / 8
 \ 
 \         |<------------- len ------------->|
@@ -46,6 +45,7 @@ DECIMAL 050 CONSTANT WASTE
 : RELEASE ( mem size -- )
       #FREE OR USE ;
 
+
    \ Version of Klaus Schleisiek's dynamic memory alloc.  3 / 8
 : FITS? ( size -- mem | false )
    >R ANCHOR @
@@ -61,7 +61,6 @@ DECIMAL 050 CONSTANT WASTE
 
 : SETANCHOR ( mem -- mem )
     DUP ANCHOR @ = IF  DUP @ ANCHOR ! THEN ;
-
 
    \ Version of Klaus Schleisiek's dynamic memory alloc.  4 / 8
 : UNLINK ( mem -- ) SETANCHOR  @LINKS 2DUP !  SWAP CELL+ ! ;
@@ -137,3 +136,4 @@ DECIMAL 050 CONSTANT WASTE
     BEGIN ?CR DUP 6 U.R ." : "
        ADDR&SIZE 4 U.R CELL+ @ END?
     UNTIL DROP ;
+

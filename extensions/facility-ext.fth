@@ -1,6 +1,6 @@
 \ Forth 2012 facillity extensions for CamelForth BootROM
 
-.( Loading facility definitions ) CR
+.( Loading facility definitions... ) CR
 
 FORTH DEFINITIONS
 1 +LOAD

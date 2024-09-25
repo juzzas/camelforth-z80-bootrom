@@ -1,7 +1,7 @@
 \ forth2012 tools-ext wordlist                        jps  0 / 4
 .( Loading tools-ext definitions... ) CR
 FORTH DEFINITIONS
-1 5 +THRU
+1 3 +THRU
 
 
 
@@ -14,23 +14,7 @@ FORTH DEFINITIONS
 
 
 
-   \ forth2012 tools-ext wordlist                     jps  1 / 4
-: COMPARE  ( c-addr1 u1 caddr2 u2 -- n )
-   ROT 2DUP 2>R  ( c-addr1 u1 caddr2 u2 u1 ; u2 u1 )
-   MIN           ( c-addr1 caddr2 u'  ; u2 u1 )
-   S=            ( n ; u2 u1 )
-   ?DUP 0<> IF  2R> 2DROP                     \ no match
-            ELSE  2R>   2DUP  = IF  2DROP 0   \ match
-                 \ else which is shorter ?
-                 ELSE  <  IF  -1  ELSE  1  THEN  THEN
-            THEN    ;
-
-
-
-
-
-
-   \ forth2012 tools-ext wordlist                     jps  2 / 4
+   \ forth2012 tools-ext wordlist                     jps  1 / 3
 : [THEN] ( -- ) ; IMMEDIATE
 
 : [UNDEFINED] BL WORD FIND NIP 0= ; IMMEDIATE
@@ -46,7 +30,7 @@ FORTH DEFINITIONS
 
 
 
-   \ forth2012 tools-ext wordlist                     jps  3 / 4
+   \ forth2012 tools-ext wordlist                     jps  2 / 3
 : [ELSE] ( -- )
    1 BEGIN                                       \ level
      BEGIN BL WORD COUNT DUP WHILE               \ level adr len
@@ -62,7 +46,7 @@ FORTH DEFINITIONS
         THEN ?DUP 0= IF EXIT THEN                \ level'
      REPEAT 2DROP                                \ level
    REFILL 0= UNTIL        DROP    ; IMMEDIATE
-   \ forth2012 tools-ext wordlist                     jps  4 / 4
+   \ forth2012 tools-ext wordlist                     jps  3 / 3
 : [IF] ( flag -- )
    0= IF POSTPONE [ELSE] THEN  ; IMMEDIATE
 

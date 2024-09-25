@@ -1,6 +1,6 @@
 \ Forth 2012 Core extensions for CamelForth BootROM
 
-.( Loading core-ext definitions ) CR
+.( Loading core-ext definitions... ) CR
 
 FORTH DEFINITIONS
 1 2 +THRU
