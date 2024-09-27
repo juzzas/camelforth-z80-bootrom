@@ -75,39 +75,57 @@ class Processor(object):
 class ProcessBlocks(Processor):
     def __init__(self, infile, outfile):
         super().__init__(infile, outfile)
+        self._line_cnt = 0
 
+
+    def pad(self):
+        while self._line_cnt % 16 != 0:
+            self._outfile.write(b' ' * 64)
+            self._line_cnt += 1
+
+    def writeln(self, line):
+        line_len = 0
+
+        for char in line:
+            if char == '\f':
+                self._outfile.write(b' ' * (64 - line_len))
+                self._line_cnt += 1
+                line_len = 0
+                self.pad()
+            else:
+                self._outfile.write(bytes(char, 'utf-8'))
+                line_len += 1
+
+        if line_len < 64:
+            self._outfile.write(b' ' * (64 - line_len))
+        self._line_cnt += 1
 
     def process(self, logger):
         """ Process infile to outfile."""
 
-        padlines_cnt = 0
+        self._line_cnt = 0
         for line in self._infile:
             line = line.rstrip('\n')
-
-            if len(line) > 64:
-                padded_line = line[:64]
-                logger.warning("line {} too long".format(padlines_cnt+1))
+            expected_line_max = (64 + line.count('\f'))
+            if len(line) > expected_line_max:
+                padded_line = line[:expected_line_max]
+                logger.warning("line {} too long".format(self._line_cnt+1))
             else:
-                padded_line = line.ljust(64, ' ')
+                padded_line = line.ljust(expected_line_max, ' ')
 
-            self._outfile.write(bytes(padded_line, 'utf-8'))
+            self.writeln(padded_line)
 
-            if padlines_cnt % 16 == 0:
-                logger.debug("Block {0:d}: ".format(int(padlines_cnt / 16) + 1) + ('-' * 64))
+            if self._line_cnt % 16 == 0:
+                logger.debug("Block {0:d}: ".format(int(self._line_cnt / 16) + 1) + ('-' * 64))
 
-            logger.debug("{} ({:02}): {}".format(padlines_cnt + 1,
-                                                 (padlines_cnt % 16) + 1,
+            logger.debug("{} ({:02}): {}".format(self._line_cnt + 1,
+                                                 (self._line_cnt % 16) + 1,
                                                  padded_line))
 
-            padlines_cnt += 1
+        logger.info("line count: {}".format(self._line_cnt))
 
-        logger.info("line count: {}".format(padlines_cnt))
-
-        while padlines_cnt % 16 != 0:
-            self._outfile.write(b' ' * 64)
-            padlines_cnt += 1
-
-        logger.info("blocks count: {0:d}".format(int(padlines_cnt / 16)))
+        self.pad()
+        logger.info("blocks count: {0:d}".format(int(self._line_cnt / 16)))
 
 
 class ProcessText(Processor):
