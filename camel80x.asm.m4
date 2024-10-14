@@ -1702,8 +1702,8 @@ XLOAD1:
 
 XLOAD2:
         dw RFROM,lit,load_index,STORE
-        dw RFROM,lit,load_buffer,STORE
         dw RFROM,lit,load_blknum,STORE
+        dw RFROM,lit,load_buffer,STORE
         dw TEMPBUFF_FREE
         dw RESTORE_INPUT
         dw EXIT
