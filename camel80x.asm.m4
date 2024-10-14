@@ -1628,15 +1628,15 @@ SECTION code_16k
 ;         -1 load-blk# +!
 ;         0 load-index !
 ;         1 BLK +!   THEN
-; 
+;
 ;     load-blk# @ 0= IF 0 EXIT THEN
-; 
+;
 ;     BLK @ BLOCK    ( addr )
 ;     load-index @ +  ( index )
 ;         load_buffer @  C/L MOVE
 ;
 ;     load_buffer @ C/L  'SOURCE 2!
-; 
+;
 ;     0 >IN !
 ;     C/L load-index  +! TRUE    ;
 LOAD_REFILL:
@@ -1661,59 +1661,58 @@ LOAD_REFILL2:
         dw C_L,lit,load_index,PLUSSTORE,lit,-1
         dw EXIT
 
-; : (LOAD)  ( -- )
+; : (LOAD)  ( blk blk# -- )
+;    OVER 0= IF -35 THROW THEN
+;    SAVE-INPUT
+;    ['] load-refill REFILLVEC !
+;    load-buffer @ >R 
 ;    64  TEMPBUFF-ALLOC  load_buffer   !
+;    load-blk# @ >R    load-blk# !
+;    BLK !
+;    load-index @ >R   0 load-index !
 ;    BEGIN
 ;      REFILL  IF
 ;        ( SOURCE TYPE CR )  INTERPRET
-;      ELSE  TEMPBUFF-FREE  EXIT
+;      ELSE
+;        R> load-index !
+;        R> load-blk# !
+;        R> load-buffer !
+;        TEMPBUFF-FREE
+;        RESTORE-INPUT
+;        EXIT
 ;      THEN
 ;    AGAIN  ;
 XLOAD:
         call docolon
+        dw OVER,ZEROEQUAL,qbranch,LOAD0
+        dw lit,-35,THROW
+LOAD0:
+        dw SAVE_INPUT
+        dw lit,LOAD_REFILL,REFILLVEC,STORE
+        dw lit,load_buffer,FETCH,TOR
         dw lit,64,TEMPBUFF_ALLOC,lit,load_buffer,STORE
+        dw lit,load_blknum,FETCH,TOR,lit,load_blknum,STORE
+        dw BLK,STORE
+        dw lit,load_index,FETCH,TOR,lit,0,lit,load_index,STORE
 XLOAD1:
         dw REFILL,qbranch,XLOAD2
-        ; dw SOURCE,TYPE,CR
+        dw SOURCE,TYPE,CR
         dw INTERPRET
         dw branch,XLOAD1
 
 XLOAD2:
+        dw RFROM,lit,load_index,STORE
+        dw RFROM,lit,load_buffer,STORE
+        dw RFROM,lit,load_blknum,STORE
         dw TEMPBUFF_FREE
+        dw RESTORE_INPUT
         dw EXIT
 
 
 ;C  LOAD ( blk -- )
-;    DUP 0= IF -35 THROW THEN
-;    load-buffer @ >R 
-;    load-index @ >R   0 load-index !
-;    load-blk# @ >R    1 load-blk# !
-;    REFILLVEC @ >R    ['] load-refill REFILLVEC !
-;    SAVE-INPUT
-;    BLK !
-;    (LOAD)
-;    RESTORE-INPUT
-;    R> REFILLVEC !  
-;    R> load-blk# !
-;    R> load-index ! 
-;    R> load-buffer !;
+;    1 (LOAD) ;
     head(LOAD,LOAD,docolon)
-        dw DUP,ZEROEQUAL,qbranch,LOAD1
-        dw lit,-35,THROW
-LOAD1:
-        dw lit,load_buffer,FETCH,TOR
-        dw lit,load_index,FETCH,TOR,lit,0,lit,load_index,STORE
-        dw lit,load_blknum,FETCH,TOR,lit,1,lit,load_blknum,STORE
-        dw REFILLVEC,FETCH,TOR,lit,LOAD_REFILL,REFILLVEC,STORE
-        dw SAVE_INPUT
-        dw BLK,STORE
-        dw XLOAD
-        dw RESTORE_INPUT
-        dw RFROM,REFILLVEC,STORE
-        dw RFROM,lit,load_blknum,STORE
-        dw RFROM,lit,load_index,STORE
-        dw RFROM,lit,load_buffer,STORE
-
+        dw lit,1,XLOAD
         dw EXIT
 
 
@@ -1721,23 +1720,20 @@ LOAD1:
 ;C +LOAD                  n  --    load block BLK + n
 ;     BLK @ + LOAD  ;
     head(PLUSLOAD,+LOAD,docolon)
-        dw BLK,FETCH,PLUS,LOAD
+        dw BLK,FETCH,PLUS,lit,1,XLOAD
         dw EXIT
 
 ;C THRU            n1 n2  --    load blocks n1 to n2
-;     1+ SWAP DO I LOAD LOOP ;
+;     OVER - 1+ (LOAD) ;
     head(THRU,THRU,docolon)
-        dw ONEPLUS,SWOP,xdo
-THRU1:
-        dw II,LOAD,xloop,THRU1
+        dw OVER,MINUS,ONEPLUS,XLOAD
         dw EXIT
 
 ;C +THRU            n1 n2  --    load blocks BLK+n1 to BLK+n2
-;     1+ SWAP DO I +LOAD LOOP ;
+;     OVER - 1+ SWAP BLK @ + SWAP (LOAD) ;
     head(PLUSTHRU,+THRU,docolon)
-        dw ONEPLUS,SWOP,xdo
-PLUSTHRU1:
-        dw II,PLUSLOAD,xloop,PLUSTHRU1
+        dw OVER,MINUS,ONEPLUS
+        dw SWOP,BLK,FETCH,PLUS,SWOP,XLOAD
         dw EXIT
 
 ;C COPY            n1 n2  --    copy block n1 to n2
