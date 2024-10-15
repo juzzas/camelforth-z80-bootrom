@@ -270,10 +270,10 @@ DLESS2:
 ;: d2*     ( d -- d     shift double left )
     head(DTWOSTAR,D2*,docode)
        pop hl 
-       sla b
-       rl c
+       sla l
        rl h
-       rl l
+       rl c
+       rl b
        push hl
        next
 
