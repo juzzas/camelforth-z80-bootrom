@@ -27,22 +27,41 @@ VARIABLE verbose     0 verbose !
    close-output  ;  IMMEDIATE
 : OPEN: BL PARSE USE  ; IMMEDIATE
 
+: current-block ( -- )
+   blk-cur @ BLOCK blk-ptr ! ;
+
+: next-block  ( -- ) 
+   blk-cur @ 1+ DUP blk-cur !
+   BLOCK blk-ptr ! ;
+
+: inc-offset  ( offset -- offset' )
+   blk-offset @ 1+
+   DUP 1023 > IF
+      DROP next-block  0
+   THEN 
+   blk-offset !  ;
+
+
+
 : (write-char) ( c -- )
-   blk-ptr @ blk-offset @ + c! 
-   1 blk-offset +!
-   blk-offset @ 1023 > IF
-      0 blk-offset !
-      1 blk-cur +!
-      blk-cur @ BLOCK blk-ptr ! THEN  ;
+   blk-ptr @ blk-offset @ + c!
+   UPDATE inc-offset ;
 
 : write-char ( c -- )
-   blk-cur @ BLOCK blk-ptr !
-   (write-char) UPDATE ;
+   current-block
+   (write-char) ;
 
 : write-chars ( c-addr u -- )
-   blk-cur @ BLOCK blk-ptr !
+   current-block
    DUP IF 0 DO DUP C@ (write-char) 1+ LOOP DROP
    ELSE 2DROP  THEN  UPDATE ;
+
+: pad-chars  ( c -- ) 
+   ." padding from " blk-offset @ . CR
+   current-block
+   1024 blk-offset @ -  DUP IF
+     0 DO DUP write-char LOOP
+   THEN ." new offset " blk-offset @ . ;
 
 : AT-BLOCK:  ( blk "filename" -- )
    DUP . ."  <-- " 
@@ -73,6 +92,6 @@ VARIABLE verbose     0 verbose !
       block-line SWAP 2DUP ?type write-chars
       13 write-char
    REPEAT  2DROP
-   26 write-char
+   26 pad-chars
    close-input ; IMMEDIATE
 
