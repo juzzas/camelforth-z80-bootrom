@@ -1,12 +1,106 @@
 0 VALUE fd-in
 0 VALUE fd-out
+0 VALUE blk-out
 256 CONSTANT max-block-line
 CREATE block-line max-block-line ALLOT
 1024 CONSTANT B/BLK
-VARIABLE blk-ptr     0 blk-ptr !
-VARIABLE blk-cur     0 blk-cur !
-VARIABLE blk-offset  0 blk-offset !
+
+1 CONSTANT R/O
+2 CONSTANT W/O
+3 CONSTANT R/W
+
+: BIN  ( fam -- fam' )
+    32768 +  ;   \ set most significant bit 
+
+\ start of BLKFILE extension
+BEGIN-STRUCTURE BLKFILE-CONTEXT
+   FIELD: blk-origin
+   FIELD: blk-ptr
+   FIELD: blk-cur
+   FIELD: blk-offset
+   FIELD: blkfile-dirty
+   FIELD: blkfile-fam
+END-STRUCTURE
+
+CREATE blkfile BLKFILE-CONTEXT ALLOT
+
+: set-dirty  ( blkfile-id -- )
+   -1 SWAP blkfile-dirty !  ;
+
+: is-dirty?  ( blkfile-id -- )
+   blkfile-dirty @  ;
+
+: current-block ( blkfile-id -- )
+   DUP blk-cur @ BLOCK SWAP blk-ptr ! ;
+
+: inc-block  ( blkfile-id -- ) 
+   1 OVER blk-cur +!   ( blkfile-id )
+   0 OVER blk-offset ! ( blkfile-id )
+   DUP is-dirty? IF UPDATE THEN
+   current-block ;
+
+: inc-offset  ( blkfile-id -- )
+   1 OVER blk-offset +! ( blkfile-id )
+   DUP blk-offset @ 1023 > IF
+      inc-block
+   ELSE  DROP  THEN   ;
+
+
+
+: (write-char) ( c blkfile-id -- )
+   SWAP OVER DUP blk-ptr @  ( blkfile-id c blkfile-id blk-ptr )
+   SWAP blk-offset @ + c!   ( blkfile-id )
+   inc-offset ;
+
+: write-char ( c blkfile-id )
+   DUP current-block
+   DUP set-dirty
+   (write-char) ;
+
+: write-chars ( c-addr u blkfile-id -- )
+   OVER IF
+     DUP current-block  ( c-addr u blkfile-id )
+     DUP set-dirty
+     SWAP 0 DO   ( c-addr blkfile-id )
+       OVER I + C@  ( c-addr blkfile-id c )
+       OVER (write-char) ( c-addr blkfile-id )
+     LOOP
+   ELSE
+     DROP
+   THEN  2DROP  ;
+
+: pad-chars  ( c blkfile-id -- )
+   \ ." padding from " DUP blk-offset @ . CR
+   DUP current-block
+   DUP set-dirty
+   1024 OVER blk-offset @ -  DUP IF  ( c blkfile-id )
+     0 DO 2DUP (write-char) LOOP
+   THEN
+   \ ." new offset " DUP blk-offset @ .
+   2DROP ;
+
+
+: (open-blkfile) ( blk fam blkfile-id -- blkfile-id )
+   SWAP OVER blkfile-fam !
+   SWAP OVER 2DUP  blk-cur !  blk-origin !
+   0 OVER blk-ptr !
+   0 OVER blk-offset !
+   0 OVER blkfile-dirty ! ;
+
+
+: open-blkfile ( blk fam -- blkfile-id )
+   blkfile (open-blkfile) ;
+
+: close-blkfile ( blkfile-id -- )
+   DUP is-dirty? IF UPDATE THEN
+   FLUSH ;
+
+: blkfile-size ( blkfile-id -- #blks )
+   DUP blk-cur @ SWAP blk-origin @ - 1+ ;
+\ end of BLKFILE extension
+
 VARIABLE verbose     0 verbose !
+
 
 : open-input ( addr u -- )  R/O OPEN-FILE THROW TO fd-in ;
 : open-output ( addr u -- )  W/O CREATE-FILE THROW TO fd-out ;
@@ -27,71 +121,39 @@ VARIABLE verbose     0 verbose !
    close-output  ;  IMMEDIATE
 : OPEN: BL PARSE USE  ; IMMEDIATE
 
-: current-block ( -- )
-   blk-cur @ BLOCK blk-ptr ! ;
-
-: next-block  ( -- ) 
-   blk-cur @ 1+ DUP blk-cur !
-   BLOCK blk-ptr ! ;
-
-: inc-offset  ( offset -- offset' )
-   blk-offset @ 1+
-   DUP 1023 > IF
-      DROP next-block  0
-   THEN 
-   blk-offset !  ;
-
-
-
-: (write-char) ( c -- )
-   blk-ptr @ blk-offset @ + c!
-   UPDATE inc-offset ;
-
-: write-char ( c -- )
-   current-block
-   (write-char) ;
-
-: write-chars ( c-addr u -- )
-   current-block
-   DUP IF 0 DO DUP C@ (write-char) 1+ LOOP DROP
-   ELSE 2DROP  THEN  UPDATE ;
-
-: pad-chars  ( c -- ) 
-   ." padding from " blk-offset @ . CR
-   current-block
-   1024 blk-offset @ -  DUP IF
-     0 DO DUP write-char LOOP
-   THEN ." new offset " blk-offset @ . ;
 
 : AT-BLOCK:  ( blk "filename" -- )
-   DUP . ."  <-- " 
+   DUP . ." <-- " 
    BL PARSE
-   2DUP TYPE CR
+   2DUP TYPE ."  ["
    open-input
-   blk-cur !
-   0 blk-offset !
+   R/W BIN open-blkfile TO blk-out
    begin
       block-line max-block-line 32 FILL
       block-line max-block-line fd-in read-line throw
    while
-      DROP block-line C/L 2DUP ?type write-chars
+      DROP block-line C/L 2DUP ?type blk-out write-chars
    REPEAT  DROP
+   blk-out blkfile-size . ." blocks]" CR
+   blk-out close-blkfile
    close-input ; IMMEDIATE
 
 : AT-TEXT:  ( blk "filename" -- )
-   DUP . ."  <-- " 
+   DUP . ." <-- "
    BL PARSE
-   2DUP TYPE CR
+   2DUP TYPE ."  ["
    open-input
-   blk-cur !
-   0 blk-offset !
+   R/W open-blkfile TO blk-out
    begin
       block-line max-block-line 32 FILL
       block-line max-block-line fd-in read-line throw
    while
-      block-line SWAP 2DUP ?type write-chars
-      13 write-char
+      block-line SWAP 2DUP ?type blk-out write-chars
+      13 blk-out write-char
    REPEAT  2DROP
-   26 pad-chars
+   26 blk-out pad-chars
+   blk-out blkfile-size . ." blocks]" CR
+   blk-out close-blkfile
+
    close-input ; IMMEDIATE
 

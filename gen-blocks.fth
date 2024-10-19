@@ -16,9 +16,7 @@ OPEN:  build/cf-image.blk
 102 AT-BLOCK: extensions/ansi.fth
 108 AT-BLOCK: extensions/leds.fth
 
-1 VERBOSE !
 180 AT-BLOCK: extensions/assembler.fth
-0 VERBOSE !
 
 300 AT-BLOCK: extensions/testsuite.fth
 303 AT-BLOCK: extensions/ttester.fth
