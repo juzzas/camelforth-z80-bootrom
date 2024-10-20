@@ -5,38 +5,34 @@
 CREATE block-line max-block-line ALLOT
 1024 CONSTANT B/BLK
 
-1 CONSTANT R/O
-2 CONSTANT W/O
-3 CONSTANT R/W
-
-: BIN  ( fam -- fam' )
-    32768 +  ;   \ set most significant bit 
+VARIABLE   blk-ptr
+VARIABLE   blkfile-dirty
 
 \ start of BLKFILE extension
 BEGIN-STRUCTURE BLKFILE-CONTEXT
    FIELD: blk-origin
-   FIELD: blk-ptr
    FIELD: blk-cur
    FIELD: blk-offset
-   FIELD: blkfile-dirty
-   FIELD: blkfile-fam
 END-STRUCTURE
 
 CREATE blkfile BLKFILE-CONTEXT ALLOT
 
-: set-dirty  ( blkfile-id -- )
-   -1 SWAP blkfile-dirty !  ;
+: set-dirty  ( -- )
+   -1 blkfile-dirty !  ;
 
-: is-dirty?  ( blkfile-id -- )
+: clear-dirty  ( -- )
+   0 blkfile-dirty !  ;
+
+: is-dirty?  ( -- )
    blkfile-dirty @  ;
 
 : current-block ( blkfile-id -- )
-   DUP blk-cur @ BLOCK SWAP blk-ptr ! ;
+   is-dirty? IF UPDATE clear-dirty THEN
+   blk-cur @ BLOCK blk-ptr ! ;
 
 : inc-block  ( blkfile-id -- ) 
    1 OVER blk-cur +!   ( blkfile-id )
    0 OVER blk-offset ! ( blkfile-id )
-   DUP is-dirty? IF UPDATE THEN
    current-block ;
 
 : inc-offset  ( blkfile-id -- )
@@ -45,22 +41,20 @@ CREATE blkfile BLKFILE-CONTEXT ALLOT
       inc-block
    ELSE  DROP  THEN   ;
 
-
-
 : (write-char) ( c blkfile-id -- )
-   SWAP OVER DUP blk-ptr @  ( blkfile-id c blkfile-id blk-ptr )
+   SWAP OVER blk-ptr @  ( blkfile-id c blkfile-id blk-ptr )
    SWAP blk-offset @ + c!   ( blkfile-id )
    inc-offset ;
 
 : write-char ( c blkfile-id )
    DUP current-block
-   DUP set-dirty
+   set-dirty
    (write-char) ;
 
 : write-chars ( c-addr u blkfile-id -- )
    OVER IF
      DUP current-block  ( c-addr u blkfile-id )
-     DUP set-dirty
+     set-dirty
      SWAP 0 DO   ( c-addr blkfile-id )
        OVER I + C@  ( c-addr blkfile-id c )
        OVER (write-char) ( c-addr blkfile-id )
@@ -69,35 +63,58 @@ CREATE blkfile BLKFILE-CONTEXT ALLOT
      DROP
    THEN  2DROP  ;
 
+: (read-char) ( blkfile-id -- c )
+   blk-ptr @  ( blkfile-id blk-ptr )
+   blk-offset @ + c@   ( c )
+   inc-offset ;
+
+: read-char ( blkfile-id -- c )
+   DUP current-block
+   (read-char) ;
+
+: read-chars ( c-addr u blkfile-id -- )
+   OVER IF
+     DUP current-block  ( c-addr u blkfile-id )
+     SWAP 0 DO   ( c-addr blkfile-id )
+       2DUP (read-char)  ( c-addr blkfile-id c-addr c )
+       SWAP I + C!  ( c-addr blkfile-id )
+     LOOP
+   ELSE
+     DROP
+   THEN  2DROP  ;
+
+
+
+: (open-blkfile) ( blk blkfile-id -- blkfile-id )
+   SWAP OVER 2DUP ( blkfile-id blk blkfile-id blk blkfile-id )
+   blk-cur !  blk-origin !  ( blkfile-id )
+   clear-dirty
+   0 OVER blk-offset ! ;     ( blkfile-id )
+
+
+: open-blkfile ( blk -- blkfile-id )
+   blkfile (open-blkfile) ;
+
+: close-blkfile ( blkfile-id -- )
+   is-dirty? IF UPDATE clear-dirty THEN
+   FLUSH ;
+
+
+
+: blkfile-size ( blkfile-id -- #blks )
+   DUP blk-cur @ SWAP blk-origin @ - 1+ ;
+\ end of BLKFILE extension
+
+
 : pad-chars  ( c blkfile-id -- )
    \ ." padding from " DUP blk-offset @ . CR
    DUP current-block
-   DUP set-dirty
+   set-dirty
    1024 OVER blk-offset @ -  DUP IF  ( c blkfile-id )
      0 DO 2DUP (write-char) LOOP
    THEN
    \ ." new offset " DUP blk-offset @ .
    2DROP ;
-
-
-: (open-blkfile) ( blk fam blkfile-id -- blkfile-id )
-   SWAP OVER blkfile-fam !
-   SWAP OVER 2DUP  blk-cur !  blk-origin !
-   0 OVER blk-ptr !
-   0 OVER blk-offset !
-   0 OVER blkfile-dirty ! ;
-
-
-: open-blkfile ( blk fam -- blkfile-id )
-   blkfile (open-blkfile) ;
-
-: close-blkfile ( blkfile-id -- )
-   DUP is-dirty? IF UPDATE THEN
-   FLUSH ;
-
-: blkfile-size ( blkfile-id -- #blks )
-   DUP blk-cur @ SWAP blk-origin @ - 1+ ;
-\ end of BLKFILE extension
 
 VARIABLE verbose     0 verbose !
 
