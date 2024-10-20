@@ -1746,35 +1746,15 @@ XLOAD2:
 
 ; BLKFILE implementation =====================================
 
-;BEGIN-STRUCTURE BLKFILECTX
-;   FIELD: blkfile>offset
-;   FIELD: blkfile>current
-;   FIELD: blkfile>origin
-;END-STRUCTURE
-
-    head(BLKFILECTX,BLKFILECTX,docon)
-        DW 6
-
-    head(BLKFILETOOFFSET,BLKFILE>OFFSET,docolon)
-        DW EXIT
-
-    head(BLKFILETOCURRENT,BLKFILE>CURRENT,docolon)
-        DW lit,2,PLUS
-        DW EXIT
-
-    head(BLKFILETOORIGIN,BLKFILE>ORIGIN,docolon)
-        DW lit,4,PLUS
-        DW EXIT
-
-;CREATE blkfile BLKFILE-CONTEXT ALLOT
 ;VARIABLE   blk-ptr
 ;VARIABLE   blkfile-dirty
 
 SECTION data
 
 blk_ptr: DS 2
+blk_curr: DS 2
+blk_offset: DS 2
 blkfile_dirty: DS 2
-blkfile: DS 6
 
 SECTION code_16k
 
@@ -1807,148 +1787,136 @@ CURRENT_BLOCK:
     DW IS_DIRTYQ,qbranch,CURRBLK1
     DW UPDATE,CLEAR_DIRTY
 CURRBLK1:
-    DW BLKFILETOCURRENT,FETCH,BLOCK,lit,blk_ptr,STORE
+    DW lit,blk_curr,FETCH,BLOCK,lit,blk_ptr,STORE
     DW EXIT
 
-;: inc-block  ( blkfile-id -- ) 
-;   1 OVER blk-cur +!   ( blkfile-id )
-;   0 OVER blk-offset ! ( blkfile-id )
+;: inc-block  ( -- ) 
+;   1 blk-cur +!   (  )
+;   0 blk-offset ! (  )
 ;   current-block ;
 INC_BLOCK:
     call docolon
-    DW lit,1,OVER,BLKFILETOCURRENT,PLUSSTORE
-    DW lit,0,OVER,BLKFILETOOFFSET,STORE
+    DW lit,1,lit,blk_curr,PLUSSTORE
+    DW lit,0,blk_offset,STORE
     DW CURRENT_BLOCK
     DW EXIT
 
-;: inc-offset  ( blkfile-id -- )
-;   1 OVER blk-offset +! ( blkfile-id )
-;   DUP blk-offset @ 1023 > IF
+;: inc-offset  ( -- )
+;   1 blk-offset +! ( )
+;   blk-offset @ 1023 > IF
 ;      inc-block
 ;   ELSE  DROP  THEN   ;
 INC_OFFSET:
     call docolon
-    DW lit,1,OVER,BLKFILETOOFFSET,PLUSSTORE
-    DW DUP,BLKFILETOOFFSET,FETCH,lit,1023,GREATER
+    DW lit,1,lit,blk_offset,PLUSSTORE
+    DW lit,blk_offset,FETCH,lit,1023,GREATER
     DW qbranch,INCOFFSET1
     DW INC_BLOCK,EXIT
 
 INCOFFSET1:
     DW DROP,EXIT
 
-;: (write-char) ( c blkfile-id -- )
-;   SWAP OVER blk-ptr @  ( blkfile-id c blkfile-id blk-ptr )
-;   SWAP blk-offset @ + c!   ( blkfile-id )
+;: (write-char) ( c -- )
+;   blk-ptr @  ( c blk-ptr )
+;   blk-offset @ + c!   ( )
 ;   inc-offset ;
 XWRITE_CHAR:
     call docolon
-    DW SWOP,OVER,lit,blk_ptr,FETCH
-    DW SWOP,BLKFILETOOFFSET,FETCH,PLUS,CSTORE
+    DW lit,blk_ptr,FETCH
+    DW lit,blk_offset,FETCH,PLUS,CSTORE
     DW INC_OFFSET
     DW EXIT
 
-;: write-char ( c blkfile-id )
-;   DUP current-block
+;: write-char ( c )
+;   current-block
 ;   set-dirty
 ;   (write-char) ;
     head(WRITE_CHAR,WRITE-CHAR,docolon)
-        DW DUP,CURRENT_BLOCK
+        DW CURRENT_BLOCK
         DW SET_DIRTY
         DW XWRITE_CHAR
         DW EXIT
 
-;: write-chars ( c-addr u blkfile-id -- )
-;   OVER IF
-;     DUP current-block  ( c-addr u blkfile-id )
+;: write-chars ( c-addr u -- )
+;   ?DUP IF
+;     current-block  ( c-addr u )
 ;     set-dirty
-;     SWAP 0 DO   ( c-addr blkfile-id )
-;       OVER I + C@  ( c-addr blkfile-id c )
-;       OVER (write-char) ( c-addr blkfile-id )
+;     SWAP 0 DO   ( c-addr )
+;       DUP I + C@  ( c-addr c )
+;       (write-char) ( c-addr )
 ;     LOOP
-;   ELSE
-;     DROP
-;   THEN  2DROP  ;
+;   THEN DROP ;
     head(WRITE_CHARS,WRITE-CHARS,docolon)
-        DW DUP,qbranch,WRITECHARS2
+        DW QDUP,qbranch,WRITECHARS2
 
-        DW DUP,CURRENT_BLOCK,SET_DIRTY
+        DW CURRENT_BLOCK,SET_DIRTY
         DW SWOP,lit,0,xdo
 WRITECHARS1:
-        DW OVER,II,PLUS,CFETCH
-        DW OVER,XWRITE_CHAR
+        DW DUP,II,PLUS,CFETCH
+        DW XWRITE_CHAR
         DW xloop,WRITECHARS1
 
 WRITECHARS2:
         DW DROP
+        DW EXIT
 
-WRITECHARS3:
-        DW TWODROP,EXIT
-
-;: (read-char) ( blkfile-id -- c )
-;   blk-ptr @  ( blkfile-id blk-ptr )
-;   SWAP blk-offset @ + c@   ( c )
+;: (read-char) ( -- c )
+;   blk-ptr @  ( blk-ptr )
+;   blk-offset @ + c@   ( c )
 ;   inc-offset ;
 XREAD_CHAR:
         call docolon
-        DW blk_ptr,FETCH
-        DW SWOP,BLKFILETOOFFSET,FETCH,PLUS,CFETCH
+        DW lit,blk_ptr,FETCH
+        DW lit,blk_offset,FETCH,PLUS,CFETCH
         DW INC_OFFSET
         DW EXIT
 
-;: read-char ( blkfile-id -- c )
-;   DUP current-block
+;: read-char ( -- c )
+;   current-block
 ;   (read-char) ;
     head(READ_CHAR,READ-CHAR,docolon)
-        DW DUP,CURRENT_BLOCK
+        DW CURRENT_BLOCK
         DW XREAD_CHAR
         DW EXIT
 
-;: read-chars ( c-addr u blkfile-id -- )
-;   OVER IF
-;     DUP current-block  ( c-addr u blkfile-id )
-;     SWAP 0 DO   ( c-addr blkfile-id )
-;       2DUP (read-char)  ( c-addr blkfile-id c-addr c )
-;       SWAP I + C!  ( c-addr blkfile-id )
+;: read-chars ( c-addr u -- )
+;   ?DUP IF
+;     current-block  ( c-addr u )
+;     0 DO   ( c-addr )
+;       (read-char)  ( c-addr c )
+;       OVER I + C!  ( c-addr )
 ;     LOOP
-;   ELSE
-;     DROP
-;   THEN  2DROP  ;
+;   THEN  DROP  ;
     head(READ_CHARS,READ-CHARS,docolon)
-        DW OVER,qbranch,READCHARS2
+        DW QDUP,qbranch,READCHARS2
 
-        DW DUP,CURRENT_BLOCK
-        DW SWOP,lit,0,xdo
+        DW CURRENT_BLOCK
+        DW lit,0,xdo
 READCHARS1:
-        DW TWODUP,XREAD_CHAR
-        DW SWOP,II,PLUS,CSTORE
+        DW XREAD_CHAR
+        DW OVER,II,PLUS,CSTORE
         DW xloop,READCHARS1
 
 READCHARS2:
         DW DROP
-
-READCHARS3:
-        DW TWODROP,EXIT
-
-;: (open-blkfile) ( blk blkfile-id -- blkfile-id )
-;   SWAP OVER 2DUP ( blkfile-id blk blkfile-id blk blkfile-id )
-;   blk-cur !  blk-origin !  ( blkfile-id )
-;   clear-dirty
-;   0 OVER blk-offset ! ;     ( blkfile-id )
-    head(XOPEN_BLKFILE,``(OPEN-BLKFILE)'',docolon)
-        DW SWOP,OVER,TWODUP
-        DW BLKFILETOCURRENT,STORE
-        DW BLKFILETOORIGIN,STORE
-        DW CLEAR_DIRTY
-        DW lit,0,OVER,BLKFILETOOFFSET,STORE
         DW EXIT
 
-;: open-blkfile ( blk -- blkfile-id )
-;   blkfile (open-blkfile) ;
+;: (open-blkfile) ( blk offset -- )
+;   blk-offset !
+;   blk-cur !
+;   clear-dirty  ;
+    head(XOPEN_BLKFILE,``(OPEN-BLKFILE)'',docolon)
+        DW lit,blk_offset,STORE
+        DW lit,blk_curr,STORE
+        DW CLEAR_DIRTY
+        DW EXIT
+
+;: open-blkfile ( blk -- )
 ;
-;: (close-blkfile) ( blkfile-id -- )
+;: (close-blkfile) ( -- )
 ;   is-dirty? IF UPDATE clear-dirty THEN
 ;   FLUSH ;
-    head(XCLOSE_BLKFILE,``(OPEN-BLKFILE)'',docolon)
+    head(XCLOSE_BLKFILE,``(CLOSE-BLKFILE)'',docolon)
         DW IS_DIRTYQ,qbranch,XCLOSE_BLKFILE1
         DW UPDATE,CLEAR_DIRTY
 
