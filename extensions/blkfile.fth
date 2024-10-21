@@ -1,4 +1,4 @@
-( tloader - load text files embedded into blocks          1 / n)
+( blkfile - extension to treat blocks as files          1 / n)
 
 VARIABLE tload-block
 VARIABLE tload-block-num
@@ -9,6 +9,12 @@ VARIABLE tload-index
 
 
 
+\ start of BLKFILE extension
+BEGIN-STRUCTURE BLKFILE-CONTEXT
+   FIELD: blk.origin
+   FIELD: blk.cur
+   FIELD: blk.offset
+END-STRUCTURE
 
 
 
