@@ -193,21 +193,6 @@ dnl         dw EXIT
 DLITER1: DW EXIT
 
 
-;C 2VARIABLE  x1 x2 --      define a Forth double variable
-;   CREATE 2 CELLS ALLOT ;
-; Action of RAM variable is identical to CREATE,
-; so we don't need a DOES> clause to change it.
-    head(TWOVARIABLE,2VARIABLE,docolon)
-        DW CREATE,lit,2,CELLS,ALLOT,EXIT
-
-;C 2CONSTANT x1 x2  -      define a Forth constant
-;   CREATE , , DOES> 2@  ;
-    head(TWOCONSTANT,2CONSTANT,docolon)
-        DW CREATE,COMMA,COMMA,XDOES
-
-        call dodoes
-        DW TWOFETCH
-        DW EXIT
 
 ;C 0<>     x1 -- flag    test not eq to 0
     head(ZERONOTEQUAL,0<>,docolon)
@@ -248,10 +233,6 @@ DLESS2:
         DW TWODROP,ULESS
         DW EXIT
 
-
-;: D0<   NIP #MSB AND 0<> ;
-    head(DZEROLESS,D0<,docolon)
-        DW NIP,lit,0x8000,AND,ZERONOTEQUAL,EXIT
 
 ;: D0=   OR 0=  ;
     head(DZEROEQUAL,D0=,docolon)
@@ -296,66 +277,6 @@ DMIN1:
 
 
 ; RC2014 EXTENDED STRINGS =======================
-
-; \ Compare the string specified by c-addr1 u1 to the string
-; \ specified by c-addr2 u2. The strings are compared, beginning
-; \ at the given addresses, character by character, up to the
-; \ length of the shorter string or until a difference is found.
-; \ If the two strings are identical, n is zero. If the two
-; \ strings are identical up to the length of the shorter string,
-; \ n is minus-one (-1) if u1 is less than u2 and one (1)
-; \ otherwise. If the two strings are not identical up to the
-; \ length of the shorter string, n is minus-one (-1) if the
-; \ first non-matching character in the string specified by
-; \ c-addr1 u1 has a lesser numeric value than the corresponding
-; \ character in the string specified by c-addr2 u2 and one (1)
-; \ otherwise.
-;
-;C COMPARE  ( c-addr1 u1 caddr2 u2 -- n )
-;   ROT 2DUP 2>R  ( c-addr1 u1 caddr2 u2 u1 ; u2 u1 )
-;   MIN           ( c-addr1 caddr2 u'  ; u2 u1 )
-;   S=            ( n ; u2 u1 )
-;   ?DUP 0<> IF  2R> 2DROP                     \ no match
-;            ELSE  2R>   2DUP  = IF  2DROP 0   \ match
-;                 \ else which is shorter ?
-;                 ELSE  <  IF  -1  ELSE  1  THEN  THEN
-;            THEN    ;
-dnl    head(COMPARE,COMPARE,docolon)
-dnl        DW ROT,TWODUP,TWOTOR
-dnl        DW MIN
-dnl        DW sequal
-dnl        DW QDUP,ZERONOTEQUAL,qbranch,COMPARE1
-dnl
-dnl        DW TWORFROM,TWODROP
-dnl        DW EXIT
-dnl
-dnl COMPARE1:
-dnl         DW TWORFROM,TWODUP,EQUAL,qbranch,COMPARE2
-dnl 
-dnl         DW TWODROP,lit,0
-dnl         DW EXIT
-dnl 
-dnl COMPARE2:
-dnl         DW LESS,qbranch,COMPARE3
-dnl 
-dnl         DW lit,-1
-dnl         DW EXIT
-dnl 
-dnl COMPARE3:
-dnl         DW lit,1
-dnl         DW EXIT
-
-;: prefix rot min tuck compare ; ( c1 u1 c2 u2 -- f )
-;: search ( c1 u1 c2 u2 -- c3 u3 f : find c2/u2 in c1/u1 )
-;    swap >r >r 2dup
-;    begin
-;      dup r@ >= over 0> and
-;      while
-;        2dup r> r> 2dup >r >r swap prefix
-;        0= if rot drop rot drop rdrop rdrop -1 exit then
-;        +string
-;      repeat
-;    2drop rdrop rdrop 0 ;
 
 ; RC2014 EXTENDED STRUCTURES ====================
 
@@ -636,60 +557,6 @@ STACKUNTIL3:
 ;    ;
     head(NOOP,NOOP,docolon)
         dw EXIT
-
-;C DEFER    ( "name" -- )        create a deferred word
-;    CREATE ['] NOOP ,
-;   DOES>
-;    @ EXECUTE ;
-    head(DEFER,DEFER,docolon)
-        DW CREATE,lit,NOOP,COMMA
-
-        DW XDOES
-        call dodoes
-        DW FETCH,EXECUTE
-        dw EXIT
-
-;C DEFER!   ( xt2 xt1 -- )             store xt2 in xt1
-;   >BODY ! ;
-    head(DEFERSTOR,DEFER!,docolon)
-        DW TOBODY,STORE
-        DW EXIT
-
-;C DEFER@   ( xt2 xt1 -- )             store xt2 in xt1
-;   >BODY ! ;
-    head(DEFERFETCH,DEFER@,docolon)
-        DW TOBODY,FETCH
-        DW EXIT
-
-;C IS       ( xt "name" -- )     define a deferred word
-;   STATE @ IF
-;      POSTPONE ['] POSTPONE DEFER!
-;   ELSE
-;      ' DEFER!
-;   THEN ; IMMEDIATE
-    immed(IS,IS,docolon)
-        DW STATE,FETCH,qbranch,IS1
-        DW BRACTICK,lit,DEFERSTOR,COMMAXT
-        DW branch,IS2
-IS1:
-        DW TICK,DEFERSTOR
-IS2:
-        DW EXIT
-
-;C ACTION-OF  ( "name -- xt" )     get the action of a deferred word
-;   STATE @ IF
-;      POSTPONE ['] POSTPONE DEFER@
-;   ELSE
-;      ' DEFER@
-;   THEN ; IMMEDIATe
-    immed(ACTION_OF,ACTION-OF,docolon)
-        DW STATE,FETCH,qbranch,AOF1
-        DW BRACTICK,lit,DEFERFETCH,COMMAXT
-        DW branch,AOF2
-AOF1:
-        DW TICK,DEFERFETCH
-AOF2:
-        DW EXIT
 
 
 ; RC2014 EXTENSIONS (TERMINAL) ==================
@@ -1779,7 +1646,7 @@ IS_DIRTYQ:
     DW lit,blkfile_dirty,FETCH
     DW EXIT
 
-;: current-block ( blkfile-id -- )
+;: current-block ( -- )
 ;   is-dirty? IF UPDATE clear-dirty THEN
 ;   blk-cur @ BLOCK blk-ptr ! ;
 CURRENT_BLOCK:
@@ -1797,7 +1664,7 @@ CURRBLK1:
 INC_BLOCK:
     call docolon
     DW lit,1,lit,blk_curr,PLUSSTORE
-    DW lit,0,blk_offset,STORE
+    DW lit,0,lit,blk_offset,STORE
     DW CURRENT_BLOCK
     DW EXIT
 
@@ -1805,16 +1672,16 @@ INC_BLOCK:
 ;   1 blk-offset +! ( )
 ;   blk-offset @ 1023 > IF
 ;      inc-block
-;   ELSE  DROP  THEN   ;
+;   THEN   ;
 INC_OFFSET:
     call docolon
     DW lit,1,lit,blk_offset,PLUSSTORE
     DW lit,blk_offset,FETCH,lit,1023,GREATER
     DW qbranch,INCOFFSET1
-    DW INC_BLOCK,EXIT
+    DW INC_BLOCK
 
 INCOFFSET1:
-    DW DROP,EXIT
+    DW EXIT
 
 ;: (write-char) ( c -- )
 ;   blk-ptr @  ( c blk-ptr )
@@ -1827,17 +1694,17 @@ XWRITE_CHAR:
     DW INC_OFFSET
     DW EXIT
 
-;: write-char ( c )
+;: PUTCH ( c )
 ;   current-block
 ;   set-dirty
 ;   (write-char) ;
-    head(WRITE_CHAR,WRITE-CHAR,docolon)
+    head(PUTCH,PUTCH,docolon)
         DW CURRENT_BLOCK
         DW SET_DIRTY
         DW XWRITE_CHAR
         DW EXIT
 
-;: write-chars ( c-addr u -- )
+;: PUTCHARS ( c-addr u -- )
 ;   ?DUP IF
 ;     current-block  ( c-addr u )
 ;     set-dirty
@@ -1846,17 +1713,17 @@ XWRITE_CHAR:
 ;       (write-char) ( c-addr )
 ;     LOOP
 ;   THEN DROP ;
-    head(WRITE_CHARS,WRITE-CHARS,docolon)
-        DW QDUP,qbranch,WRITECHARS2
+    head(PUTCHARS,PUTCHARS,docolon)
+        DW QDUP,qbranch,PUTCHARS2
 
         DW CURRENT_BLOCK,SET_DIRTY
         DW SWOP,lit,0,xdo
-WRITECHARS1:
+PUTCHARS1:
         DW DUP,II,PLUS,CFETCH
         DW XWRITE_CHAR
-        DW xloop,WRITECHARS1
+        DW xloop,PUTCHARS1
 
-WRITECHARS2:
+PUTCHARS2:
         DW DROP
         DW EXIT
 
@@ -1871,15 +1738,15 @@ XREAD_CHAR:
         DW INC_OFFSET
         DW EXIT
 
-;: read-char ( -- c )
+;: GETCH ( -- c )
 ;   current-block
 ;   (read-char) ;
-    head(READ_CHAR,READ-CHAR,docolon)
+    head(GETCH,GETCH,docolon)
         DW CURRENT_BLOCK
         DW XREAD_CHAR
         DW EXIT
 
-;: read-chars ( c-addr u -- )
+;: GETCHARS ( c-addr u -- )
 ;   ?DUP IF
 ;     current-block  ( c-addr u )
 ;     0 DO   ( c-addr )
@@ -1887,25 +1754,25 @@ XREAD_CHAR:
 ;       OVER I + C!  ( c-addr )
 ;     LOOP
 ;   THEN  DROP  ;
-    head(READ_CHARS,READ-CHARS,docolon)
-        DW QDUP,qbranch,READCHARS2
+    head(GETCHARS,GETCHARS,docolon)
+        DW QDUP,qbranch,GETCHARS2
 
         DW CURRENT_BLOCK
         DW lit,0,xdo
-READCHARS1:
+GETCHARS1:
         DW XREAD_CHAR
         DW OVER,II,PLUS,CSTORE
-        DW xloop,READCHARS1
+        DW xloop,GETCHARS1
 
-READCHARS2:
+GETCHARS2:
         DW DROP
         DW EXIT
 
-;: (open-blkfile) ( blk offset -- )
+;: BEGIN-BLKFILE ( blk offset -- )
 ;   blk-offset !
 ;   blk-cur !
 ;   clear-dirty  ;
-    head(XOPEN_BLKFILE,``(OPEN-BLKFILE)'',docolon)
+    head(BEGIN_BLKFILE,``BEGIN-BLKFILE'',docolon)
         DW lit,blk_offset,STORE
         DW lit,blk_curr,STORE
         DW CLEAR_DIRTY
@@ -1913,15 +1780,15 @@ READCHARS2:
 
 ;: open-blkfile ( blk -- )
 ;
-;: (close-blkfile) ( -- )
+;: END-BLKFILE ( -- blk' offset' )
 ;   is-dirty? IF UPDATE clear-dirty THEN
 ;   FLUSH ;
-    head(XCLOSE_BLKFILE,``(CLOSE-BLKFILE)'',docolon)
-        DW IS_DIRTYQ,qbranch,XCLOSE_BLKFILE1
+    head(END_BLKFILE,``END-BLKFILE'',docolon)
+        DW IS_DIRTYQ,qbranch,END_BLKFILE1
         DW UPDATE,CLEAR_DIRTY
 
-XCLOSE_BLKFILE1:
-        DW FLUSH,EXIT
+END_BLKFILE1:
+        DW lit,blk_curr,FETCH,lit,blk_offset,FETCH,EXIT
 
 
 
@@ -2090,93 +1957,25 @@ defc SNAPSHOT_RST_LEN = 128-24
         dw TYPE,CR,QUIT
         dw EXIT
 
-; (BSAVE) ( c-addr u blk -- )  save block to file
-;    BUFFER                               ( c-addr u buffer )
-;    SWAP MOVE
-;    UPDATE  ;
-XBSAVE:
-        call docolon
-        dw BUFFER
-        dw SWOP,MOVE
-        dw UPDATE
-        dw EXIT
-
 ;: BSAVE   ( c-addr u blk -- )
-;    SWAP B/BLK /MOD    ( c-addr blk rem #blks )
-;    SWAP   >R      (c-addr blk #blks ; rem )
-;    ?DUP IF
-;      0 DO                  ( c-addr blk ; rem )
-;        2DUP B/BLK SWAP (BSAVE)  ( c-addr blk ; rem )
-;        SWAP B/BLK +             ( blk c-addr' ; rem )
-;        SWAP 1+                  ( c-addr' blk' ; rem )
-;      LOOP
-;    THEN           ( c-addr blk ; rem )
-;
-;    R> SWAP        ( c-addr rem blk )
-;    OVER IF (BSAVE) ELSE 2DROP DROP THEN
-;    FLUSH  ;
+;     0 (OPEN-BLKFILE)
+;     WRITE-BLKFILE
+;     (CLOSE-BLKFILE)   ;
     head(BSAVE,BSAVE,docolon)
-        dw SWOP,B_BLK,SLASHMOD
-        dw SWOP,TOR
-        dw QDUP,qbranch,BSAVE1
-        dw lit,0,xdo
-BSAVE2:
-        dw TWODUP,B_BLK,SWOP,XBSAVE
-        dw SWOP,B_BLK,PLUS
-        dw SWOP,ONEPLUS
-        dw xloop,BSAVE2
-BSAVE1:
-        dw RFROM,SWOP
-        dw OVER,qbranch,BSAVE3
-        dw XBSAVE
-        dw branch,BSAVE4
-BSAVE3:
-        dw TWODROP,DROP
-BSAVE4:
-        dw FLUSH
+        dw lit,0,BEGIN_BLKFILE
+        dw PUTCHARS
+        dw END_BLKFILE,TWODROP
         dw EXIT
 
-; (BLOAD) ( c-addr u blk -- )  load block from disks
-;    BLOCK                            ( c-addr u buffer )
-;    ROT ROT MOVE    ;
-XBLOAD:
-        call docolon
-        dw BLOCK
-        dw ROT,ROT,MOVE
-        dw EXIT
 
 ;: BLOAD   ( c-addr u blk -- )
-;    SWAP B/BLK /MOD    ( c-addr blk rem #blks )
-;    SWAP   >R      (c-addr blk #blks ; rem )
-;    ?DUP IF
-;      0 DO                  ( c-addr blk ; rem )
-;        2DUP B/BLK SWAP (BLOAD)   ( c-addr blk ; rem )
-;        SWAP B/BLK +              ( blk c-addr' ; rem )
-;        SWAP 1+                   ( c-addr' blk' ; rem )
-;      LOOP
-;    THEN           ( c-addr blk ; rem )
-;
-;    R> SWAP        ( c-addr rem blk )
-;    OVER IF (BLOAD) ELSE 2DROP DROP THEN
-;     ;
+;     0 (OPEN-BLKFILE)
+;     READ-BLKFILE
+;     (CLOSE-BLKFILE)   ;
     head(BLOAD,BLOAD,docolon)
-        dw SWOP,B_BLK,SLASHMOD
-        dw SWOP,TOR
-        dw QDUP,qbranch,BLOAD1
-        dw lit,0,xdo
-BLOAD2:
-        dw TWODUP,B_BLK,SWOP,XBLOAD
-        dw SWOP,B_BLK,PLUS
-        dw SWOP,ONEPLUS
-        dw xloop,BLOAD2
-BLOAD1:
-        dw RFROM,SWOP
-        dw OVER,qbranch,BLOAD3
-        dw XBLOAD
-        dw branch,BLOAD4
-BLOAD3:
-        dw TWODROP,DROP
-BLOAD4:
+        dw lit,0,BEGIN_BLKFILE
+        dw GETCHARS
+        dw END_BLKFILE,TWODROP
         dw EXIT
 
 
@@ -2197,35 +1996,13 @@ defc BLK_DATA_SIZE   = 1024-BLK_HEADER_SIZE
 ;      CELL+ 2DUP !              ( c-addr u buffer+2 ; store data size at buffer+2 )
 ;      CELL+ >SNAPSHOT           ( c-addr u ; store SNAPSHOT )
 ;
-;    BUFFER BLK_HDR_SIZE +    ( c-addr u buffer' )
-;    OVER BLK_DATA_SIZE > IF
-;      >R OVER R> BLK_DATA_SIZE MOVE UPDATE  ( c-addr u )
-;      SWAP BLK_DATA_SIZE +                  ( u c-addr' )
-;      SWAP BLK_DATA_SIZE -                  ( c-addr' u' )
-;    ELSE                     ( c-addr u buffer' )
-;      >R 2DUP R>             ( c-addr u c-addr u buffer' )
-;       SWAP MOVE UPDATE      ( c-addr u )
-;       + 0                   ( c-addr' 0 )
-;    THEN   FLUSH  ;
+
 XSAVEHDR:
         call docolon
         dw DUP,lit,BLK_HEADER_SIZE,ERASE
         dw lit,BLK_HEADER_SIZE,OVER,STORE
         dw CELLPLUS,TWODUP,STORE
         dw CELLPLUS,TOSNAPSHOT
-
-        dw BLK,FETCH,BUFFER,lit,BLK_HEADER_SIZE,PLUS
-        dw OVER,lit,BLK_HEADER_SIZE,GREATER,qbranch,XSAVEHDR1
-        dw TOR,OVER,RFROM,lit,BLK_DATA_SIZE,MOVE,UPDATE
-        dw SWOP,lit,BLK_DATA_SIZE,PLUS
-        dw SWOP,lit,BLK_DATA_SIZE,MINUS
-        dw branch,XSAVEHDR2
-XSAVEHDR1:
-        dw TOR,TWODUP,RFROM
-        dw SWOP,MOVE,UPDATE
-        dw PLUS,lit,0
-XSAVEHDR2:
-        dw FLUSH
         dw EXIT
 
 ;: SAVE   ( blk -- )
@@ -2245,12 +2022,10 @@ XSAVEHDR2:
         dw ROT,BUFFER                              ;  ( c-addr u buffer )
         dw XSAVEHDR
 
-        dw DUP,qbranch,SAVE1
-        dw BLK,FETCH,ONEPLUS,BSAVE
-        dw branch,SAVE2
-SAVE1:
-        dw TWODROP
-SAVE2:
+        dw BLK,FETCH,lit,BLK_HEADER_SIZE
+        dw BEGIN_BLKFILE
+        dw PUTCHARS
+        dw END_BLKFILE,TWODROP
         dw EXIT
 
 ;: RESTORE   ( blk -- )
@@ -2287,23 +2062,10 @@ SAVE2:
 
         dw SWOP,lit,enddict,ROT
 
-        dw DUP,lit,BLK_DATA_SIZE,GREATER,qbranch,RESTORE1
-        dw TOR,TWODUP,lit,BLK_DATA_SIZE,MOVE,NIP,RFROM
-        dw SWOP,lit,BLK_DATA_SIZE,PLUS
-        dw SWOP,lit,BLK_DATA_SIZE,MINUS
-        dw branch,RESTORE2
-RESTORE1:
-        dw TOR,TWODUP,RFETCH
-        dw MOVE,NIP,RFROM
-        dw PLUS,lit,0
-
-RESTORE2:
-        dw DUP,qbranch,RESTORE3
-        dw BLK,FETCH,ONEPLUS,BLOAD
-        dw branch,RESTORE4
-RESTORE3:
-        dw TWODROP
-RESTORE4:
+        dw BLK,FETCH,lit,BLK_HEADER_SIZE
+        dw BEGIN_BLKFILE
+        dw GETCHARS
+        dw END_BLKFILE,TWODROP
         dw EXIT
 
 
