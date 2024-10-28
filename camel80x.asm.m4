@@ -347,9 +347,9 @@ dnl ;   DOES>  ;
 ;      CELL NEGATE    ( lifo -2 )
 ;      OVER           ( lifo -2 lifo )
 ;      +!             ( lifo )
-;      @ ;
+;      @ @ ;
     head(STACKFROM,S>,docolon)
-        DW CELL,NEGATE,OVER,PLUSSTORE,FETCH
+        DW CELL,NEGATE,OVER,PLUSSTORE,FETCH,FETCH
         DW EXIT
 
 ; Fetch the value at the top of the STACK
@@ -1746,16 +1746,16 @@ XREAD_CHAR:
         DW XREAD_CHAR
         DW EXIT
 
-;: GETCHARS ( c-addr u -- )
-;   ?DUP IF
+;: GETCHARS ( c-addr u -- u )
+;   DUP >R  ?DUP  IF
 ;     current-block  ( c-addr u )
 ;     0 DO   ( c-addr )
 ;       (read-char)  ( c-addr c )
 ;       OVER I + C!  ( c-addr )
 ;     LOOP
-;   THEN  DROP  ;
+;   THEN  DROP R> ;
     head(GETCHARS,GETCHARS,docolon)
-        DW QDUP,qbranch,GETCHARS2
+        DW DUP,TOR,QDUP,qbranch,GETCHARS2
 
         DW CURRENT_BLOCK
         DW lit,0,xdo
@@ -1765,7 +1765,7 @@ GETCHARS1:
         DW xloop,GETCHARS1
 
 GETCHARS2:
-        DW DROP
+        DW DROP,RFROM
         DW EXIT
 
 ;: BEGIN-BLKFILE ( blk offset -- )
