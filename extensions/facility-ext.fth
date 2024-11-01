@@ -23,4 +23,4 @@ FORTH DEFINITIONS
    DOES> @ + ;  ( addr1 -- addr2 ; calculate address of field )
 : FIELD: ALIGNED 1 CELLS +FIELD ;
 : CFIELD: 1 CHARS +FIELD ;
-: END-STRUCTURE CONSTANT ;
+: END-STRUCTURE SWAP ! ;

@@ -11,6 +11,7 @@ OPEN:  build/cf-image.blk
 45 AT-BLOCK: extensions/tools-ext.fth
 54 AT-BLOCK: extensions/memory.fth
 
+81 AT-BLOCK: extensions/blkfile.fth
 90 AT-BLOCK: extensions/fixed.fth
 99 AT-BLOCK: extensions/random.fth
 102 AT-BLOCK: extensions/ansi.fth
