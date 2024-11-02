@@ -236,20 +236,30 @@ SECTION code
             DW EXIT
 
     ;C FM/MOD   d1 n1 -- n2 n3   floored signed div'n
-    ;   DUP >R              save divisor
-    ;   SM/REM
-    ;   DUP 0< IF           if quotient negative,
-    ;       SWAP R> +         add divisor to rem'dr
-    ;       SWAP 1-           decrement quotient
-    ;   ELSE R> DROP THEN ;
+    ;   DUP >R              divisor
+    ;   2DUP XOR >R         sign of quotient
+    ;   >R                  divisor
+    ;   DABS R@ ABS UM/MOD
+    ;   SWAP R> ?NEGATE SWAP  apply sign to remainder
+    ;   R> 0< IF              if quotient negative,
+    ;       NEGATE
+    ;       OVER IF             if remainder nonzero,
+    ;         R@ ROT -  SWAP 1-     adjust rem,quot
+    ;       THEN
+    ;   THEN  R> DROP ;
     ; Ref. dpANS-6 section 3.2.2.1.
+    ; FM/MOD bugfix: https://www.camelforth.com/fmmod.html
         head(FMSLASHMOD,FM/MOD,docolon)
-            DW DUP,TOR,SMSLASHREM
-            DW DUP,ZEROLESS,qbranch,FMMOD1
-            DW SWOP,RFROM,PLUS,SWOP,ONEMINUS
-            DW branch,FMMOD2
+            DW DUP,TOR
+            DW TWODUP,XOR,TOR
+            DW TOR
+            DW DABS,RFETCH,ABS,UMSLASHMOD
+            DW SWOP,RFROM,QNEGATE,SWOP
+            DW RFROM,ZEROLESS,qbranch,FMMOD1
+            DW NEGATE,OVER,qbranch,FMMOD1
+            DW RFETCH,ROT,MINUS,SWOP,ONEMINUS
     FMMOD1: DW RFROM,DROP
-    FMMOD2: DW EXIT
+            DW EXIT
 
     ;C *      n1 n2 -- n3       signed multiply
     ;   M* DROP ;
