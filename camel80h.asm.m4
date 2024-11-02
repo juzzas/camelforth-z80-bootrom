@@ -1140,19 +1140,19 @@ POST2:  DW EXIT
 
 ; CONTROL STRUCTURES ============================
 
-;C IF       -- adrs    conditional forward branch
+;C IF       -- orig    conditional forward branch
 ;   ['] qbranch ,BRANCH  HERE DUP ,DEST ;
 ;   IMMEDIATE
     immed(IF,IF,docolon)
         DW lit,qbranch,COMMABRANCH
         DW HERE,DUP,COMMADEST,EXIT
 
-;C THEN     adrs --        resolve forward branch
+;C THEN     orig --        resolve forward branch
 ;   HERE SWAP !DEST ; IMMEDIATE
     immed(THEN,THEN,docolon)
         DW HERE,SWOP,STOREDEST,EXIT
 
-;C ELSE     adrs1 -- adrs2    branch for IF..ELSE
+;C ELSE     orig1 -- orig2    branch for IF..ELSE
 ;   ['] branch ,BRANCH  HERE DUP ,DEST
 ;   SWAP  POSTPONE THEN ; IMMEDIATE
     immed(ELSE,ELSE,docolon)
@@ -1160,34 +1160,36 @@ POST2:  DW EXIT
         DW HERE,DUP,COMMADEST
         DW SWOP,THEN,EXIT
 
-;C BEGIN    -- adrs        target for bwd. branch
+;C BEGIN    -- dest        target for bwd. branch
 ;   HERE ; IMMEDIATE
     immed(BEGIN,BEGIN,docode)
         jp HERE
 
-;C UNTIL    adrs --   conditional backward branch
+;C UNTIL    dest --   conditional backward branch
 ;   ['] qbranch ,BRANCH  ,DEST ; IMMEDIATE
 ;   conditional backward branch
     immed(UNTIL,UNTIL,docolon)
         DW lit,qbranch,COMMABRANCH
         DW COMMADEST,EXIT
 
-;X AGAIN    adrs --      uncond'l backward branch
+;X AGAIN    dest --      uncond'l backward branch
 ;   ['] branch ,BRANCH  ,DEST ; IMMEDIATE
 ;   unconditional backward branch
     immed(AGAIN,AGAIN,docolon)
         DW lit,branch,COMMABRANCH
         DW COMMADEST,EXIT
 
-;C WHILE    -- adrs         branch for WHILE loop
-;   POSTPONE IF ; IMMEDIATE
-    immed(WHILE,WHILE,docode)
-        jp IF
+;C WHILE   dest -- orig dest         branch for WHILE loop
+;   ['] qbranch ,BRANCH  HERE DUP ,DEST SWAP  ; IMMEDIATE
+    immed(WHILE,WHILE,docolon)
+        DW lit,qbranch,COMMABRANCH
+        DW HERE,DUP,COMMADEST,SWOP
+        DW EXIT
 
-;C REPEAT   adrs1 adrs2 --     resolve WHILE loop
-;   SWAP POSTPONE AGAIN POSTPONE THEN ; IMMEDIATE
+;C REPEAT   orig dest --     resolve WHILE loop
+;   POSTPONE AGAIN POSTPONE THEN ; IMMEDIATE
     immed(REPEAT,REPEAT,docolon)
-        DW SWOP,AGAIN,THEN,EXIT
+        DW AGAIN,THEN,EXIT
 
 ;Z >L   x --   L: -- x        move to leave stack
 ;   CELL LP +!  LP @ ! ;      (L stack grows up)
