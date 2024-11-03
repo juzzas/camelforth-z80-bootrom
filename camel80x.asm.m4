@@ -1708,7 +1708,7 @@ XWRITE_CHAR:
 ;   ?DUP IF
 ;     current-block  ( c-addr u )
 ;     set-dirty
-;     SWAP 0 DO   ( c-addr )
+;     0 DO   ( c-addr )
 ;       DUP I + C@  ( c-addr c )
 ;       (write-char) ( c-addr )
 ;     LOOP
@@ -1717,7 +1717,7 @@ XWRITE_CHAR:
         DW QDUP,qbranch,PUTCHARS2
 
         DW CURRENT_BLOCK,SET_DIRTY
-        DW SWOP,lit,0,xdo
+        DW lit,0,xdo
 PUTCHARS1:
         DW DUP,II,PLUS,CFETCH
         DW XWRITE_CHAR
@@ -2009,13 +2009,13 @@ XSAVEHDR:
 ;    DUP WIPE
 ;    enddict   DP @ enddict -    ( blk c-addr u )
 ;    ROT BUFFER                  ( c-addr u buffer -- ; blk in BLK)
-;    (BSAVEHDR)                  ( c-addr' u' )
+;    (SAVEHDR)                   ( c-addr u )
 ;
-;    DUP IF
-;      BLK @ 1+ BSAVE
-;    ELSE
-;      2DROP
-;    THEN   ;
+;    BLK @  BLK_HEADER_SIZE
+;    BEGIN-BLKFILE
+;    PUTCHARS
+;    END-BLKFILE
+;    FLUSH  ;
     head(SAVE,SAVE,docolon)
         dw DUP,WIPE
         dw lit,enddict,DP,FETCH,lit,enddict,MINUS  ;  ( block c-addr u )
@@ -2023,9 +2023,11 @@ XSAVEHDR:
         dw XSAVEHDR
 
         dw BLK,FETCH,lit,BLK_HEADER_SIZE
+        dw DOTS,CR
         dw BEGIN_BLKFILE
+        dw DOTS,CR
         dw PUTCHARS
-        dw END_BLKFILE,TWODROP
+        dw END_BLKFILE,DOT,DOT,FLUSH   ; TWODROP
         dw EXIT
 
 ;: RESTORE   ( blk -- )
