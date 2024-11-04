@@ -54,11 +54,6 @@ SECTION code_16k
         head(SCR,SCR,douser)
             dw 32
 
-    ;Z REC-USERVEC      -- xt    if set, use XT as user vector for RECOGNIZER
-    ;  34 USER REC-USERVEC
-        head(REC_USERVEC,REC-USERVEC,douser)
-            dw 34
-
     ;Z VOCLINK      -- a-addr   address for VOCLINK wid
     ;  38 USER CURRENT
         head(VOCLINK,VOCLINK,douser)
@@ -1919,8 +1914,8 @@ SNAPSHOTDOTORDER:
         dw EXIT
 
 ; USER space index to restore
-defc SNAPSHOT_RST_START = 24
-defc SNAPSHOT_RST_LEN = 128-24
+defc SNAPSHOT_RST_START = 12
+defc SNAPSHOT_RST_LEN = 128-12
 
 ;: SNAPSHOT>  ( snapaddr  --   restore snapshot )
 ;        DUP SNAPSHOT.USER SNAPSHOT_RST_START +
@@ -2014,7 +2009,7 @@ XSAVEHDR:
 ;    BLK @  BLK_HEADER_SIZE
 ;    BEGIN-BLKFILE
 ;    PUTCHARS
-;    END-BLKFILE
+;    END-BLKFILE  2DROP
 ;    FLUSH  ;
     head(SAVE,SAVE,docolon)
         dw DUP,WIPE
@@ -2023,11 +2018,9 @@ XSAVEHDR:
         dw XSAVEHDR
 
         dw BLK,FETCH,lit,BLK_HEADER_SIZE
-        dw DOTS,CR
         dw BEGIN_BLKFILE
-        dw DOTS,CR
         dw PUTCHARS
-        dw END_BLKFILE,DOT,DOT,FLUSH   ; TWODROP
+        dw END_BLKFILE,TWODROP,FLUSH
         dw EXIT
 
 ;: RESTORE   ( blk -- )
@@ -2039,21 +2032,10 @@ XSAVEHDR:
 ;
 ;    SWAP enddict ROT       ( buffer' enddict u)
 ;
-;    DUP BLK_DATA_SIZE > IF   ( buffer' c-addr u )
-;      >R 2DUP BLK_DATA_SIZE MOVE NIP R>     ( c-addr u )
-;      SWAP BLK_DATA_SIZE +                  ( u c-addr' )
-;      SWAP BLK_DATA_SIZE -                  ( c-addr' u' )
-;    ELSE                     ( buffer' c-addr u )
-;      >R 2DUP R@             ( buffer' c-addr buffer' c-addr u )
-;       MOVE NIP R>           ( c-addr u )
-;       + 0                   ( c-addr' 0 )
-;    THEN
-;
-;    DUP IF    ( c-addr' u' )
-;      BLK @ 1+ BLOAD
-;    ELSE
-;      2DROP
-;    THEN    ;
+;    BLK @  BLK_HEADER_SIZE
+;    BEGIN-BLKFILE
+;    GETCHARS
+;    END-BLKFILE 2DROP    ;
     head(RESTORE,RESTORE,docolon)
         dw BLOCK
         dw DUP,FETCH               ; header size
