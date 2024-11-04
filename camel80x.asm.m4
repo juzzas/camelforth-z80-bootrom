@@ -50,14 +50,14 @@ SECTION code_16k
 
 
     ;Z SCR          -- a-addr  last edited screen number
-    ;  32 USER SCR
+    ;  24 USER SCR
         head(SCR,SCR,douser)
-            dw 32
+            dw 24
 
     ;Z VOCLINK      -- a-addr   address for VOCLINK wid
-    ;  38 USER CURRENT
+    ;  26 USER CURRENT
         head(VOCLINK,VOCLINK,douser)
-            dw 38
+            dw 26
 
 ;: FORTH-WORDLIST ( -- wid )
 ; Return wid, the identifier of the word list that includes all standard
@@ -1914,8 +1914,8 @@ SNAPSHOTDOTORDER:
         dw EXIT
 
 ; USER space index to restore
-defc SNAPSHOT_RST_START = 12
-defc SNAPSHOT_RST_LEN = 128-12
+defc SNAPSHOT_RST_START = 24
+defc SNAPSHOT_RST_LEN = 128-24
 
 ;: SNAPSHOT>  ( snapaddr  --   restore snapshot )
 ;        DUP SNAPSHOT.USER SNAPSHOT_RST_START +

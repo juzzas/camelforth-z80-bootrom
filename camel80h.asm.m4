@@ -78,11 +78,6 @@ SECTION code
         head(TICKSOURCE,'SOURCE,douser)
             dw 10
 
-    ;Z latest    -- a-addr     last word in dict.
-    ;   14 USER LATEST
-        head(LATEST,LATEST,douser)
-            dw 14
-
     ;Z hp       -- a-addr     HOLD pointer
     ;   16 USER HP
         head(HP,HP,douser)
@@ -95,17 +90,38 @@ SECTION code
 
     ;  20 USER BLK
     ;  22 USER DSK
-    ;  24 USER BLKOFFSET
-    ;  26 USER BLKLIMIT
-    ;  28 USER SECTWRVEC
-    ;  30 USER SECTRDVEC
-    ;  32 USER SCR
-    ;  34 USER REC-USERVEC
+    ;  24 USER SCR
+    ;  26 USER VOCLINK
+
+    ;Z latest    -- a-addr     last word in dict.
+    ;   28 USER LATEST
+        head(LATEST,LATEST,douser)
+            dw 28
 
     ;Z CURRENT      -- a-addr   address of CURRENT wid
-    ;  36 USER CURRENT
+    ;  30 USER CURRENT
         head(CURRENT,CURRENT,douser)
-            dw 36
+            dw 30
+
+    ;Z SOURCE-ID      -- addr   current source ID for interpreter
+    ;  32 USER SOURCE-ID
+        head(SOURCE_ID,SOURCE-ID,douser)
+            dw 32
+
+    ;Z PAUSE      -- xt     if set, use XT as KEY destination
+    ;  34 USER PAUSEVEC
+        head(PAUSEVEC,PAUSEVEC,douser)
+            dw 34
+
+dnl    ;Z KEYVEC      -- xt     if set, use XT as KEY destination
+dnl    ;  36 USER KEYVEC
+dnl        head(KEYVEC,KEYVEC,douser)
+dnl            dw 36
+
+dnl    ;Z KEYQVEC      -- xt     if set, use XT as KEY? destination
+dnl    ;  38 USER KEY?VEC
+dnl        head(KEYQVEC,KEY?VEC,douser)
+dnl            dw 38
 
     ;Z EMITVEC      -- xt     if set, use XT as EMIT destination
     ;  40 USER EMITVEC
@@ -122,12 +138,8 @@ SECTION code
         head(HANDLER,HANDLER,douser)
             dw 44
 
-    ;Z SOURCE-ID      -- addr   current source ID for interpreter
-    ;  46 USER SOURCE-ID
-        head(SOURCE_ID,SOURCE-ID,douser)
-            dw 46
 
-    ;  48 USER WORDLISTS
+
 
     ;Z s0       -- a-addr     end of parameter stack
         head(S0,S0,douser)
@@ -151,32 +163,27 @@ SECTION code
             DW 0,0,10,0     ; reserved,>IN,BASE,STATE
             DW enddict      ; DP                         8
             DW 0,0          ; SOURCE init'd elsewhere    10
-            DW lastword     ; LATEST
+            DW 0            ; empty
             DW 0            ; HP init'd elsewhere
             DW 0            ; LP init'd elsewhere
             DW 0            ; BLK                        20
             DW 1            ; DSK
-            DW 0            ; BLKOFFSET
-            DW 8192         ; BLKLIMIT
-            DW NOOP         ; SECTWRVEC
-            DW NOOP         ; SECTRDVEC                  30
             DW 0            ; SCR
-            DW 0            ; REC-USERVEC
-            DW 1            ; CURRENT
             DW vocab_lastword            ; VOC-LINK
-            DW TOCONSOLE    ; EMITVEC                    40
-            DW XREFILL8K   ; REFILLVEC
-            DW 0            ; HANDLER
+            DW lastword     ; LATEST
+            DW 1            ; CURRENT                    30
             DW 0            ; SOURCE-ID
-            DW 3            ; number of wordlists        48
-            DW lastword     ; LFA of FORTH wordlist
-            DW editor_lastword   ; LFA of EDITOR wordlist
-            DW vocab_lastword    ; LFA of VOCS wordlist
+            DW NOOP         ; PAUSEVEC
+            DW NOOP         ; KEYVEC
+            DW NOOP         ; KEY?VEC
+            DW TOCONSOLE    ; EMITVEC                    40
+            DW XREFILL8K    ; REFILLVEC
+            DW 0            ; HANDLER
 
 
     ;Z #init    -- n    #bytes of user area init data
         head(NINIT,``#INIT'',docon)
-            DW 66
+            DW 46
 
     ; ARITHMETIC OPERATORS ==========================
 
