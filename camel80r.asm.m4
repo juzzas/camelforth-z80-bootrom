@@ -207,10 +207,10 @@ DUMP1:
 ; HEXLOAD implementation ==========================
 
 ;Z IHXCRC+  ( c -- )
-;    IHXCRC @ + FF AND IHXCRC ! ;
+;    IHXCRC +! ;
 IHXCRCPLUS:
         call docolon
-        DW IHXCRC,FETCH,PLUS,IHXCRC,STORE
+        DW IHXCRC,PLUSSTORE
         DW EXIT
 
 ;Z ?IHXCRC  ( c -- flag )    ( does the crc match? )
@@ -220,30 +220,35 @@ QIHXCRC:
         DW IHXCRC,FETCH,NEGATE,lit,255,AND,EQUAL
         DW EXIT
 
-;Z (IHXBYTE)  ( tib-ptr -- u tib-ptr )
-;    BASE @ >R HEX
-;    R@ 0 S>D R> 2
-;    >NUMBER       ( du tib-ptr u )
-;    DROP NIP      ( u tib-ptr )
-;    DUP RFROM = IF -1 THROW THEN
-;    R> BASE !    ;
-XIHXBYTE:
-        call docolon
-        DW BASE,FETCH,TOR,HEX
-        DW TOR,lit,0,STOD,RFETCH,lit,2
-        DW TONUMBER
-        DW DROP,NIP
-        DW DUP,RFROM,EQUAL,qbranch,XIHXBYTE1
-        DW lit,-1,THROW
 
-XIHXBYTE1:
-        DW RFROM,BASE,STORE
-        DW EXIT
+
+;Z (IHXBYTE)  ( tib-ptr -- c tib-ptr' )
+XIHXBYTE:
+        call readnibble ; read the first nibble
+        rlca            ; shift it left by 4 bits
+        rlca
+        rlca
+        rlca
+        ld l,a          ; temporarily store the first nibble in L
+        call readnibble ; get the second (low) nibble
+        or l            ; assemble two nibbles into one byte in A
+        ld l,a          ; put assembled byte back into L
+        ld h,0
+        push hl         ; TUCK hl 
+        next            ;
+
+    readnibble:
+        ld a,(bc)
+        inc bc
+        sub '0'
+        cp 10
+        ret C           ; if A<10 just return
+        sub 7           ; else subtract 'A'-'0' (17) and add 10
+        ret
+
 
 ;Z IHXBYTE  ( tib-ptr -- u tib-ptr )
-;    >R 0 S>D R> 2
-;    >NUMBER       ( du tib-ptr u )
-;    DROP NIP      ( u tib-ptr )
+;    (IHXBYTE)
 ;    OVER IHXCRC+  ;
 IHXBYTE:
         call docolon
