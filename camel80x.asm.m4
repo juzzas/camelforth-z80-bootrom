@@ -550,8 +550,8 @@ STACKUNTIL3:
 
 ;C NOOP        ( -- )        no operation
 ;    ;
-    head(NOOP,NOOP,docolon)
-        dw EXIT
+    head(NOOP,NOOP,docode)
+        next
 
 
 ; RC2014 EXTENSIONS (TERMINAL) ==================
