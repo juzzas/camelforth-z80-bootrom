@@ -54,11 +54,6 @@ SECTION code_16k
         head(SCR,SCR,douser)
             dw 24
 
-    ;Z VOCLINK      -- a-addr   address for VOCLINK wid
-    ;  26 USER CURRENT
-        head(VOCLINK,VOCLINK,douser)
-            dw 26
-
 ;: FORTH-WORDLIST ( -- wid )
 ; Return wid, the identifier of the word list that includes all standard
 ; words provided by the implementation. This word list is initially the
@@ -67,12 +62,12 @@ SECTION code_16k
             dw LATEST,EXIT
 
 ;: EDITOR-WORDLIST ( -- wid )
-        head(EDITOR_WORDLIST,EDITOR-WORDLIST,douser)
-            dw 52
+        head(EDITOR_WORDLIST,EDITOR-WORDLIST,docolon)
+            dw lit,editor_wordlist_head,EXIT
 
 ;: VOCAB-WORDLIST ( -- wid )
-        head(VOCAB_WORDLIST,VOCAB-WORDLIST,douser)
-            dw 54
+        head(VOCAB_WORDLIST,VOCAB-WORDLIST,docolon)
+            dw lit,vocab_wordlist_head,EXIT
 
 EXTERN intvec_ptr
 ;Z INTVEC      -- a-addr   pointer to address holding interrupt vector
@@ -636,6 +631,12 @@ SECTION data
 STACK_WORDLISTS:
         ds 34    ; 16 cells + stack top pointer
 
+vocab_wordlist_head:
+        ds 2
+
+editor_wordlist_head:
+        ds 2
+
 SECTION code_16k
 
 ;: WORDLIST ( -- wid )
@@ -832,8 +833,8 @@ FINDNG1:
 ;    DOES>  @ WORDLISTS TOSTACK
 ;  ;
     head(VOCABULARY,VOCABULARY,docolon)
-        dw VOCLINK,FETCH,WIDTONFA,COMMA,lit,0,CCOMMA
-        dw HERE,VOCLINK,FETCH,WIDTONFASTORE
+        dw VOCAB_WORDLIST,WIDTONFA,COMMA,lit,0,CCOMMA
+        dw HERE,VOCAB_WORDLIST,WIDTONFASTORE
         dw BL,WORD,CFETCH,ONEPLUS,ALLOT
         dw lit,docreate,COMMACF
         dw WORDLIST,COMMA
@@ -843,10 +844,10 @@ FINDNG1:
         DW WORDLISTS,STACKSTORE
         dw EXIT
 
-; patch latest entry on VOCLINK with code from VOCDOES
+; patch latest entry on  with code from VOCDOES
 XVOCDOES:
         call docolon
-        DW RFROM,VOCLINK,FETCH,WIDTONFA,NFATOCFA,STORECF
+        DW RFROM,VOCAB_WORDLIST,WIDTONFA,NFATOCFA,STORECF
         DW EXIT
 
 ;: ALSO  ( -- )  WORDLISTS STACK-DUP ;
@@ -872,7 +873,7 @@ XVOCDOES:
 ;: VOCS  ( -- )      list all vocabularies in dict
 ;   VOCLINK @ (WORDS) ;
     head(VOCS,VOCS,docolon)
-        DW VOCLINK,FETCH,XWORDS,EXIT
+        DW VOCAB_WORDLIST,XWORDS,EXIT
 
 ;Z WORDS_16K ( -- )      list all words in search order
 ;   ['] (WORDS) WORDLISTS STACK.MAP ;
@@ -1910,6 +1911,11 @@ SNAPSHOTDOTORDER:
         dw DUP,NUMSNAPSHOT,ERASE
         dw DUP,SNAPSHOTDOTUSER,U0,SWOP,lit,128,MOVE
         dw DUP,SNAPSHOTDOTORDER,SAVE_ORDER
+        dw DUP,SNAPSHOTDOTLINKS
+        dw    VOCAB_WORDLIST,FETCH,OVER,STORE,CELLPLUS
+        dw    FORTH_WORDLIST,FETCH,OVER,STORE,CELLPLUS
+        dw    EDITOR_WORDLIST,FETCH,OVER,STORE,CELLPLUS
+        dw    DROP
         dw DROP
         dw EXIT
 
@@ -1928,6 +1934,11 @@ defc SNAPSHOT_RST_LEN = 128-24
         dw U0,lit,SNAPSHOT_RST_START,PLUS,lit,SNAPSHOT_RST_LEN,MOVE
         dw DUP,SNAPSHOTDOTORDER,RESTORE_ORDER
         dw DUP,SNAPSHOTDOTUSER,lit,8,PLUS,FETCH,DP,STORE
+        dw DUP,SNAPSHOTDOTLINKS
+        dw    DUP,FETCH,VOCAB_WORDLIST,STORE,CELLPLUS
+        dw    DUP,FETCH,FORTH_WORDLIST,STORE,CELLPLUS
+        dw    DUP,FETCH,EDITOR_WORDLIST,STORE,CELLPLUS
+        dw    DROP
         dw DROP
         dw EXIT
 
@@ -2402,10 +2413,11 @@ NR2:    DW DROP
 
 ;Z /16KROM    init enhanced features
     head(SLASH16KROM,``/16KROM'',docolon)
+        DW lit,editor_lastword,EDITOR_WORDLIST,STORE
+        DW lit,vocab_lastword,VOCAB_WORDLIST,STORE
         DW VOCAB_WORDLIST,FORTH_WORDLIST,lit,2,SET_ORDER
         DW lit,REC_IHEX,lit,REC_NUMBER,lit,REC_FIND,lit,3,RECOGNIZERS,STACKSET
         DW FORTH_WORDLIST,CURRENT,STORE
-        DW VOCAB_WORDLIST,VOCLINK,STORE
         DW SLASHBLKCTX
         DW SLASHTEMPBUFF
         DW XSQUOTE

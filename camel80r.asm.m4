@@ -187,12 +187,6 @@ DUMP1:
         DW II,CFETCH,DOT,xloop,DUMP1
         DW EXIT
 
-;Z PAGE  ( --  clear screen )
-;    VT-ESC ." 2J"
-    head(PAGE,PAGE,docolon)
-        dw lit,12,EMIT
-        dw EXIT
-
 ;Z AT-XY  ( x y -- move cursor to x,y )
 ;    VT-ESC 1+ (.) TYPE ." ;" 1+ (.) TYPE ." H" ;
     head(AT_XY,AT-XY,docolon)
@@ -203,6 +197,16 @@ DUMP1:
         dw ONEPLUS,XDOT,TYPE
         dw lit,'H',EMIT
         dw EXIT
+
+;Z PAGE  ( --  clear screen )
+;    VT-ESC ." 2J"
+    head(PAGE,PAGE,docolon)
+        dw XSQUOTE
+        db 4,0x1b,"[2J"
+        dw TYPE
+        dw lit,0,lit,0,AT_XY
+        dw EXIT
+
 
 ; HEXLOAD implementation ==========================
 

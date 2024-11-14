@@ -91,7 +91,7 @@ SECTION code
     ;  20 USER BLK
     ;  22 USER DSK
     ;  24 USER SCR
-    ;  26 USER VOCLINK
+    ;  26 USER     unused
 
     ;Z latest    -- a-addr     last word in dict.
     ;   28 USER LATEST
@@ -108,29 +108,29 @@ SECTION code
         head(SOURCE_ID,SOURCE-ID,douser)
             dw 32
 
-    ;Z PAUSE      -- xt     if set, use XT as KEY destination
+    ;Z 'PAUSE      -- xt     if set, use XT as PAUSE destination
     ;  34 USER PAUSEVEC
-        head(PAUSEVEC,PAUSEVEC,douser)
+        head(PAUSEVEC,'PAUSE,douser)
             dw 34
 
-dnl    ;Z KEYVEC      -- xt     if set, use XT as KEY destination
-dnl    ;  36 USER KEYVEC
-dnl        head(KEYVEC,KEYVEC,douser)
-dnl            dw 36
+    ;Z 'KEY      -- xt     if set, use XT as KEY destination
+    ;  36 USER KEYVEC
+        head(KEYVEC,'KEY,douser)
+            dw 36
 
-dnl    ;Z KEYQVEC      -- xt     if set, use XT as KEY? destination
-dnl    ;  38 USER KEY?VEC
-dnl        head(KEYQVEC,KEY?VEC,douser)
-dnl            dw 38
+    ;Z 'KEY?      -- xt     if set, use XT as KEY? destination
+    ;  38 USER KEY?VEC
+        head(KEYQVEC,'KEY?,douser)
+            dw 38
 
-    ;Z EMITVEC      -- xt     if set, use XT as EMIT destination
+    ;Z 'EMIT      -- xt     if set, use XT as EMIT destination
     ;  40 USER EMITVEC
-        head(EMITVEC,EMITVEC,douser)
+        head(EMITVEC,'EMIT,douser)
             dw 40
 
-    ;Z REFILLVEC      -- xt    if set, use XT as REFILL source
+    ;Z 'REFILL      -- xt    if set, use XT as REFILL source
     ;  42 USER REFILLVEC
-        head(REFILLVEC,REFILLVEC,douser)
+        head(REFILLVEC,'REFILL,douser)
             dw 42
 
     ;Z HANDLER      -- xt    if set, use XT as THROW handler
@@ -169,21 +169,21 @@ dnl            dw 38
             DW 0            ; BLK                        20
             DW 1            ; DSK
             DW 0            ; SCR
-            DW vocab_lastword            ; VOC-LINK
+            DW 0            ;
             DW lastword     ; LATEST
             DW 1            ; CURRENT                    30
             DW 0            ; SOURCE-ID
-            DW NOOP         ; PAUSEVEC
-            DW NOOP         ; KEYVEC
-            DW NOOP         ; KEY?VEC
-            DW TOCONSOLE    ; EMITVEC                    40
-            DW XREFILL8K    ; REFILLVEC
+            DW NOOP         ; 'PAUSE
+            DW RX           ; 'KEY
+            DW RXQ          ; 'KEY?
+            DW TX           ; 'EMIT
+            DW XREFILL8K    ; 'REFILL
             DW 0            ; HANDLER
 
 
     ;Z #init    -- n    #bytes of user area init data
         head(NINIT,``#INIT'',docon)
-            DW 46
+            DW 60
 
     ; ARITHMETIC OPERATORS ==========================
 
@@ -348,8 +348,20 @@ dnl            dw 38
 
     ; INPUT/OUTPUT ==================================
 
+    ;C KEY    -- char       input character
+    ;   'KEY @ EXECUTE ;
+        head(KEY,KEY,docolon)
+            dw KEYVEC,FETCH,EXECUTE
+            dw EXIT
+
+    ;C KEY?   -- flag       input character available
+    ;   'KEY? @ EXECUTE ;
+        head(KEYQ,KEY?,docolon)
+            dw KEYQVEC,FETCH,EXECUTE
+            dw EXIT
+
     ;C EMIT   char --        output character
-    ;   EMITVEC @ EXECUTE ;
+    ;   'EMIT @ EXECUTE ;
         head(EMIT,EMIT,docolon)
             dw EMITVEC,FETCH,EXECUTE
             dw EXIT

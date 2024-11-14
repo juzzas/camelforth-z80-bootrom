@@ -321,15 +321,15 @@ dodoes: ; -- a-addr
 
 ; TERMINAL I/O ==================================
 
-;C TOCONSOLE     c --    output character to console
-    head(TOCONSOLE,>CONSOLE,docode)
+;C TX     c --    output character to console
+    head(TX,TX,docode)
         ld a,c
         rst 0x08 
         pop bc
         next
 
-;X KEY?     -- f    return true if char waiting
-    head(QUERYKEY,KEY?,docode)
+;X RX?     -- f    return true if char waiting
+    head(RXQ,RX?,docode)
         push bc
         rst 0x18
         or a
@@ -344,18 +344,13 @@ querykey1:
 querykey2:
         next
 
-;C KEY      -- c    get character from keyboard
-    head(KEY,KEY,docode)
+;C RX      -- c    get character from console
+    head(RX,RX,docode)
         push bc
         rst 0x10
         ld c,a
         ld b,0
         next
-
-SECTION data
-last_key: ds 1
-SECTION code
-
 
 ;X BYE     i*x --    return to CP/M
     head(BYE,BYE,docode)
