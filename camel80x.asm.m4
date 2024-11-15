@@ -198,6 +198,19 @@ SECTION code_16k
 
 ; RC2014 EXTENSION output ====================
 
+;C ?DO       -- if-adrs -1 adrs   L: -- 0
+;   -1           flag to distiguish this from ?DO
+;   ['] 2DUP ,XT  ['] <> ,XT  POSTPONE IF
+;                SWAP     swap IF target and flag
+;   ['] xdo ,XT   HERE     target for bwd branch
+;   0 >L ; IMMEDIATE           marker for LEAVEs
+    immed(QDO,?DO,docolon)
+        DW lit,-1
+        DW lit,TWODUP,COMMAXT
+        DW lit,NOTEQUAL,COMMAXT
+        DW IF,SWOP
+        DW DO_COMMON,EXIT
+
 
 dnl ;Z VT-ESC  ( --  emit escape character )
 dnl ;    27 EMIT [CHAR] [ EMIT ;

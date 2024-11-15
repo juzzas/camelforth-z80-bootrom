@@ -1238,28 +1238,42 @@ POST2:  DW EXIT
         DW LP,FETCH,FETCH
         DW CELL,NEGATE,LP,PLUSSTORE,EXIT
 
-;C DO       -- adrs   L: -- 0
+DO_COMMON:
+        call docolon
+        DW lit,xdo,COMMAXT,HERE
+        DW lit,0,TOL,EXIT
+
+;C DO       -- 0 adrs   L: -- 0
+;   0           flag to distiguish this from ?DO
 ;   ['] xdo ,XT   HERE     target for bwd branch
 ;   0 >L ; IMMEDIATE           marker for LEAVEs
     immed(DO,DO,docolon)
-        DW lit,xdo,COMMAXT,HERE
-            DW lit,0,TOL,EXIT
+        DW lit,0
+        DW DO_COMMON,EXIT
 
-    ;Z ENDLOOP   adrs xt --   L: 0 a1 a2 .. aN --
-    ;   ,BRANCH  ,DEST                backward loop
-    ;   BEGIN L> ?DUP WHILE POSTPONE THEN REPEAT ;
-    ;                                 resolve LEAVEs
-    ; This is a common factor of LOOP and +LOOP.
-        head(ENDLOOP,ENDLOOP,docolon)
-            DW COMMABRANCH,COMMADEST
-    LOOP1:  DW LFROM,QDUP,qbranch,LOOP2
-            DW THEN,branch,LOOP1
-    LOOP2:  DW EXIT
+;Z ENDLOOP  f adrs xt --   L: 0 a1 a2 .. aN --
+;   ,BRANCH  ,DEST                backward loop
+;   BEGIN L> ?DUP WHILE POSTPONE THEN REPEAT
+;                                 resolve LEAVEs
+;   IF              resolves potential ?DO branch
+;      POSTPONE ELSE   ['] 2DROP ,XT
+;      POSTPONE THEN
+;   THEN
+; This is a common factor of LOOP and +LOOP.
+    head(ENDLOOP,ENDLOOP,docolon)
+        DW COMMABRANCH,COMMADEST
+LOOP1:  DW LFROM,QDUP,qbranch,LOOP2
+        DW THEN,branch,LOOP1
+LOOP2:  DW qbranch,LOOP3
+        DW ELSE
+        DW lit,TWODROP,COMMAXT
+        DW THEN
+LOOP3:  DW EXIT
 
-    ;C LOOP    adrs --   L: 0 a1 a2 .. aN --
-    ;   ['] xloop ENDLOOP ;  IMMEDIATE
-        immed(LOOP,LOOP,docolon)
-            DW lit,xloop,ENDLOOP,EXIT
+;C LOOP    adrs --   L: 0 a1 a2 .. aN --
+;   ['] xloop ENDLOOP ;  IMMEDIATE
+    immed(LOOP,LOOP,docolon)
+        DW lit,xloop,ENDLOOP,EXIT
 
 ;C +LOOP   adrs --   L: 0 a1 a2 .. aN --
 ;   ['] xplusloop ENDLOOP ;  IMMEDIATE
