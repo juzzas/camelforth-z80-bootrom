@@ -54,6 +54,45 @@ SECTION code_16k
         head(SCR,SCR,douser)
             dw 24
 
+    ;Z 'PAUSE      -- xt     if set, use XT as PAUSE destination
+    ;  34 USER 'PAUSE
+        head(TICKPAUSE,'PAUSE,docode)
+            jp PAUSEVEC
+
+    ;Z 'KEY      -- xt     if set, use XT as KEY destination
+    ;  36 USER 'KEY
+        head(TICKKEY,'KEY,docode)
+            jp KEYVEC
+
+    ;Z 'KEY?      -- xt     if set, use XT as KEY? destination
+    ;  38 USER 'KEY?
+        head(TICKKEYQ,'KEY?,docode)
+            jp KEYQVEC
+
+    ;Z 'EMIT      -- xt     if set, use XT as EMIT destination
+    ;  40 USER 'EMIT
+        head(TICKEMIT,'EMIT,docode)
+            jp EMITVEC
+
+    ;Z 'REFILL      -- xt    if set, use XT as REFILL source
+    ;  42 USER 'REFILL
+        head(TICKREFILL,'REFILL,docode)
+            jp REFILLVEC
+
+EXTERN intvec_ptr
+;Z INTVEC      -- a-addr   pointer to address holding interrupt vector
+;  intvec_ptr CONSTANT INTVEC
+    head(INTVEC,'INT,docon)
+        dw intvec_ptr
+
+EXTERN nmivec_ptr
+;Z NMIVEC      -- a-addr   pointer to address holding interrupt vector
+;  intvec_ptr CONSTANT NMIVEC
+    head(NMIVEC,'NMI,docon)
+        dw nmivec_ptr
+
+
+
 ;: FORTH-WORDLIST ( -- wid )
 ; Return wid, the identifier of the word list that includes all standard
 ; words provided by the implementation. This word list is initially the
@@ -68,19 +107,6 @@ SECTION code_16k
 ;: VOCAB-WORDLIST ( -- wid )
         head(VOCAB_WORDLIST,VOCAB-WORDLIST,docolon)
             dw lit,vocab_wordlist_head,EXIT
-
-EXTERN intvec_ptr
-;Z INTVEC      -- a-addr   pointer to address holding interrupt vector
-;  intvec_ptr CONSTANT INTVEC
-    head(INTVEC,INTVEC,docon)
-        dw intvec_ptr
-
-EXTERN nmivec_ptr
-;Z NMIVEC      -- a-addr   pointer to address holding interrupt vector
-;  intvec_ptr CONSTANT NMIVEC
-    head(NMIVEC,NMIVEC,docon)
-        dw nmivec_ptr
-
 
 dnl ;Z :NONAME       ( -- xt      define anonymous xt )
 dnl ;    CURRENT @ @ , 0 C,    ( last link + immed flag )
@@ -118,22 +144,29 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
         pop bc
         next
 
-; TEMPBUFF reserves chucks of 
-;Z   /TEMPBUFF  ( -- )
-    head(SLASHTEMPBUFF,/TEMPBUFF,docolon)
+;C   PAUSE ( -- )   call idle routine
+    head(PAUSE,PAUSE,docolon)
+        DW PAUSEVEC,FETCH,EXECUTE
+        DW EXIT
+
+; TEMPBUFF reserves chucks of memory in a stack-like algorithm
+;Z   /TBUFFER  ( -- )
+SLASHTEMPBUFF:
+        call docolon
         DW lit,STACK_TEMPBUFF,STACKCLEAR
         DW EXIT
 
-;Z   TEMPBUFF-BASE  ( -- addr )  addr of base of tempbuffers
-    head(TEMPBUFF_BASE,TEMPBUFF-BASE,docolon)
+;Z   TBUFFER-BASE  ( -- addr )  addr of base of tempbuffers
+TEMPBUFF_BASE:
+        call docolon
         DW BLKFIRST
         DW lit,STACK_TEMPBUFF,STACKEMPTYQ,INVERT,qbranch,TEMPBUFF_BASE1
         DW lit,STACK_TEMPBUFF,STACKFETCH,MINUS
 TEMPBUFF_BASE1:
         DW EXIT
 
-;Z   TEMPBUFF-ALLOC  ( u -- addr ) allocates u byte buffer
-    head(TEMPBUFF_ALLOC,TEMPBUFF-ALLOC,docolon)
+;Z   TBUFFER-ALLOC  ( u -- addr ) allocates u byte buffer
+    head(TEMPBUFF_ALLOC,TBUFFER-ALLOC,docolon)
         DW lit,STACK_TEMPBUFF,STACKEMPTYQ,INVERT,qbranch,TEMPBUFF_ALLOC1
         DW lit,STACK_TEMPBUFF,STACKFETCH,PLUS
 TEMPBUFF_ALLOC1:
@@ -141,8 +174,8 @@ TEMPBUFF_ALLOC1:
         DW TEMPBUFF_BASE
         dw EXIT
 
-;Z   TEMPBUFF-FREE  ( --  ) frees last 256byte buffer
-    head(TEMPBUFF_FREE,TEMPBUFF-FREE,docolon)
+;Z   TBUFFER-FREE  ( --  ) frees last 256byte buffer
+    head(TEMPBUFF_FREE,TBUFFER-FREE,docolon)
         DW lit,STACK_TEMPBUFF,STACKEMPTYQ,INVERT,qbranch,TEMPBUFF_FREE1
         DW lit,STACK_TEMPBUFF,STACKDROP
 TEMPBUFF_FREE1:
