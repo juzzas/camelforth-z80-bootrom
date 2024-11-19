@@ -141,13 +141,15 @@ main_code_warmstart:
         jp main_code_init
         
 main_code_init:
-        ld hl,$8800
-        dec h        ; EM-100h
+        ld hl,$8700
+        dec h        ; 8600h
         ld sp,hl     ;      = top of param stack
-        inc h        ; EM
+        inc h        ; 8800h
+        inc h
         push hl
         pop ix       ;      = top of return stack
-        dec h        ; EM-200h
+        dec h        ; 8500h
+        dec h
         dec h
         push hl
         pop iy       ;      = bottom of user area
@@ -161,15 +163,15 @@ main_code_init:
 ; Memory map:
 ;   8000h       ACIA buffers
 ;   8200h       Camelforth workspace
-;   EM-300h     user stack top
-;   EM-300h     Terminal Input Buffer, 128 bytes
-;   EM-200h     User area, 128 bytes
-;   EM-180h     Parameter stack, 128B, grows down
-;   EM-100h     HOLD area, 40 bytes, grows down
-;   EM-0D8h     PAD buffer, 88 bytes
-;   EM-80h      Return stack, 128 B, grows down
-;   EM=87ffh    End of RAM workspace
-;   8800h       Forth kernel = start offer dictionary
+;   8400h       TIB  256 bytes
+;   8500h       USER area, 128 bytes
+;   8580-85FFh  HOLD/PAD buffers, 40 and 88 bytes
+;   8600-86FFh  Parameter stack, 258 B, grows down
+;   8700->      Leave/CS stack, grows up
+;      <-87FFh  Return stack, 256 B, grows down
+;   8800-8BFF   string buffers
+;   8BFFh       End of RAM workspace
+;   8C00h       Forth kernel = start offer dictionary
 ;     ? h       Forth dictionary (user RAM)
 ;   FFFFh       Top of RAM
 ; See also the definitions of U0, S0, and R0

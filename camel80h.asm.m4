@@ -46,7 +46,7 @@ SECTION code
 ;X tib     -- a-addr     Terminal Input Buffer
     ;  HEX -80 USER TIB      128bytes below user area
         head(TIB,TIB,docon)
-            dw $8500
+            dw $8400
 
     ;Z u0      -- a-addr       current user area adrs
     ;  0 USER U0
@@ -145,20 +145,20 @@ SECTION code
 
     ;Z s0       -- a-addr     end of parameter stack
         head(S0,S0,douser)
-            dw 100h
+            dw 200h
 
     ;X PAD       -- a-addr    user PAD buffer
     ;                         = end of hold area!
         head(PAD,PAD,douser)
-            dw 128h
+            dw 228h
 
     ;Z l0       -- a-addr     bottom of Leave stack
         head(L0,L0,douser)
-            dw 180h
+            dw 200h
 
     ;Z r0       -- a-addr     end of return stack
         head(R0,R0,douser)
-            dw 200h
+            dw 300h
 
     ;Z uinit    -- addr  initial values for user area
         head(UINIT,UINIT,docreate)
