@@ -5,7 +5,7 @@ TARGET=camel80
 
 .PHONY: all clean blk $(TARGET)
 
-all: $(TARGET) blk
+all: $(TARGET) 
 
 clean:
 	rm -f *.o $(TARGET)

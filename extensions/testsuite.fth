@@ -1,12 +1,25 @@
 \ Forth-2012 test suite
+.( Starting Forth 2012 test suite... ) CR
 
-.( Starting Forth 2012 test suite... )
-
+81  LOAD     \ blkfile
 303 LOAD     \ ttester
-\ 12 LOAD     \ tloader
+1 2 +THRU
 
-.( Starting preliminary tests... )
-\ 93 TLOAD    \ prelimiary test
 
-.( Starting core tests... )
-\ 105 TLOAD   \ core test
+
+
+
+
+
+
+
+
+\ Forth-2012 test suite   1 / 2
+
+\ .( Starting preliminary tests... ) CR  330 TLOAD
+.( Starting core tests... ) CR         342 TLOAD DECIMAL
+.( Starting coreplustests ) CR         372 TLOAD
+.( Loading test utilities... ) CR      384 TLOAD
+.( Loading error reporting... ) CR     390 TLOAD
+.( Staring core ext tests... ) CR      396 TLOAD
+

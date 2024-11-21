@@ -1605,7 +1605,7 @@ LOAD0:
         dw lit,load_index,FETCH,TOR,lit,0,lit,load_index,STORE
 XLOAD1:
         dw REFILL,qbranch,XLOAD2
-        dw SOURCE,TYPE,CR
+        ; debug dw SOURCE,TYPE,CR
         dw INTERPRET
         dw branch,XLOAD1
 

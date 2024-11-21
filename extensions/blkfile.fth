@@ -133,7 +133,7 @@ VARIABLE blkfile-eof
 
 : TLOAD ( blk -- )
    SAVE-INPUT
-   ['] tload-refill REFILLVEC !
+   ['] tload-refill 'REFILL !
    (TLOAD)
    RESTORE-INPUT  ;
 
@@ -194,11 +194,11 @@ VARIABLE blkfile-eof
 
 
 : TLOAD ( blk -- )
-   REFILLVEC @ >R
+   'REFILL @ >R
    SWAP BLK !
-   ['] tload-refill REFILLVEC !
+   ['] tload-refill 'REFILL !
    SAVE-INPUT
    (TLOAD)
    RESTORE-INPUT
-   R> REFILLVEC !
+   R> 'REFILL !
    ;
