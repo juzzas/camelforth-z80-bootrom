@@ -54,10 +54,6 @@ SECTION code_16k
         head(SCR,SCR,douser)
             dw 24
 
-    ;Z 'PAUSE      -- xt     if set, use XT as PAUSE destination
-    ;  34 USER 'PAUSE
-        head(TICKPAUSE,'PAUSE,docode)
-            jp PAUSEVEC
 
     ;Z 'KEY      -- xt     if set, use XT as KEY destination
     ;  36 USER 'KEY
@@ -79,18 +75,33 @@ SECTION code_16k
         head(TICKREFILL,'REFILL,docode)
             jp REFILLVEC
 
+    ;Z LINK        -- a-addr  link to round-robin task
+    ;  44 USER LINK
+        head(LINK,LINK,douser)
+            dw 44
+
+    ;Z ACTIVE      -- f    flag if task is active
+    ;  46 USER ACTIVE
+        head(ACTIVE,ACTIVE,douser)
+            dw 46
+
 EXTERN intvec_ptr
-;Z INTVEC      -- a-addr   pointer to address holding interrupt vector
+;Z 'INT      -- a-addr   pointer to address holding interrupt vector
 ;  intvec_ptr CONSTANT INTVEC
     head(INTVEC,'INT,docon)
         dw intvec_ptr
 
 EXTERN nmivec_ptr
-;Z NMIVEC      -- a-addr   pointer to address holding interrupt vector
+;Z 'NMI      -- a-addr   pointer to address holding interrupt vector
 ;  intvec_ptr CONSTANT NMIVEC
     head(NMIVEC,'NMI,docon)
         dw nmivec_ptr
 
+EXTERN pausevec_ptr
+;Z 'PAUSE      -- a-addr   pointer to address holding pause vector
+;  pausevec_ptr CONSTANT 'INTVEC
+    head(TICKPAUSE,'PAUSE,docode)
+        jp PAUSEVEC
 
 
 ;: FORTH-WORDLIST ( -- wid )
@@ -416,15 +427,6 @@ dnl ;   DOES>  ;
         DW DUP,STACKFETCH,SWOP,TOSTACK
         DW EXIT
 
-; Duplicate the value at the top of the STACK
-; : SOVER ( lifo -- )
-;      DUP >R  ( lilo   r: lifo );
-;      S> R@ S> SWAP R@ >S R> >S ;
-    head(STACKOVER,SOVER,docolon)
-        DW DUP,TOR,STACKFROM
-        DW RFETCH,STACKFROM,SWOP,RFETCH,TOSTACK,RFROM,TOSTACK
-        DW EXIT
-
 ; Clear STACK
 ; : /STACK ( lifo -- )
 ;      DUP    ( lifo lifo )
@@ -617,42 +619,45 @@ STACKUNTIL3:
         dw lit,0,SWOP,DDOTR
         dw EXIT
 
-;Z (D.W)         ( d width --   width with leading 0's )
-;    1- DUP 1 < IF DROP 1 THEN <# 0 DO # LOOP #S #> ;
-    head(XDDOTW,(D.W),docolon)
-        dw ONEMINUS,DUP,lit,1,LESS,qbranch,XDDOTW1
-        dw DROP,lit,1
-XDDOTW1:
-        dw LESSNUM,lit,0,xdo
-XDDOTW2:
-        dw NUM,xloop,XDDOTW2
-        dw NUMS,NUMGREATER
-        dw EXIT
-
-;Z (.W)         ( n width --   width with leading 0's )
-;    >R S>D R> (D.W) ;
-    head(XDOTW,(.W),docolon)
-        dw TOR,STOD,RFROM,XDDOTW
-        dw EXIT
-
-;Z .W           ( n width --   width with leading 0's )
-;    (.W) TYPE SPACE ;
-    head(DOTW,.W,docolon)
-        dw XDOTW,TYPE,SPACE
-        dw EXIT
-
-;Z (U.W)        ( u width --   width with leading 0's )
-;    0 SWAP (D.W) ;
-    head(XUDOTW,(U.W),docolon)
-        dw lit,0,SWOP,XDDOTW
-        dw EXIT
-
-;Z U.W         ( u width --   width with leading 0's )
-;    (U.W) TYPE SPACE ;
-    head(UDOTW,U.W,docolon)
-        dw XUDOTW,TYPE,SPACE
-        dw EXIT
-
+dnl ;Z (D.W)         ( d width --   width with leading 0's )
+dnl ;    1- DUP 1 < IF DROP 1 THEN <# 0 DO # LOOP #S #> ;
+dnl XDDOTW:
+dnl         call docolon
+dnl         dw ONEMINUS,DUP,lit,1,LESS,qbranch,XDDOTW1
+dnl         dw DROP,lit,1
+dnl XDDOTW1:
+dnl         dw LESSNUM,lit,0,xdo
+dnl XDDOTW2:
+dnl         dw NUM,xloop,XDDOTW2
+dnl         dw NUMS,NUMGREATER
+dnl         dw EXIT
+dnl 
+dnl ;Z (.W)         ( n width --   width with leading 0's )
+dnl ;    >R S>D R> (D.W) ;
+dnl XDOTW:
+dnl         call docolon
+dnl         dw TOR,STOD,RFROM,XDDOTW
+dnl         dw EXIT
+dnl 
+dnl ;Z .W           ( n width --   width with leading 0's )
+dnl ;    (.W) TYPE SPACE ;
+dnl     head(DOTW,.W,docolon)
+dnl         dw XDOTW,TYPE,SPACE
+dnl         dw EXIT
+dnl 
+dnl ;Z (U.W)        ( u width --   width with leading 0's )
+dnl ;    0 SWAP (D.W) ;
+dnl XUDOTW:
+dnl         call docolon
+dnl         dw lit,0,SWOP,XDDOTW
+dnl         dw EXIT
+dnl 
+dnl ;Z U.W         ( u width --   width with leading 0's )
+dnl ;    (U.W) TYPE SPACE ;
+dnl     head(UDOTW,U.W,docolon)
+dnl         dw XUDOTW,TYPE,SPACE
+dnl         dw EXIT
+dnl 
 ;Z PRINTABLE?         ( n - flag  is character printable? )
 ;    20 7F WITHIN ;
     head(PRINTABLEQ,PRINTABLE?,docolon)
@@ -2362,7 +2367,7 @@ INTRP_NG3: DW RECTYPETOINT,EXECUTE
 INTRP_NG4: DW RFROM,DROP,branch,INTRP_NG5
 INTRP_NG2: DW DROP,RFROM,COUNT,TYPE,lit,63,EMIT,CR,ABORT
 INTRP_NG5: DW branch,INTRP_NG1
-INTRP_NG9: DW DROP
+INTRP_NG9: DW CHECK_SP,DROP
         DW EXIT
 
 
@@ -2454,11 +2459,162 @@ NR2:    DW DROP
         DW EXIT
 
 
+; RC2014 Multitasking ====================
+
+;Z NEXT-TASK  ( task-id -- task-id' )
+    head(TASK_NEXT,NEXT-TASK,docode)
+NEXT_TASK1:
+        ld hl,44
+        add hl,bc
+        ld c,(hl)  ; get link
+        inc hl
+        ld b,(hl)  ; bc contains task-id'
+        ld a,b     ; is it 0 (aka end of list)?
+        or c
+        jr z,NEXT_TASK_END
+
+        ld hl,46  ; is it active?
+        add hl,bc
+        ld a,(hl)
+        inc hl
+        or (hl)
+        jr z, NEXT_TASK1
+
+NEXT_TASK_END:
+        next
+
+;Z SWITCH-TASK           ( task-id --      runtime for task switcher )
+    head(SWITCH_TASK,SWITCH-TASK,docode)
+        di 
+        ; bc has task-id to switch to
+        push de  ; save IP
+        push ix  ; save RP
+
+        ld hl,0
+        add hl,sp
+
+        ld (iy+0), l
+        ld (iy+1), h
+
+        ; bc = task pointer
+        push bc
+        pop iy
+        ld l, (iy+0)
+        ld h, (iy+1)
+        ld sp, hl
+        pop ix
+        pop de
+        pop bc   ; new TOS
+        ei
+
+        next
+
+SECTION data
+
+multi_sp_temp:
+        DEFS 2
+
+SECTION code_16k
+
+;Z TASK%    (  -- n                 size of task )
+    head(TASKSIZE,TASK%,docon)
+        DW 768
+
+;Z TASK_THREAD   ( xt -- )
+TASK_THREAD:
+        DW L0,LP,STORE
+        DW R0,RPSTORE,lit,0,STATE,STORE
+        DW lit,0,HANDLER,STORE
+        DW lit,0,SOURCE_ID,STORE
+        DW lit,0,BLK,STORE
+        DW DOTS
+        DW lit,-1,ACTIVE,STORE
+        DW CATCH
+        DW lit,0,ACTIVE,STORE
+        DW CR,U0,LINK,FETCH,DOTS
+TASK_THREAD1:
+        DW PAUSE
+        ; shouldn't return back here
+        DW branch,TASK_THREAD1
+
+;Z SEED_TASK     ( xt task-id -- )
+SEED_TASK:
+        di   ; bc contains task-id
+        exx
+        pop hl ; hl' contains xt
+        exx
+
+        push iy
+        push ix
+        push de
+        ld (multi_sp_temp), sp
+
+        ; set up new SP
+        ld hl,512
+        add hl,bc
+        ld sp, hl
+
+        ; push xt      (new tos)
+        exx
+        push hl
+        exx
+
+        ; push new IP  (new de)
+        ld de,TASK_THREAD
+        push de
+
+        ; push new RP  (new ix)
+        ld hl,768
+        add hl,bc
+        push hl
+
+        ; save sp in U0 (bc)
+        push bc
+        pop iy
+        ld hl,0
+        add hl,sp
+        ld (iy+0), l
+        ld (iy+1), h
+
+
+        ld sp, (multi_sp_temp)
+        pop de
+        pop ix
+        pop iy
+        pop bc  ; new TOS item
+        ei
+        next
+
+;Z INIT-TASK     ( xt task-id --  )
+    head(INIT_TASK,INIT-TASK,docolon)
+       dw DUP,U0,SWOP,lit,128,MOVE
+       dw SEED_TASK
+       dw EXIT
+
+;Z TASK>LINK   ( task-id -- a-addr )
+    head(TASKTOLINK,TASK>LINK,docolon)
+       dw lit,44,PLUS
+       dw EXIT
+
+;Z TASK>ACTIVE   ( task-id -- a-addr )
+    head(TASKTOACTIVE,TASK>ACTIVE,docolon)
+       dw lit,46,PLUS
+       dw EXIT
+
+
+
 ; RC2014 16K initialisation ====================
 
 
 ;Z /16KROM    init enhanced features
-    head(SLASH16KROM,``/16KROM'',docolon)
+SLASH16KROM:
+        call docolon
+        DW U0,LINK,STORE
+        DW lit,-1,ACTIVE,STORE
+        DW lit,FIND_16K,lit,xt_find,STORE
+        DW lit,POSTPONE_16K,lit,xt_postpone,STORE
+        DW lit,INTERPRET_16K,lit,xt_interpret,STORE
+        DW lit,WORDS_16K,lit,xt_words,STORE
         DW lit,editor_lastword,EDITOR_WORDLIST,STORE
         DW lit,vocab_lastword,VOCAB_WORDLIST,STORE
         DW VOCAB_WORDLIST,FORTH_WORDLIST,lit,2,SET_ORDER

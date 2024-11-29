@@ -40,7 +40,8 @@ SECTION code_16k
 
 ;Z .BLOCK  ( --  block status )
 ;    ." Screen: " SCR @ DUP . UPDATED? 43 + EMIT SPACE ;
-    head_editor(DOTBLOCK,.BLOCK,docolon)
+DOTBLOCK:
+        call docolon
         dw XSQUOTE
         db 8,"Screen: "
         dw TYPE
@@ -66,7 +67,8 @@ RULER1:
 
 ; Z VB  ( -- )    visual list
 ;     --- SCR @ BLOCK (LIST) DROP --- ;
-    head_editor(VB,VB,docolon)
+VB:
+        call docolon
         dw RULER
         dw SCR,FETCH,BLOCK,XLIST,DROP
         dw RULER
@@ -75,7 +77,8 @@ RULER1:
 
 ;Z .STACK  ( -- )    display stack status
 ;     ." Stack: " .S ;
-    head_editor(DOTSTACK,.STACK,docolon)
+DOTSTACK:
+        call docolon
         dw XSQUOTE
         db 7,"Stack: "
         dw TYPE
@@ -85,20 +88,23 @@ RULER1:
 
 ;Z STATUS  ( -- )    status line
 ;     .BLOCK .STACK ;
-    head_editor(STATUS,STATUS,docolon)
+STATUS:
+        call docolon
         dw DOTBLOCK
         dw DOTSTACK
         dw EXIT
 
 ;Z V    ( -- )      visual list
 ;     CR VB STATUS ;
-    head_editor(VEE,V,docolon)
+VEE:
+        call docolon
         dw PAGE,lit,0,DUP,AT_XY,VB,STATUS
         dw EXIT
 
 ;Z V*   ( -- )      visual list update
 ;     UPDATE V ;
-    head_editor(VSTAR,V*,docolon)
+VSTAR:
+        call docolon
         dw UPDATE,VEE
         dw EXIT
 
@@ -187,19 +193,22 @@ N1:
 ;  RC2014 Full screen editor =========================
 
 ;: !XY ( i -- i ) 1023 AND DUP C/L /MOD 3 2 D+ AT-XY ;
-    head_editor(STOREXY,!XY,docolon)
+STOREXY:
+        call docolon
         dw lit,1023,AND,DUP,C_L,SLASHMOD,lit,3,lit,1,DPLUS,AT_XY
         dw EXIT
 
 ;: !CH ( c i -- c i ) 2DUP SCR @ BLOCK + C! UPDATE OVER EMIT ;
-    head_editor(STORECH,!CH,docolon)
+STORECH:
+        call docolon
         dw TWODUP,SCR,FETCH,BLOCK,PLUS,CSTORE,UPDATE
         dw OVER,EMIT
         dw EXIT
 
 ;: 'I    ( i -- c-addr )
 ;    SCR,FETCH,BLOCK,PLUS  ;
-    head_editor(TICKI,'I,docolon)
+TICKI:
+        call docolon
         dw SCR,FETCH,BLOCK,PLUS
         dw EXIT
 
@@ -359,39 +368,39 @@ EDIT1:
 
 ;  RC2014 Memdump =========================
 
-;Z (MEMDUMP)  ( addr u --    memory dump line )
-;     DUP >R
-;     OVER 4 .W ." : "
-;     0 DO DUP I + C@ 2 .W LOOP
-;     DROP R>
-;     SPACE     ( addr u )
-;     TYPE$  ;
-    head(XMEMDUMP,(MEMDUMP),docolon)
-        dw DUP,TOR
-        dw OVER,lit,4,UDOTW,XSQUOTE
-        db 2,": "
-        dw TYPE
-        dw lit,0,xdo
-XMEMDUMP1:
-        dw DUP,II,PLUS,CFETCH,lit,2,DOTW
-        dw xloop,XMEMDUMP1
-        dw DROP,RFROM,SPACE
-        dw TYPESTRING,EXIT
+dnl ;Z (MEMDUMP)  ( addr u --    memory dump line )
+dnl ;     DUP >R
+dnl ;     OVER 4 .W ." : "
+dnl ;     0 DO DUP I + C@ 2 .W LOOP
+dnl ;     DROP R>
+dnl ;     SPACE     ( addr u )
+dnl ;     TYPE$  ;
+dnl     head(XMEMDUMP,(MEMDUMP),docolon)
+dnl         dw DUP,TOR
+dnl         dw OVER,lit,4,UDOTW,XSQUOTE
+dnl         db 2,": "
+dnl         dw TYPE
+dnl         dw lit,0,xdo
+dnl XMEMDUMP1:
+dnl         dw DUP,II,PLUS,CFETCH,lit,2,DOTW
+dnl         dw xloop,XMEMDUMP1
+dnl         dw DROP,RFROM,SPACE
+dnl         dw TYPESTRING,EXIT
 
 
-;Z MEMDUMP  ( addr u --    memory dump utility )
-;     BASE @ >R HEX
-;     OVER +               ( addr addr+u )
-;     SWAP                 ( addr+u  addr )
-;     DO I DUP 16 CR (MEMDUMP) 16 +LOOP
-;     R> BASE ! ;
-    head(MEMDUMP,MEMDUMP,docolon)
-        dw BASE,FETCH,TOR,HEX
-        dw OVER,PLUS,SWOP
-        dw xdo
-MEMDUMP1:
-        dw II,DUP,lit,16,CR,XMEMDUMP,lit,16,xplusloop,MEMDUMP1
-        dw RFROM,BASE,STORE
-        dw EXIT
+dnl ;Z MEMDUMP  ( addr u --    memory dump utility )
+dnl ;     BASE @ >R HEX
+dnl ;     OVER +               ( addr addr+u )
+dnl ;     SWAP                 ( addr+u  addr )
+dnl ;     DO I DUP 16 CR (MEMDUMP) 16 +LOOP
+dnl ;     R> BASE ! ;
+dnl     head(MEMDUMP,MEMDUMP,docolon)
+dnl         dw BASE,FETCH,TOR,HEX
+dnl         dw OVER,PLUS,SWOP
+dnl         dw xdo
+dnl MEMDUMP1:
+dnl         dw II,DUP,lit,16,CR,XMEMDUMP,lit,16,xplusloop,MEMDUMP1
+dnl         dw RFROM,BASE,STORE
+dnl         dw EXIT
 
 

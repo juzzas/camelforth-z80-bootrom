@@ -44,19 +44,17 @@ SECTION code
         dw 254          ; 2 chars safety zone
 
 ;X tib     -- a-addr     Terminal Input Buffer
-    ;  HEX -80 USER TIB      128bytes below user area
-        head(TIB,TIB,docon)
-            dw $8400
+;  HEX 8400 CONSTANT TIB
+    head(TIB,TIB,docon)
+        dw $8400
+
 
     ;Z u0      -- a-addr       current user area adrs
     ;  0 USER U0
         head(U0,U0,douser)
             dw 0
 
-    ;C >IN     -- a-addr        holds offset into TIB
-    ;  2 USER >IN
-        head(TOIN,>IN,douser)
-            dw 2
+    ; USER 2  empty
 
     ;C BASE    -- a-addr       holds conversion radix
     ;  4 USER BASE
@@ -68,10 +66,7 @@ SECTION code
         head(STATE,STATE,douser)
             dw 6
 
-    ;Z dp      -- a-addr       holds dictionary ptr
-    ;  8 USER DP
-        head(DP,DP,douser)
-            dw 8
+    ; USER 8  empty
 
     ;Z 'source  -- a-addr      two cells: len, adrs
     ; 10 USER 'SOURCE
@@ -97,10 +92,7 @@ SECTION code
         head(HANDLER,HANDLER,douser)
             dw 26
 
-    ;Z latest    -- a-addr     last word in dict.
-    ;   28 USER LATEST
-        head(LATEST,LATEST,douser)
-            dw 28
+    ;  28 USER empty
 
     ;Z CURRENT      -- a-addr   address of CURRENT wid
     ;  30 USER CURRENT
@@ -112,11 +104,7 @@ SECTION code
         head(SOURCE_ID,SOURCE-ID,douser)
             dw 32
 
-    ;Z 'PAUSE      -- xt     if set, use XT as PAUSE destination
-    ;  34 USER PAUSEVEC
-    PAUSEVEC:
-            call douser
-            dw 34
+    ; 34 USER empty
 
     ;Z 'KEY      -- xt     if set, use XT as KEY destination
     ;  36 USER KEYVEC
@@ -142,6 +130,9 @@ SECTION code
             call douser
             dw 42
 
+    ; 44 USER LINK
+    ; 46 USER ACTIVE
+
 
     ;Z s0       -- a-addr     end of parameter stack
         head(S0,S0,douser)
@@ -165,7 +156,7 @@ SECTION code
             DW 0,0,10,0     ; reserved,>IN,BASE,STATE
             DW enddict      ; DP                         8
             DW 0,0          ; SOURCE init'd elsewhere    10
-            DW 0            ; empty
+            DW 0            ; LINK
             DW 0            ; HP init'd elsewhere
             DW 0            ; LP init'd elsewhere
             DW 0            ; BLK                        20
@@ -369,7 +360,7 @@ KEY1:
     ;C EMIT   char --        output character
     ;   'EMIT @ EXECUTE ;
         head(EMIT,EMIT,docolon)
-            dw PAUSEVEC,FETCH,EXECUTE
+            ; dw PAUSEVEC,FETCH,EXECUTE
             dw EMITVEC,FETCH,EXECUTE
             dw EXIT
 
@@ -874,7 +865,7 @@ INTER4a: DW QNUMBER,qbranch,INTER5
 INTER5: DW COUNT,TYPE,lit,3FH,EMIT,CR,ABORT
 INTER6:
 INTER8: DW branch,INTER1
-INTER9: DW DROP,EXIT
+INTER9: DW DROP,CHECK_SP,EXIT
 
 ;X (REFILL8K)  -- f  refill input buffer
 ;     TIB DUP TIBSIZE ACCEPT 'SOURCE 2! 0 >IN ! SPACE -1 ;
@@ -943,12 +934,18 @@ XREFILL8K:
         DW SPSTORE,DROP,RFROM
 THROW1: DW EXIT
 
-
+CHECK_SP:
+        call docolon
+        DW SPFETCH,S0,GREATER,qbranch,CHECK_SP1
+        DW lit,-4,THROW
+CHECK_SP1:
+        DW EXIT
 
 ;C QUIT     --    R: i*x --    interpret from kbd
 ;   L0 LP !  R0 RP!   0 STATE ! 0 HANDLER !  0 SOURCE-ID !
 ;   ['] XREFILL8K REFILLVEC !
 ;   BEGIN
+;     CHECK_SP
 ;     REFILL  IF
 ;       ['] INTERPRET CATCH
 ;       CASE
@@ -1365,7 +1362,7 @@ WORDS_8K:
 ;       SP@ S0 2 - DO I @ U. -2 +LOOP
 ;   THEN ;
     head(DOTS,.S,docolon)
-        DW SPFETCH,S0,MINUS,qbranch,DOTS2
+        DW CHECK_SP,SPFETCH,S0,MINUS,qbranch,DOTS2
         DW SPFETCH,S0,lit,2,MINUS,xdo
 DOTS1:  DW II,FETCH,UDOT,lit,-2,xplusloop,DOTS1
 DOTS2:  DW EXIT
@@ -1460,6 +1457,9 @@ tdiv1:
 ;   ABORT ;
     head(COLD,COLD,docolon)
         DW UINIT,U0,NINIT,CMOVE
+        DW lit,NOOP,PAUSEVEC,STORE
+        DW lit,enddict,DP,STORE
+        DW lit,lastword,LATEST,STORE
         DW lit,camel_signon
         DW lit,camel_signon_len
         DW TYPE,CR
@@ -1468,10 +1468,6 @@ tdiv1:
         DW ROM16KQ,qbranch,COLD1
         DW lit,65535,lit,flag_rom16k,STORE
         DW SLASH16KROM
-        DW lit,FIND_16K,lit,xt_find,STORE
-        DW lit,POSTPONE_16K,lit,xt_postpone,STORE
-        DW lit,INTERPRET_16K,lit,xt_interpret,STORE
-        DW lit,WORDS_16K,lit,xt_words,STORE
         DW ABORT
 
 COLD1:  DW lit,lastword8k,LATEST,STORE
@@ -1530,6 +1526,21 @@ CONTEXT1:
             dw LATEST
             dw EXIT
 
+;Z latest    -- a-addr     last word in dict.
+        head(LATEST,LATEST,docon)
+            dw sysvar_latest
+
+;Z dp      -- a-addr       holds dictionary ptr
+    head(DP,DP,docon)
+        dw sysvar_dp
+
+;C >IN     -- a-addr        holds offset into TIB
+    head(TOIN,>IN,docon)
+        dw sysvar_toin
+
+PAUSEVEC:
+        call docon
+        dw sysvar_tickpause
 
 camel_signon:
         DB "Z80 CamelForth v1.02  25 Jan 1995"
@@ -1547,5 +1558,12 @@ xt_find:
         DEFS 2
 xt_words:
         DEFS 2
-
+sysvar_dp:
+        DEFS 2
+sysvar_toin:
+        DEFS 2
+sysvar_latest:
+        DEFS 2
+sysvar_tickpause:
+        DEFS 2
 SECTION code
