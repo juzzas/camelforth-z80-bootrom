@@ -54,7 +54,7 @@ SECTION code
         head(U0,U0,douser)
             dw 0
 
-    ; USER 2  empty
+    ; USER 2  STACKTOP
 
     ;C BASE    -- a-addr       holds conversion radix
     ;  4 USER BASE
@@ -66,7 +66,7 @@ SECTION code
         head(STATE,STATE,douser)
             dw 6
 
-    ; USER 8  empty
+    ; USER 8  ENTRY
 
     ;Z 'source  -- a-addr      two cells: len, adrs
     ; 10 USER 'SOURCE

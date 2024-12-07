@@ -75,15 +75,20 @@ SECTION code_16k
         head(TICKREFILL,'REFILL,docode)
             jp REFILLVEC
 
-    ;Z LINK        -- a-addr  link to round-robin task
+    ;Z LINK        -- a-addr  link to following round-robin task
     ;  44 USER LINK
         head(LINK,LINK,douser)
             dw 44
 
-    ;Z ACTIVE      -- f    flag if task is active
-    ;  46 USER ACTIVE
-        head(ACTIVE,ACTIVE,douser)
-            dw 46
+    ;Z STACKTOP      -- a-addr  address of stored stack top for task
+    ;  2 USER STACKTOP
+        head(STACKTOP,STACKTOP,douser)
+            dw 2
+
+    ;Z ENTRY      -- a-addr  address of xt for entry point of task
+    ;  8 USER ENTRY
+        head(ENTRY,ENTRY,douser)
+            dw 8
 
 EXTERN intvec_ptr
 ;Z 'INT      -- a-addr   pointer to address holding interrupt vector
@@ -2461,147 +2466,79 @@ NR2:    DW DROP
 
 ; RC2014 Multitasking ====================
 
-;Z NEXT-TASK  ( task-id -- task-id' )
-    head(TASK_NEXT,NEXT-TASK,docode)
-NEXT_TASK1:
-        ld hl,44
-        add hl,bc
-        ld c,(hl)  ; get link
-        inc hl
-        ld b,(hl)  ; bc contains task-id'
-        ld a,b     ; is it 0 (aka end of list)?
-        or c
-        jr z,NEXT_TASK_END
-
-        ld hl,46  ; is it active?
-        add hl,bc
-        ld a,(hl)
-        inc hl
-        or (hl)
-        jr z, NEXT_TASK1
-
-NEXT_TASK_END:
-        next
-
-;Z SWITCH-TASK           ( task-id --      runtime for task switcher )
-    head(SWITCH_TASK,SWITCH-TASK,docode)
-        di 
-        ; bc has task-id to switch to
-        push de  ; save IP
-        push ix  ; save RP
-
-        ld hl,0
-        add hl,sp
-
-        ld (iy+0), l
-        ld (iy+1), h
-
-        ; bc = task pointer
+;Z UP!
+    head(UPSTORE,UP!,docode)
         push bc
         pop iy
-        ld l, (iy+0)
-        ld h, (iy+1)
-        ld sp, hl
-        pop ix
-        pop de
-        pop bc   ; new TOS
-        ei
-
+        pop bc
         next
 
-SECTION data
-
-multi_sp_temp:
-        DEFS 2
-
-SECTION code_16k
-
-;Z TASK%    (  -- n                 size of task )
-    head(TASKSIZE,TASK%,docon)
-        DW 768
-
-;Z TASK_THREAD   ( xt -- )
-TASK_THREAD:
-        DW L0,LP,STORE
-        DW R0,RPSTORE,lit,0,STATE,STORE
-        DW lit,0,HANDLER,STORE
-        DW lit,0,SOURCE_ID,STORE
-        DW lit,0,BLK,STORE
-        DW DOTS
-        DW lit,-1,ACTIVE,STORE
-        DW CATCH
-        DW lit,0,ACTIVE,STORE
-        DW CR,U0,LINK,FETCH,DOTS
-TASK_THREAD1:
-        DW PAUSE
-        ; shouldn't return back here
-        DW branch,TASK_THREAD1
-
-;Z SEED_TASK     ( xt task-id -- )
-SEED_TASK:
-        di   ; bc contains task-id
-        exx
-        pop hl ; hl' contains xt
-        exx
-
+;Z UP@
+    head(UPFETCH,UP@,docode)
+        push bc
         push iy
-        push ix
-        push de
-        ld (multi_sp_temp), sp
-
-        ; set up new SP
-        ld hl,512
-        add hl,bc
-        ld sp, hl
-
-        ; push xt      (new tos)
-        exx
-        push hl
-        exx
-
-        ; push new IP  (new de)
-        ld de,TASK_THREAD
-        push de
-
-        ; push new RP  (new ix)
-        ld hl,768
-        add hl,bc
-        push hl
-
-        ; save sp in U0 (bc)
-        push bc
-        pop iy
-        ld hl,0
-        add hl,sp
-        ld (iy+0), l
-        ld (iy+1), h
-
-
-        ld sp, (multi_sp_temp)
-        pop de
-        pop ix
-        pop iy
-        pop bc  ; new TOS item
-        ei
+        pop bc
         next
 
-;Z INIT-TASK     ( xt task-id --  )
+
+;Z <INIT>   - "init" task state
+;  R> CELL- UP!
+;  S0 SP!
+;  R0 RP!
+;  L0 LP !
+;  0 STATE !
+;  0 HANDLER !
+;  0 BLK !
+;  ['] <WAKE> U0 !   ( we're away! )
+;  ENTRY @ EXECUTE
+;  ['] <SLEEP> U0 !  ( if we come back, the stop this thread )
+;  (PAUSE)   ;
+    head(XINIT,<INIT>,docolon)
+       dw RFROM,CELLMINUS,UPSTORE
+       dw S0,SPSTORE
+       dw R0,RPSTORE
+       dw L0,LP,STORE
+       dw lit,0,STATE,STORE
+       dw lit,0,HANDLER,STORE
+       dw lit,0,BLK,STORE
+       dw lit,XWAKE,U0,STORE
+       dw ENTRY,FETCH,EXECUTE
+       dw lit,XSLEEP,U0,STORE
+       dw XPAUSE,EXIT
+
+;Z <WAKE>   -- "wake" task state
+;  R> CELL- UP!
+;  STACKTOP @ SP! RP!  ;
+    head(XWAKE,<WAKE>,docolon)
+       dw RFROM,CELLMINUS,UPSTORE
+       dw STACKTOP,FETCH,SPSTORE,RPSTORE
+       dw EXIT
+
+;Z <SLEEP>  -- "sleeping" task state
+;  R> CELL- UP! LINK @ >R  ;
+    head(XSLEEP,<SLEEP>,docolon)
+       dw RFROM,CELLMINUS,UPSTORE
+       dw LINK,FETCH,TOR
+       dw EXIT
+
+;Z (PAUSE)     -- pause run-time
+;  RP@ SP@ STACKTOP !
+;  LINK @ >R ; COMPILE-ONLY
+    head(XPAUSE,(PAUSE),docolon)
+        dw RPFETCH,SPFETCH,STACKTOP,STORE
+        dw LINK,FETCH,TOR
+        dw EXIT
+
+;Z INIT-TASK     ( task-id --  )
     head(INIT_TASK,INIT-TASK,docolon)
-       dw DUP,U0,SWOP,lit,128,MOVE
-       dw SEED_TASK
-       dw EXIT
-
-;Z TASK>LINK   ( task-id -- a-addr )
-    head(TASKTOLINK,TASK>LINK,docolon)
-       dw lit,44,PLUS
-       dw EXIT
-
-;Z TASK>ACTIVE   ( task-id -- a-addr )
-    head(TASKTOACTIVE,TASK>ACTIVE,docolon)
-       dw lit,46,PLUS
+       dw U0,OVER,lit,256,MOVE  ; copy USER variables
+       dw DUP,LINK,STORE
+       dw lit,XINIT,SWOP,STORE      ; set new task STATE to <INIT>
        dw EXIT
 
 
+    head(TASKSIZE,TASK%,docon)
+        dw 768
 
 ; RC2014 16K initialisation ====================
 
@@ -2610,7 +2547,7 @@ SEED_TASK:
 SLASH16KROM:
         call docolon
         DW U0,LINK,STORE
-        DW lit,-1,ACTIVE,STORE
+        DW lit,XWAKE,U0,STORE
         DW lit,FIND_16K,lit,xt_find,STORE
         DW lit,POSTPONE_16K,lit,xt_postpone,STORE
         DW lit,INTERPRET_16K,lit,xt_interpret,STORE

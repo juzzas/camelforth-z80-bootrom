@@ -86,26 +86,12 @@ DOTSTACK:
         dw EXIT
 
 
-;Z STATUS  ( -- )    status line
-;     .BLOCK .STACK ;
-STATUS:
-        call docolon
-        dw DOTBLOCK
-        dw DOTSTACK
-        dw EXIT
 
 ;Z V    ( -- )      visual list
-;     CR VB STATUS ;
+;     CR VB .BLOCK .STACK ;
 VEE:
         call docolon
-        dw PAGE,lit,0,DUP,AT_XY,VB,STATUS
-        dw EXIT
-
-;Z V*   ( -- )      visual list update
-;     UPDATE V ;
-VSTAR:
-        call docolon
-        dw UPDATE,VEE
+        dw PAGE,lit,0,DUP,AT_XY,VB,DOTBLOCK,DOTSTACK
         dw EXIT
 
 ;Z S    ( n -- )     select screen n

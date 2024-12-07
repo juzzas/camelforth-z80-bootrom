@@ -8,32 +8,33 @@ CODE: I]  FB C, ( EI )  NEXT, ;CODE \ exit critical section
            ( Execution:  -- task-id )
    CREATE TASK% ALLOT ;
 
-: SELF-TASK  ( -- task-id )  U0 ;
-
-: (PAUSE)  SELF-TASK NEXT-TASK SWITCH-TASK ;
-
+: STATUS  U0 ;
+: TASK>STATUS ( task-id -- addr ) STATUS U0 - + ;
+: TASK>LINK ( task-id -- addr ) LINK U0 - + ;
+: TASK>ENTRY ( task-id -- addr ) ENTRY U0 - + ;
 
 
 : START-TASK ( xt task-id -- ) 
-    TUCK INIT-TASK  ( task-id )
-    -1 OVER TASK>ACTIVE ! ( task-id )
-    LINK @ OVER TASK>LINK ! ( task-id )
-    LINK ! ;
+    DUP INIT-TASK  TASK>ENTRY !  ;
 
 : STOP-TASK  ( task-id -- )
-   TASK>ACTIVE 0 SWAP ! ;
+   TASK>STATUS ['] <SLEEP> SWAP ! ;
 
 : MULTI ( -- )  ['] (PAUSE) 'PAUSE ! ;
 : SINGLE ( -- ) ['] NOOP 'PAUSE ! ;
+: PAUSE  'PAUSE @ EXECUTE ;
+
+
+
 
 
 
 
 
 VARIABLE task-count ;
-\ : task1  0 task-count ATOMIC! BEGIN
-\    task-count ATOMIC@ +1
-\    task-count ATOMIC! PAUSE  AGAIN ;
+\ : task1  0 task-count ! BEGIN
+\    task-count @ 1+
+\    task-count ! PAUSE  AGAIN ;
 : task1 ." hello!" ;
 TASK t1
 : RUN  ['] task1 t1 START-TASK  ;
