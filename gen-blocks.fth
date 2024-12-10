@@ -22,24 +22,24 @@ OPEN:  build/cf-image.blk
 
 300 AT-BLOCK: extensions/testsuite.fth
 303 AT-BLOCK: extensions/ttester.fth
-330 AT-TEXT: forth2012-test-suite/src/prelimtest.fth
-342 AT-TEXT: forth2012-test-suite/src/core.fr
-372 AT-TEXT: forth2012-test-suite/src/coreplustest.fth
-384 AT-TEXT: forth2012-test-suite/src/utilities.fth
-390 AT-TEXT: forth2012-test-suite/src/errorreport.fth
-396 AT-TEXT: forth2012-test-suite/src/coreexttest.fth
-423 AT-TEXT: forth2012-test-suite/src/blocktest.fth
-450 AT-TEXT: forth2012-test-suite/src/doubletest.fth
-465 AT-TEXT: forth2012-test-suite/src/exceptiontest.fth
-471 AT-TEXT: forth2012-test-suite/src/facilitytest.fth
-477 AT-TEXT: forth2012-test-suite/src/filetest.fth
-489 AT-TEXT: forth2012-test-suite/src/localstest.fth
-498 AT-TEXT: forth2012-test-suite/src/memorytest.fth
-504 AT-TEXT: forth2012-test-suite/src/toolstest.fth
-519 AT-TEXT: forth2012-test-suite/src/searchordertest.fth
-528 AT-TEXT: forth2012-test-suite/src/stringtest.fth
+330 AT-TEXT: test/forth2012-test-suite/src/prelimtest.fth
+342 AT-TEXT: test/forth2012-test-suite/src/core.fr
+372 AT-TEXT: test/forth2012-test-suite/src/coreplustest.fth
+384 AT-TEXT: test/forth2012-test-suite/src/utilities.fth
+390 AT-TEXT: test/forth2012-test-suite/src/errorreport.fth
+396 AT-TEXT: test/forth2012-test-suite/src/coreexttest.fth
+423 AT-TEXT: test/forth2012-test-suite/src/blocktest.fth
+450 AT-TEXT: test/forth2012-test-suite/src/doubletest.fth
+465 AT-TEXT: test/forth2012-test-suite/src/exceptiontest.fth
+471 AT-TEXT: test/forth2012-test-suite/src/facilitytest.fth
+477 AT-TEXT: test/forth2012-test-suite/src/filetest.fth
+489 AT-TEXT: test/forth2012-test-suite/src/localstest.fth
+498 AT-TEXT: test/forth2012-test-suite/src/memorytest.fth
+504 AT-TEXT: test/forth2012-test-suite/src/toolstest.fth
+519 AT-TEXT: test/forth2012-test-suite/src/searchordertest.fth
+528 AT-TEXT: test/forth2012-test-suite/src/stringtest.fth
 
-600 AT-BLOCK: examples/hexload_test.fth
-612 AT-BLOCK: examples/hexload_test2.fth
+600 AT-BLOCK: test/hexload_test.fth
+612 AT-BLOCK: test/hexload_test2.fth
 FLUSH
 BYE
