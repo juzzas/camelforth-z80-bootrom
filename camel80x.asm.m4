@@ -117,12 +117,16 @@ EXTERN pausevec_ptr
             dw LATEST,EXIT
 
 ;: EDITOR-WORDLIST ( -- wid )
-        head(EDITOR_WORDLIST,EDITOR-WORDLIST,docolon)
-            dw lit,editor_wordlist_head,EXIT
+        head(EDITOR_WORDLIST,EDITOR-WORDLIST,docon)
+            dw editor_wordlist_head
 
 ;: VOCAB-WORDLIST ( -- wid )
-        head(VOCAB_WORDLIST,VOCAB-WORDLIST,docolon)
-            dw lit,vocab_wordlist_head,EXIT
+        head(VOCAB_WORDLIST,VOCAB-WORDLIST,docon)
+            dw vocab_wordlist_head
+
+;: UTILS-WORDLIST ( -- wid )
+        head(UTILS_WORDLIST,UTILS-WORDLIST,docon)
+            dw utils_wordlist_head
 
 dnl ;Z :NONAME       ( -- xt      define anonymous xt )
 dnl ;    CURRENT @ @ , 0 C,    ( last link + immed flag )
@@ -693,6 +697,9 @@ vocab_wordlist_head:
 editor_wordlist_head:
         ds 2
 
+utils_wordlist_head:
+        ds 2
+
 SECTION code_16k
 
 ;: WORDLIST ( -- wid )
@@ -875,6 +882,12 @@ FINDNG1:
 ;CREATE EDITOR  EDITOR-WORDLIST , DO-VOCABULARY
     head_vocab(EDITOR,EDITOR,docolon)
         dw EDITOR_WORDLIST
+        dw WORDLISTS,STACKSTORE
+        dw EXIT
+
+;CREATE UTILS  UTILS-WORDLIST , DO-VOCABULARY
+    head_vocab(UTILS,UTILS,docolon)
+        dw UTILS_WORDLIST
         dw WORDLISTS,STACKSTORE
         dw EXIT
 
@@ -1149,21 +1162,21 @@ DEFC DRIVECTX_SIZE = 8
 
 
 ;Z DRIVE>READ  ( drive-id -- a-addr' )  get address of  READ xt
-    head(DRIVETOREAD,DRIVE>READ,docolon)
+    head_utils(DRIVETOREAD,DRIVE>READ,docolon)
         dw EXIT
 
 ;Z DRIVE>WRITE  ( drive-id -- a-addr' )  get address of WRITE xt
-    head(DRIVETOWRITE,DRIVE>WRITE,docolon)
+    head_utils(DRIVETOWRITE,DRIVE>WRITE,docolon)
         dw lit,2,PLUS
         dw EXIT
 
 ;Z DRIVE>CAPACITY  ( drive-id -- a-addr' )  get address of CAPACITY xt
-    head(DRIVETOCAPACITY,DRIVE>CAPACITY,docolon)
+    head_utils(DRIVETOCAPACITY,DRIVE>CAPACITY,docolon)
         dw lit,4,PLUS
         dw EXIT
 
 ;Z DRIVECTX  (  -- u )  size of stucture
-    head(DRIVECTX,DRIVECTX,docon)
+    head_utils(DRIVECTX,DRIVECTX,docon)
         dw DRIVECTX_SIZE
 
 
@@ -1182,21 +1195,21 @@ DEFC DISKCTX_NUM = 8
 
 
 ;Z DISK>DRIVE  ( disk-id -- a-addr' )  get address of drive ID for disk
-    head(DISKTODRIVE,DISK>DRIVE,docolon)
+    head_utils(DISKTODRIVE,DISK>DRIVE,docolon)
         dw EXIT
 
 ;Z DISK>OFFSET  ( disk-id -- a-addr' )  get address of LBA OFFSET for disk
-    head(DISKTOOFFSET,DISK>OFFSET,docolon)
+    head_utils(DISKTOOFFSET,DISK>OFFSET,docolon)
         dw lit,2,PLUS
         dw EXIT
 
 ;Z DISK>LIMIT  ( disk-id -- a-addr' )  get address of LIMIT for disk
-    head(DISKTOLIMIT,DISK>LIMIT,docolon)
+    head_utils(DISKTOLIMIT,DISK>LIMIT,docolon)
         dw lit,6,PLUS
         dw EXIT
 
 ;Z DISK>TRANSLATOR  ( disk-id -- a-addr' )  get address of XT to translate virtual to phys b blockss
-    head(DISKTOTRANSLATOR,DISK>TRANSLATOR,docolon)
+    head_utils(DISKTOTRANSLATOR,DISK>TRANSLATOR,docolon)
         dw lit,8,PLUS
         dw EXIT
 
@@ -1206,11 +1219,11 @@ DISKCTX:
         dw DISKCTX_SIZE
 
 ;Z #DISK  (  -- u )  number of DISK entries
-    head(NUMDISK,``#DISK'',docon)
+    head_utils(NUMDISK,``#DISK'',docon)
         dw DISKCTX_NUM
 
 ;Z DISK  ( n -- disk-id | 0 )  get disk id from disk number. 0 if out of range
-    head(DISK,DISK,docolon)
+    head_utils(DISK,DISK,docolon)
         dw DUP,lit,0,NUMDISK,WITHIN
         dw qbranch,DISK1
         dw DISKCTX,STAR,lit,DISKCTX_PTR,PLUS
@@ -1231,7 +1244,7 @@ DISK1:
 ;  R@ DISK>LIMIT !
 ;  R> DISK>OFFSET 2!
 ;  ELSE  -257 THROW THEN   ;
-    head(SLICE,SLICE,docolon)
+    head_utils(SLICE,SLICE,docolon)
         DW FLUSH
         DW CURRDISKID,TOR,lit,SLICE_SECTORS,UMSTAR
         DW TWODUP,RFETCH,DISKTODRIVE,FETCH,DRIVETOCAPACITY,FETCH,EXECUTE
@@ -1300,7 +1313,7 @@ EXTERN cflash_identify
 ;       ." CFLASH INITIALISED"
 ;       CF_DRIVE-ID
 ;   ELSE ." NO CFLASH" 0 THEN ;
-    head(SLASHCFLASH,/CFLASH,docolon)
+    head_utils(SLASHCFLASH,/CFLASH,docolon)
         dw lit,cflash_init,CALL
         dw qbranch,SLASHCFLASH1
         dw XSQUOTE
@@ -1319,7 +1332,7 @@ SLASHCFLASH1:
         dw EXIT
 
 ;Z CF-CAPACITY  ( d -- )   Fetch Compact Flash capacity (sectors)
-    head(CF_CAPACITY,CF_CAPACITY,docolon)
+    head_utils(CF_CAPACITY,CF_CAPACITY,docolon)
         dw lit,512,TEMPBUFF_ALLOC,DUP,TOR,lit,cflash_identify,CALL
 ;        dw RFETCH,lit,256,MEMDUMP
         dw RFETCH,lit,120,PLUS,FETCH      ; low word of max LBA
@@ -1340,7 +1353,7 @@ EXTERN cflash_read_sector
 ; address found at 'adrs'. 'dsk' and 'blk' are the disk
 ; and block numbers respectively
 ;   clash_read_sector CALL ;
-    head(CF_SECTOR_READ,CF_SECTOR_READ,docolon)
+    head_utils(CF_SECTOR_READ,CF_SECTOR_READ,docolon)
         dw lit,cflash_read_sector,CALL
         dw branch,SECTOR_READ3
 
@@ -1358,7 +1371,7 @@ SECTOR_READ3:
 EXTERN cflash_write_sector
 ;Z CF-SECTOR-WRITE  ( lba-l lba-h adrs -- )   Compact Flash write sector at LBA
 ;   clash_write_sector CALL ;
-    head(CF_SECTOR_WRITE,CF_SECTOR_WRITE,docolon)
+    head_utils(CF_SECTOR_WRITE,CF_SECTOR_WRITE,docolon)
         dw lit,cflash_write_sector,CALL
         dw branch,SECTOR_WRITE3
 
@@ -1374,7 +1387,7 @@ SECTOR_WRITE3:
         dw EXIT
 
 
-    head(CF_DRIVE_ID,CF_DRIVE-ID,docreate)
+    head_utils(CF_DRIVE_ID,CF_DRIVE-ID,docreate)
         dw CF_SECTOR_READ
         dw CF_SECTOR_WRITE
         dw CF_CAPACITY
@@ -1750,7 +1763,7 @@ XWRITE_CHAR:
 ;   current-block
 ;   set-dirty
 ;   (write-char) ;
-    head(PUTCH,PUTCH,docolon)
+    head_utils(PUTCH,PUTCH,docolon)
         DW CURRENT_BLOCK
         DW SET_DIRTY
         DW XWRITE_CHAR
@@ -1765,7 +1778,7 @@ XWRITE_CHAR:
 ;       (write-char) ( c-addr )
 ;     LOOP
 ;   THEN DROP ;
-    head(PUTCHARS,PUTCHARS,docolon)
+    head_utils(PUTCHARS,PUTCHARS,docolon)
         DW QDUP,qbranch,PUTCHARS2
 
         DW CURRENT_BLOCK,SET_DIRTY
@@ -1793,7 +1806,7 @@ XREAD_CHAR:
 ;: GETCH ( -- c )
 ;   current-block
 ;   (read-char) ;
-    head(GETCH,GETCH,docolon)
+    head_utils(GETCH,GETCH,docolon)
         DW CURRENT_BLOCK
         DW XREAD_CHAR
         DW EXIT
@@ -1806,7 +1819,7 @@ XREAD_CHAR:
 ;       OVER I + C!  ( c-addr )
 ;     LOOP
 ;   THEN  DROP R> ;
-    head(GETCHARS,GETCHARS,docolon)
+    head_utils(GETCHARS,GETCHARS,docolon)
         DW DUP,TOR,QDUP,qbranch,GETCHARS2
 
         DW CURRENT_BLOCK
@@ -1824,7 +1837,7 @@ GETCHARS2:
 ;   blk-offset !
 ;   blk-cur !
 ;   clear-dirty  ;
-    head(BEGIN_BLKFILE,``BEGIN-BLKFILE'',docolon)
+    head_utils(BEGIN_BLKFILE,``BEGIN-BLKFILE'',docolon)
         DW lit,blk_offset,STORE
         DW lit,blk_curr,STORE
         DW CLEAR_DIRTY
@@ -1835,7 +1848,7 @@ GETCHARS2:
 ;: END-BLKFILE ( -- blk' offset' )
 ;   is-dirty? IF UPDATE clear-dirty THEN
 ;   FLUSH ;
-    head(END_BLKFILE,``END-BLKFILE'',docolon)
+    head_utils(END_BLKFILE,``END-BLKFILE'',docolon)
         DW IS_DIRTYQ,qbranch,END_BLKFILE1
         DW UPDATE,CLEAR_DIRTY
 
@@ -1866,7 +1879,7 @@ XLINE:
 ;       DUP PRINTABLE? INVERT IF DROP [CHAR] . THEN EMIT
 ;     LOOP
 ;   ELSE DROP THEN ;
-    head(TYPESTRING,TYPE$,docolon)
+    head_utils(TYPESTRING,TYPE$,docolon)
         DW QDUP,qbranch,TYPS4
         DW OVER,PLUS,SWOP,xdo
 TYPS3:  DW II,CFETCH
@@ -1963,7 +1976,7 @@ SNAPSHOTDOTORDER:
 ;        DUP SNAPSHOT.USER U0 SWAP 128 MOVE
 ;        DUP SNAPSHOT.ORDER SAVE-ORDER
 ;        DROP   ;
-    head(TOSNAPSHOT,>SNAPSHOT,docolon)
+    head_utils(TOSNAPSHOT,>SNAPSHOT,docolon)
         dw DUP,NUMSNAPSHOT,ERASE
         dw DUP,SNAPSHOTDOTUSER,U0,SWOP,lit,128,MOVE
         dw DUP,SNAPSHOTDOTORDER,SAVE_ORDER
@@ -1985,7 +1998,7 @@ defc SNAPSHOT_RST_LEN = 128-24
 ;        DUP SNAPSHOT.ORDER RESTORE-ORDER
 ;        DUP SNAPSHOT.USER 8 + @ DP !
 ;        DROP   ;
-    head(SNAPSHOTFROM,SNAPSHOT>,docolon)
+    head_utils(SNAPSHOTFROM,SNAPSHOT>,docolon)
         dw DUP,SNAPSHOTDOTUSER,lit,SNAPSHOT_RST_START,PLUS
         dw U0,lit,SNAPSHOT_RST_START,PLUS,lit,SNAPSHOT_RST_LEN,MOVE
         dw DUP,SNAPSHOTDOTORDER,RESTORE_ORDER
@@ -2131,7 +2144,7 @@ XSAVEHDR:
 
 ; 4 STACK VALUE FORTH-RECOGNIZER
 
-        head(RECOGNIZERS,RECOGNIZERS,docon)
+        head_utils(RECOGNIZERS,RECOGNIZERS,docon)
             DW STACK_RECOGNIZERS
 
 SECTION data
@@ -2145,22 +2158,22 @@ SECTION code_16k
 ;: RECTYPE: ( XT-INTERPRET XT-COMPILE XT-POSTPONE "<spaces>name" -- )
 ;  CREATE SWAP ROT , , ,
 ;    ;
-    head(RECTYPECOLON,RECTYPE:,docolon)
+    head_utils(RECTYPECOLON,RECTYPE:,docolon)
         DW CREATE,SWOP,ROT,COMMA,COMMA,COMMA
         DW EXIT
 
 ;: RECTYPE>POST ( RECTYPE-TOKEN -- XT-POSTPONE ) CELL+ CELL+ @ ;
-    head(RECTYPETOPOST,RECTYPE>POST,docolon)
+    head_utils(RECTYPETOPOST,RECTYPE>POST,docolon)
         DW CELLPLUS,CELLPLUS,FETCH
         DW EXIT
 
 ;: RECTYPE>COMP ( RECTYPE-TOKEN -- XT-COMPILE  )       CELL+ @ ;
-    head(RECTYPETOCOMP,RECTYPE>COMP,docolon)
+    head_utils(RECTYPETOCOMP,RECTYPE>COMP,docolon)
         DW CELLPLUS,FETCH
         DW EXIT
 
 ;: RECTYPE>INT  ( RECTYPE-TOKEN -- XT-INTERPRET)             @ ;
-    head(RECTYPETOINT,RECTYPE>INT,docolon)
+    head_utils(RECTYPETOINT,RECTYPE>INT,docolon)
         DW FETCH
         DW EXIT
 
@@ -2172,13 +2185,13 @@ REC_NULL_XT:
         DW QABORT
 
 ; ' NOOP ' NOOP ' NOOP  RECTYPE: RECTYPE-NULL
-    head(RECTYPE_NULL,RECTYPE-NULL,docreate)
+    head_utils(RECTYPE_NULL,RECTYPE-NULL,docreate)
         dw REC_NULL_XT
         dw REC_NULL_XT
         dw REC_NULL_XT
 
 ; ' NOOP ' NOOP ' NOOP  RECTYPE: RECTYPE-NOOP
-    head(RECTYPE_NOOP,RECTYPE-NOOP,docreate)
+    head_utils(RECTYPE_NOOP,RECTYPE-NOOP,docreate)
         dw NOOP
         dw NOOP
         dw NOOP
@@ -2222,7 +2235,7 @@ XRECOGNIZE2:
 ;    0= IF                           \ no recognizer did the job, remove addr/len
 ;     2DROP RECTYPE-NULL
 ;    THEN    ;
-    head(RECOGNIZE,RECOGNIZE,docolon)
+    head_utils(RECOGNIZE,RECOGNIZE,docolon)
         DW lit,XRECOGNIZE,SWOP,STACKUNTIL
         DW ZEROEQUAL,qbranch,RECOGNIZE1
         DW TWODROP,RECTYPE_NULL
@@ -2241,7 +2254,7 @@ RECOGNIZE1:
 ;    ELSE
 ;       RECTYPE-NULL
 ;    THEN   ;
-    head(REC_FIND,REC-FIND,docolon)
+    head_utils(REC_FIND,REC-FIND,docolon)
         DW FIND_NAME
         DW QDUP,qbranch,REC_FIND1
         DW DUP,NFATOCFA
@@ -2297,7 +2310,7 @@ REC_FIND_POST:
 ;    ELSE
 ;       RECTYPE-NULL
 ;    THEN   ;
-    head(REC_NUMBER,REC-NUMBER,docolon)
+    head_utils(REC_NUMBER,REC-NUMBER,docolon)
         DW lit,0,DUP,TWOSWAP
         DW QSIGN,TOR,TONUMBER,qbranch,RECNUM1
         DW RFROM,TWODROP,TWODROP,lit,0
@@ -2315,7 +2328,7 @@ RECNUM4:
 
 
 ;    RECTYPE: RECTYPE-NUM
-    head(RECTYPE_NUM,RECTYPE-NUM,docreate)
+    head_utils(RECTYPE_NUM,RECTYPE-NUM,docreate)
         DW NOOP
         DW LITERAL
         DW LITERAL
@@ -2395,7 +2408,7 @@ REC_IHEX_COMP:
         DW EXIT
 
 ; RECTYPE: RECTYPE-IHEX ;
-    head(RECTYPE_IHEX,RECTYPE-IHEX,docreate)
+    head_utils(RECTYPE_IHEX,RECTYPE-IHEX,docreate)
         DW REC_IHEX_XT
         DW REC_IHEX_COMP
         DW NOOP
@@ -2411,7 +2424,7 @@ REC_IHEX_COMP:
 ;       RECTYPE_NULL EXIT
 ;    THEN
 ;    DROP RECTYPE_IHEX  ;
-    head(REC_IHEX,REC-IHEX,docolon)
+    head_utils(REC_IHEX,REC-IHEX,docolon)
         DW IHEXQ,DUP,lit,1,EQUAL,qbranch,REC_IHEX1
         DW DROP
         DW RECTYPE_NOOP,EXIT
@@ -2493,7 +2506,7 @@ NR2:    DW DROP
 ;  ENTRY @ EXECUTE
 ;  ['] <SLEEP> U0 !  ( if we come back, the stop this thread )
 ;  (PAUSE)   ;
-    head(XINIT,<INIT>,docolon)
+    head_utils(XINIT,<INIT>,docolon)
        dw RFROM,CELLMINUS,UPSTORE
        dw S0,SPSTORE
        dw R0,RPSTORE
@@ -2509,14 +2522,14 @@ NR2:    DW DROP
 ;Z <WAKE>   -- "wake" task state
 ;  R> CELL- UP!
 ;  STACKTOP @ SP! RP!  ;
-    head(XWAKE,<WAKE>,docolon)
+    head_utils(XWAKE,<WAKE>,docolon)
        dw RFROM,CELLMINUS,UPSTORE
        dw STACKTOP,FETCH,SPSTORE,RPSTORE
        dw EXIT
 
 ;Z <SLEEP>  -- "sleeping" task state
 ;  R> CELL- UP! LINK @ >R  ;
-    head(XSLEEP,<SLEEP>,docolon)
+    head_utils(XSLEEP,<SLEEP>,docolon)
        dw RFROM,CELLMINUS,UPSTORE
        dw LINK,FETCH,TOR
        dw EXIT
@@ -2524,20 +2537,20 @@ NR2:    DW DROP
 ;Z (PAUSE)     -- pause run-time
 ;  RP@ SP@ STACKTOP !
 ;  LINK @ >R ; COMPILE-ONLY
-    head(XPAUSE,(PAUSE),docolon)
+    head_utils(XPAUSE,(PAUSE),docolon)
         dw RPFETCH,SPFETCH,STACKTOP,STORE
         dw LINK,FETCH,TOR
         dw EXIT
 
 ;Z INIT-TASK     ( task-id --  )
-    head(INIT_TASK,INIT-TASK,docolon)
+    head_utils(INIT_TASK,INIT-TASK,docolon)
        dw U0,OVER,lit,256,MOVE  ; copy USER variables
        dw DUP,LINK,STORE
        dw lit,XINIT,SWOP,STORE      ; set new task STATE to <INIT>
        dw EXIT
 
 
-    head(TASKSIZE,TASK%,docon)
+    head_utils(TASKSIZE,TASK%,docon)
         dw 768
 
 ; RC2014 16K initialisation ====================
@@ -2553,6 +2566,7 @@ SLASH16KROM:
         DW lit,INTERPRET_16K,lit,xt_interpret,STORE
         DW lit,WORDS_16K,lit,xt_words,STORE
         DW lit,editor_lastword,EDITOR_WORDLIST,STORE
+        DW lit,utils_lastword,UTILS_WORDLIST,STORE
         DW lit,vocab_lastword,VOCAB_WORDLIST,STORE
         DW VOCAB_WORDLIST,FORTH_WORDLIST,lit,2,SET_ORDER
         DW lit,REC_IHEX,lit,REC_NUMBER,lit,REC_FIND,lit,3,RECOGNIZERS,STACKSET

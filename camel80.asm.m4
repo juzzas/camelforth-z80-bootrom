@@ -107,6 +107,17 @@ $1:
       ifelse($3,docode,, call $3)
       ')
 
+define(link_utils, 0)
+define(head_utils, `
+      dw link_utils
+      db 0
+$1_link:
+      define(`link_utils', `$1_link')
+      defm len($2), "patsubst($2, ", `",34,"')"
+$1:
+      ifelse($3,docode,, call $3)
+      ')
+
 ; NEXTHL is used when the IP is already in HL.
 define(nexthl, `
         ld e,(hl)
@@ -1098,5 +1109,6 @@ camel80_16k_tail:
         defc lastword=link                ; nfa of last word in dict.
         defc editor_lastword=link_editor  ; nfa of last word in EDITOR wordlist.
         defc vocab_lastword=link_vocab    ; nfa of last word in VOCAB wordlist.
+        defc utils_lastword=link_utils    ; nfa of last word in UTILS wordlist.
         defc enddict=WRKSPC       ; user's code starts here
 

@@ -37,7 +37,7 @@ SECTION code
 
 ;Z RAMTOP      -- a-addr   address of first USER reserved byte
 ;  ramtop_ptr CONSTANT RAMTOP
-    head(RAMTOP,RAMTOP,docon)
+    head_utils(RAMTOP,RAMTOP,docon)
         dw ramtop_ptr
 
 SECTION data
@@ -376,7 +376,7 @@ XIHEXQ4:
 ;    ['] (IHEXQ?) CATCH
 ;       0<> IF  0  THEN  EXIT  ;
 
-    head(IHEXQ,IHEX?,docolon)
+    head_utils(IHEXQ,IHEX?,docolon)
         DW lit,XIHEXQ,CATCH
         DW qbranch,IHEXQ1
         DW lit,0,EXIT
