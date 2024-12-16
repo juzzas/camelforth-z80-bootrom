@@ -204,7 +204,9 @@ DEFC SQUOTE_TOP = WRKSPC - 0x80  ; (512 bytes)
         inc ix
         ld d,(ix+0)
         inc ix
+nextcomma_block:
         next
+defc nextcomma_block_len = 7
 
 ;Z lit      -- x    fetch inline literal to stack
 ; This is the primtive compiled by LITERAL.
@@ -346,16 +348,9 @@ dodoes: ; -- a-addr
         push bc
         rst 0x18
         or a
-        jr nz,querykey1
+        jp nz, tostrue
+        jp tosfalse
 
-        ld bc, 0
-        jr querykey2
-
-querykey1:
-        ld bc, 0xffff
-
-querykey2:
-        next
 
 ;C RX      -- c    get character from console
     head(RX,RX,docode)
@@ -364,10 +359,6 @@ querykey2:
         ld c,a
         ld b,0
         next
-
-;X BYE     i*x --    return to CP/M
-    head(BYE,BYE,docode)
-        jp 0
 
 ; STACK OPERATIONS ==============================
 

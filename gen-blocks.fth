@@ -3,6 +3,7 @@ INCLUDE tools/blocks.fth
 1000 GENERATE: build/cf-image.blk
 OPEN:  build/cf-image.blk
 0 AT-BLOCK: extensions/00system.fth
+3 AT-BLOCK: extensions/editor.fth
 30 AT-BLOCK: extensions/forth2012.fth
 33 AT-BLOCK: extensions/core-ext.fth
 36 AT-BLOCK: extensions/facility-ext.fth
@@ -41,5 +42,6 @@ OPEN:  build/cf-image.blk
 
 600 AT-BLOCK: test/hexload_test.fth
 612 AT-BLOCK: test/hexload_test2.fth
+621 AT-TEXT: test/blkfile_test1.fth
 FLUSH
 BYE

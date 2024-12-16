@@ -152,7 +152,9 @@ SECTION code
             dw 300h
 
     ;Z uinit    -- addr  initial values for user area
-        head(UINIT,UINIT,docreate)
+dnl        head(UINIT,UINIT,docreate)
+UINIT:
+            call docreate
             DW 0,0,10,0     ; reserved,>IN,BASE,STATE
             DW enddict      ; DP                         8
             DW 0,0          ; SOURCE init'd elsewhere    10

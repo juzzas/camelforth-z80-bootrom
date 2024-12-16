@@ -360,20 +360,10 @@ DMIN1:
 
 ;C NEXT,   --      compile forth NEXT word to code definition
     head(NEXTCOMMA,``NEXT,'',docolon)
-        DW lit,semicode_block,HERE
-        DW lit,semicode_block_len,MOVE
-        DW lit,semicode_block_len,ALLOT
+        DW lit,nextcomma_block,HERE
+        DW lit,nextcomma_block_len,MOVE
+        DW lit,nextcomma_block_len,ALLOT
         DW EXIT
-
-semicode_block:
-        DB 0xeb   ;  ex de,hl
-        DB 0x5e   ;  ld e,(hl)
-        DB 0x23   ;  inc hl
-        DB 0x56   ;  ld d,(hl)
-        DB 0x23   ;  inc hl
-        DB 0xeb   ;  ex de,hl
-        DB 0xe9   ;  jp (hl)
-defc semicode_block_len = 7
 
 
 ; http://www.forth.org/svfig/Len/softstak.htm
@@ -1310,14 +1300,14 @@ EXTERN cflash_identify
 ;Z /CFLASH   ( -- drive-id ) initialise the Compact Flash driver
 ;   clash_init CALL    ( f )
 ;   IF
-;       ." CFLASH INITIALISED"
+;       ." CFLASH OK"
 ;       CF_DRIVE-ID
 ;   ELSE ." NO CFLASH" 0 THEN ;
     head_utils(SLASHCFLASH,/CFLASH,docolon)
         dw lit,cflash_init,CALL
         dw qbranch,SLASHCFLASH1
         dw XSQUOTE
-        db 20,"CFLASH INITIALISED ("
+        db 11,"CFLASH OK ("
         dw TYPE,CF_CAPACITY,DTWOSLASH,DDOT
         dw XSQUOTE
         db 7,"blocks)"
@@ -1868,8 +1858,7 @@ XBLOCK:
 
 ;Z (LINE)           line# -- c-addr   address of line in block
 ;     C/L * (BLOCK) + ;
-XLINE:
-        call docolon
+    head_utils(XLINE,(LINE),docolon)
         dw C_L,STAR,XBLOCK,PLUS
         dw EXIT
 
@@ -1895,16 +1884,14 @@ TYPS5:  DW EXIT
 
 ;Z LL               line# --      List Line
 ;     (LINE) C/L TYPE CR ;
-LL:
-        call docolon
+    head_utils(LL,LL,docolon)
         dw XLINE,C_L,TYPESTRING,CR
         dw EXIT
 
 
 ;Z  (LIST)            --    runtime for list screen
 ;     L/B 0 DO I 2 .R SPACE I LL LOOP ;
-XLIST:
-        call docolon
+    head_utils(XLIST,(LIST),docolon)
         dw L_B,lit,0,xdo
 XLIST1:
         dw II,lit,2,DOTR,SPACE,II,LL,xloop,XLIST1
@@ -1945,7 +1932,7 @@ INDEX1:
 ;              LFAs point to ROM. They need to be patched in
 ;              the likely case that the ROM is updated.
 ;              Currently, the ROM'd wordlists are
-;              FORTH, EDITOR, VOCS.
+;              FORTH, EDITOR, VOCS, UTILS.
 ;              If zero, then the matching wordlist hasn't been
 ;              extended by the user.
 ;    0090   | copy of Wordlist order (34 bytes)
@@ -1984,6 +1971,7 @@ SNAPSHOTDOTORDER:
         dw    VOCAB_WORDLIST,FETCH,OVER,STORE,CELLPLUS
         dw    FORTH_WORDLIST,FETCH,OVER,STORE,CELLPLUS
         dw    EDITOR_WORDLIST,FETCH,OVER,STORE,CELLPLUS
+        dw    UTILS_WORDLIST,FETCH,OVER,STORE,CELLPLUS
         dw    DROP
         dw DROP
         dw EXIT
@@ -2007,6 +1995,7 @@ defc SNAPSHOT_RST_LEN = 128-24
         dw    DUP,FETCH,VOCAB_WORDLIST,STORE,CELLPLUS
         dw    DUP,FETCH,FORTH_WORDLIST,STORE,CELLPLUS
         dw    DUP,FETCH,EDITOR_WORDLIST,STORE,CELLPLUS
+        dw    DUP,FETCH,UTILS_WORDLIST,STORE,CELLPLUS
         dw    DROP
         dw DROP
         dw EXIT
@@ -2045,11 +2034,11 @@ defc SNAPSHOT_RST_LEN = 128-24
 
 ;: BLOAD   ( c-addr u blk -- )
 ;     0 (OPEN-BLKFILE)
-;     READ-BLKFILE
+;     READ-BLKFILE,DROP
 ;     (CLOSE-BLKFILE)   ;
     head(BLOAD,BLOAD,docolon)
         dw lit,0,BEGIN_BLKFILE
-        dw GETCHARS
+        dw GETCHARS,DROP
         dw END_BLKFILE,TWODROP
         dw EXIT
 
@@ -2114,7 +2103,7 @@ XSAVEHDR:
 ;
 ;    BLK @  BLK_HEADER_SIZE
 ;    BEGIN-BLKFILE
-;    GETCHARS
+;    GETCHARS,DROP
 ;    END-BLKFILE 2DROP    ;
     head(RESTORE,RESTORE,docolon)
         dw BLOCK
@@ -2128,7 +2117,7 @@ XSAVEHDR:
 
         dw BLK,FETCH,lit,BLK_HEADER_SIZE
         dw BEGIN_BLKFILE
-        dw GETCHARS
+        dw GETCHARS,DROP
         dw END_BLKFILE,TWODROP
         dw EXIT
 
@@ -2508,6 +2497,7 @@ NR2:    DW DROP
 ;  (PAUSE)   ;
     head_utils(XINIT,<INIT>,docolon)
        dw RFROM,CELLMINUS,UPSTORE
+XINIT1:
        dw S0,SPSTORE
        dw R0,RPSTORE
        dw L0,LP,STORE
@@ -2517,7 +2507,8 @@ NR2:    DW DROP
        dw lit,XWAKE,U0,STORE
        dw ENTRY,FETCH,EXECUTE
        dw lit,XSLEEP,U0,STORE
-       dw XPAUSE,EXIT
+       dw XPAUSE
+       dw branch,XINIT1
 
 ;Z <WAKE>   -- "wake" task state
 ;  R> CELL- UP!

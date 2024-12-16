@@ -211,6 +211,10 @@ DUMP1:
         dw lit,0,lit,0,AT_XY
         dw EXIT
 
+;C BOUNDS ( c-addr n -- n-end n-start )
+;    OVER + SWAP ;
+    head(BOUNDS,BOUNDS,docolon)
+        DW OVER,PLUS,SWOP,EXIT
 
 ; HEXLOAD implementation ==========================
 

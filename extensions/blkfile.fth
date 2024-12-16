@@ -1,6 +1,6 @@
 ( blkfile - extension to treat blocks as files          1 / n)
 
-
+.( Loading blkfile... ) CR
 
 
 -1 CONSTANT TRUE
@@ -10,10 +10,10 @@
 1 CONSTANT BIN 
 2 CONSTANT R/O
 4 CONSTANT R/W
-
-37 LOAD
+ALSO UTILS
+37 LOAD  
 1 8 +THRU
-/BLKFILE
+/BLKFILE  ONLY FORTH
 \ start of BLKFILE extension
 BEGIN-STRUCTURE BLKFILE-CONTEXT
    FIELD: blk.origin
@@ -125,8 +125,8 @@ VARIABLE blkfile-eof
    BEGIN
      REFILL  IF
        ( SOURCE TYPE  CR )
-       INTERPRET
-     ELSE  SOURCE-ID @  CLOSE-BLKFILE  THROW  EXIT
+       INTERPRET .S CR
+     ELSE  .S CR SOURCE-ID @  CLOSE-BLKFILE .S CR THROW  EXIT
      THEN
    AGAIN  ;
 
@@ -136,69 +136,3 @@ VARIABLE blkfile-eof
    ['] tload-refill 'REFILL !
    (TLOAD)
    RESTORE-INPUT  ;
-
-
-
-
-
-
-
-
-: WRITE-BLKFILE ( c-addr u blkfileid -- ior ) ;
-: WRITELINE-BLKFILE ( c-addr u blkfileid -- ior ) ;
-
-: BLKFILE-POSITION ( blkfileid -- blk offset );
-: REPOSITION-BLKFILE ( blkfileid -- blk offset )
-: BLKFILE-SIZE ( blkfileid -- blks )
-
-: pad-chars  ( c blkfile-id -- )
-   \ ." padding from " DUP blk-offset @ . CR
-   DUP current-block
-   DUP set-dirty
-   1024 OVER blk-offset @ -  DUP IF  ( c blkfile-id )
-     0 DO 2DUP (write-char) LOOP
-   THEN
-   \ ." new offset " DUP blk-offset @ .
-   2DROP ;
-
-
-( tloader - load text files embedded into blocks          1 / n)
-: tload-refill  ( -- flag )
-    tload-index @ 16 = IF 
-        -1 tload-block-num +!
-        0 tload-index !
-        1 BLK +!   THEN
-
-    tload-block-num @ 0= IF 0 EXIT THEN
-
-    BLK @ BLOCK    ( addr )
-    tload-index @ C/L * +  ( index )
-        C/L 'SOURCE 2!
-
-    0 >IN !
-    1 tload-index  +! TRUE    ;
-
-
-: (TLOAD)  ( -- )
-   tload-block-num !
-   0 tload-index !
-   BEGIN
-     REFILL  IF
-       SOURCE TYPE  CR  INTERPRET
-     ELSE   EXIT
-     THEN
-   AGAIN  ;
-
-
-
-
-
-: TLOAD ( blk -- )
-   'REFILL @ >R
-   SWAP BLK !
-   ['] tload-refill 'REFILL !
-   SAVE-INPUT
-   (TLOAD)
-   RESTORE-INPUT
-   R> 'REFILL !
-   ;
