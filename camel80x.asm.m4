@@ -169,11 +169,21 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
         DW PAUSEVEC,FETCH,EXECUTE
         DW EXIT
 
+;C TRUE
+    head(TRUE,TRUE,docode)
+        push bc
+        jp tostrue
+
+;C FALSE
+    head(FALSE,FALSE,docode)
+        push bc
+        jp tosfalse
+
 ; TEMPBUFF reserves chucks of memory in a stack-like algorithm
 ;Z   /TBUFFER  ( -- )
 SLASHTEMPBUFF:
         call docolon
-        DW lit,STACK_TEMPBUFF,STACKCLEAR
+        DW lit,STACK_TEMPBUFF,lit,STACK_TEMPBUFF_SIZE,SLASHSTACK
         DW EXIT
 
 ;Z   TBUFFER-BASE  ( -- addr )  addr of base of tempbuffers
@@ -202,9 +212,9 @@ TEMPBUFF_FREE1:
         dw EXIT
 
 SECTION data
-
+defc STACK_TEMPBUFF_SIZE = 36
 STACK_TEMPBUFF:
-        ds 34    ; 16 cells + stack top pointer
+        ds STACK_TEMPBUFF_SIZE    ; 16 cells + stack top pointer
 
 SECTION code_16k
 
@@ -219,7 +229,7 @@ SECTION code_16k
 ; RC2014 EXTENSION output ====================
 
 ;C ?DO       -- if-adrs -1 adrs   L: -- 0
-;   -1           flag to distiguish this from ?DO
+;   -1           flag to distiguish this from DO
 ;   ['] 2DUP ,XT  ['] <> ,XT  POSTPONE IF
 ;                SWAP     swap IF target and flag
 ;   ['] xdo ,XT   HERE     target for bwd branch
@@ -366,143 +376,180 @@ DMIN1:
         DW EXIT
 
 
-; http://www.forth.org/svfig/Len/softstak.htm
+dnl ; http://www.forth.org/svfig/Len/softstak.htm
+
+dnl ;     lifo+0 -> ptr to top of stack - 2
+dnl ;     lifo+2 -> S0: bottom of stack
+dnl ;     lifo+2+n -> bottom of stack
+
+dnl ; note: on empty stack, S0 and SP point to beyond end of area.
+dnl ;       SP decremented before storing.
+
+; initialise a stack at addr with n bytes
+; : /STACK   ( addr n -- )
+;      OVER +         ( addr S0 )
+;      SWAP 2DUP CELL+     ( SP sp-addr S0 s0-addr )
+;      !  !   ;
+    head_utils(SLASHSTACK,``/STACK'',docolon)
+        DW TWODUP,lit,0,FILL
+        DW OVER,PLUS
+        DW SWOP,TWODUP,CELLPLUS
+        DW STORE,STORE
+        DW EXIT
 
 dnl ; During compilation, create a STACK (software stack) with n cells.
 dnl ; On execution, return the address of the stack.
-dnl ;     lifo+0 -> ptr to top of stack + 2
-dnl ;     lifo+2 -> bottom of stack
 dnl ; : STACK ( n -- ) ( -- adr)
-dnl ;      CREATE HERE CELL+ , CELLS ALLOT
+dnl ;      CREATE              ( n )
+dnl ;      CELLS CELL+ CELL+   ( bytes )
+dnl ;      HERE OVER ALLOT      ( bytes addr )
+dnl ;      SWAP /STACK
 dnl ;   DOES>  ;
-    head(STACK,STACK,docolon)
-        DW CREATE,HERE,CELLPLUS,COMMA,CELLS,ALLOT
+    head_utils(STACK,STACK:,docolon)
+        DW CREATE
+        DW CELLS,CELLPLUS,CELLPLUS
+        DW HERE,OVER,ALLOT
+        DW SWOP,SLASHSTACK
         DW XDOES
         call dodoes
         dw EXIT
 
 ; Push number onto STACK
 ; : >S ( n lifo -- )
-;      SWAP OVER @ ! CELL SWAP +! ;
-    head(TOSTACK,>S,docolon)
-        DW SWOP,OVER,FETCH,STORE,CELL,SWOP,PLUSSTORE
+;      SWAP OVER @ ( lifo n tos )
+;      CELL- !     ( lifo )
+;      CELL NEGATE SWAP +! ;
+    head_utils(TOSTACK,>S,docolon)
+        DW SWOP,OVER,FETCH
+        DW CELLMINUS,STORE
+        DW CELL,NEGATE,SWOP,PLUSSTORE
         DW EXIT
 
 ; Pop number from STACK
 ; : S> ( lifo -- x )
-;      CELL NEGATE    ( lifo -2 )
-;      OVER           ( lifo -2 lifo )
-;      +!             ( lifo )
-;      @ @ ;
-    head(STACKFROM,S>,docolon)
-        DW CELL,NEGATE,OVER,PLUSSTORE,FETCH,FETCH
+;      DUP @ @        ( lifo x )
+;      SWAP           ( x lifo  )
+;      CELL SWAP +!  ;  ( x )
+    head_utils(STACKFROM,S>,docolon)
+        DW DUP,FETCH,FETCH
+        DW SWOP
+        DW CELL,SWOP,PLUSSTORE
         DW EXIT
 
 ; Fetch the value at the top of the STACK
 ; : S@ ( lifo -- x )
-;      @ CELL- @ ;
-    head(STACKFETCH,S@,docolon)
-        DW FETCH,CELLMINUS,FETCH
+;      @  @ ;
+    head_utils(STACKFETCH,S@,docolon)
+        DW FETCH,FETCH
         DW EXIT
 
 ; Replace the value at the top of the STACK
 ; : S! ( x lifo -- )
-;      @ CELL- ! ;
-    head(STACKSTORE,S!,docolon)
-        DW FETCH,CELLMINUS,STORE
+;      @ ! ;
+    head_utils(STACKSTORE,S!,docolon)
+        DW FETCH,STORE
         DW EXIT
 
 ; Drop the value at the top of the STACK
 ; : SDROP ( lifo -- )
 ;      S> DROP ;
-    head(STACKDROP,SDROP,docolon)
+    head_utils(STACKDROP,SDROP,docolon)
         DW STACKFROM,DROP
         DW EXIT
 
 ; Duplicate the value at the top of the STACK
 ; : SDUP ( lifo -- )
 ;      DUP S@ SWAP >S ;
-    head(STACKDUP,SDUP,docolon)
+    head_utils(STACKDUP,SDUP,docolon)
         DW DUP,STACKFETCH,SWOP,TOSTACK
         DW EXIT
 
-; Clear STACK
-; : /STACK ( lifo -- )
-;      DUP    ( lifo lifo )
-;      CELL+  ( lifo lifo+2 )
-;      SWAP   ( lifo+2 lifo )
-;      !     ;
-    head(STACKCLEAR,/STACK,docolon)
-        DW DUP,CELLPLUS,SWOP,STORE
+; PICK for stack
+; : SPICK ( n lifo -- x )
+;     @ SWAP CELLS + @ ;
+    head_utils(SPICK,SPICK,docolon)
+        DW FETCH,SWOP,CELLS,PLUS,FETCH
         DW EXIT
 
 ; : STACK-DEPTH ( lifo -- n )
 ;      STACK.BOUNDS - CELL /  ;
-    head(STACKDEPTH,STACK-DEPTH,docolon)
+    head_utils(STACKDEPTH,SDEPTH,docolon)
         DW STACKBOUNDS,MINUS
         DW TWOSLASH      ;  optimize "DW CELL,SLASH" for 16bit
         DW EXIT
 
 ; : STACK-EMPTY? ( lifo -- flag )
 ;      STACK.BOUNDS = ;
-    head(STACKEMPTYQ,STACK-EMPTY?,docolon)
+    head_utils(STACKEMPTYQ,SEMPTY?,docolon)
         DW STACKBOUNDS,EQUAL
         DW EXIT
 
 ; Create parameters for a ?DO loop that will scan every item currently in STACK. The intended use is:
 ;      ( lifo )   STACK-BOUNDS ?DO -- CELL +LOOP
 ; : STACK-BOUNDS ( lifo -- addr1 addr2 )
-;     DUP @ SWAP CELL+ ;
-    head(STACKBOUNDS,STACK-BOUNDS,docolon)
-        DW DUP,FETCH,SWOP,CELLPLUS
+;     DUP CELL+ @ SWAP @ ;
+    head_utils(STACKBOUNDS,STACK-BOUNDS,docolon)
+        DW DUP,CELLPLUS,FETCH,SWOP,FETCH
         DW EXIT
 
 ; Set the stack from the data stack
 ; : STACK-SET     ( rec-n .. rec-1 n lifo )
+;    OVER 0< IF -4 THROW THEN
 ;    OVER IF
-;      2DUP SWAP CELLS + CELL+ ( n lifo tos+2 )
-;      DUP ROT !           ( ... n tos+2 )
-;      SWAP 0 DO           ( rec-n rec-1 tos+2)
-;         CELL- DUP >R ! R>   ( rec-n ... rec-i addr )
-;      LOOP   DROP
+;      DUP >R CELL+ @      ( item-n .. item-1 n S0 ; r: stk )
+;      OVER CELLS -        ( item-n .. item-1 n sp ; r: stk )
+;      DUP >R              ( item-n .. item-1 n sp ; r: stk sp )
+;      SWAP 0 DO           ( item-n .. item-1 sp'  ; r: stk sp )
+;        2DUP ! CELL+  NIP
+;      LOOP               ( sp''  ;  r: stk sp )
+;      DROP R> R> !
 ;    ELSE
-;      NIP STACK.CLEAR
+;      NIP DUP CELL+ @ SWAP !   \ clear stack
 ;    THEN    ;
-    head(STACKSET,STACK-SET,docolon)
+    head_utils(STACKSET,STACK-SET,docolon)
+        DW OVER,ZEROLESS,qbranch,STACKSET0
+        DW lit,-4,THROW
+STACKSET0:
         DW OVER,qbranch,STACKSET2
-        DW TWODUP,SWOP,CELLS,PLUS,CELLPLUS
-        DW DUP,ROT,STORE
+        DW DUP,TOR,CELLPLUS,FETCH
+        DW OVER,CELLS,MINUS
+        DW DUP,TOR
         DW SWOP,lit,0,xdo
 STACKSET1:
-        DW CELLMINUS,DUP,TOR,STORE,RFROM
+        DW TWODUP,STORE,CELLPLUS,NIP
         DW xloop,STACKSET1
-        DW DROP
+        DW DROP,RFROM,RFROM,STORE
         DW EXIT
 STACKSET2:
-        DW NIP,STACKCLEAR
+        DW NIP
+        DW DUP,CELLPLUS,FETCH,SWOP,STORE
         DW EXIT
 
 ; Get the STACK onto the data stack
 ; : STACK-GET  ( lifo -- rec-n .. rec-1 n )
 ;     DUP STACK.DEPTH    ( lifo n )
 ;     DUP IF             ( lifo n )
-;         >R             ( lifo )
-;         STACK-BOUNDS   ( addr1 addr2 )
-;         DO              (  )
-;             I @         ( rec-i )
-;             CELL
-;         +LOOP           ( rec-i )
-;         R>              ( rec-i n )
-;     ELSE                ( lifo n )
-;         NIP             ( n )
-;     THEN                ( )
+;         >R             ( lifo ; n )
+;         CELL+ @ CELL- R@   ( S0 n ; n )
+;         0 DO           ( S0 ; n )
+;             DUP I CELLS - @  ( S0 rec-i )
+;             SWAP
+;         LOOP           ( rec-i S0 )
+;         DROP R>        ( rec-i n )
+;     ELSE               ( lifo n )
+;         NIP            ( n )
+;     THEN               ( )
 ;     ;
-    head(STACKGET,STACK-GET,docolon)
-        DW DUP,STACKDEPTH,DUP,qbranch,STACKGET2
-        DW TOR,STACKBOUNDS,xdo
+    head_utils(STACKGET,STACK-GET,docolon)
+        DW DUP,STACKDEPTH
+        DW DUP,qbranch,STACKGET2
+        DW TOR,CELLPLUS,FETCH,CELLMINUS,RFETCH
+        DW lit,0,xdo
 STACKGET1:
-        DW II,FETCH,CELL,xplusloop,STACKGET1
-        DW RFROM
+        DW DUP,II,CELLS,MINUS,FETCH
+        DW SWOP
+        DW xloop,STACKGET1
+        DW DROP,RFROM
         DW EXIT
 
 STACKGET2:
@@ -511,51 +558,54 @@ STACKGET2:
 
 ; : STACK-MAP  ( xt lifo -- )  ( execute xt for every item in stack )
 ; \ XT should not return anything on stack
-;      DUP @ SWAP STACK-DEPTH   ( xt tos+2 n )
-;      ?DUP IF   0 DO           ( xt tos+2 )
-;         CELL-                 ( xt tos )
-;         2DUP @ SWAP EXECUTE
-;      LOOP   THEN
-;      DROP DROP  ;
-    head(STACKMAP,STACK-MAP,docolon)
-        DW DUP,FETCH,SWOP,STACKDEPTH
-        DW QDUP,qbranch,STACKMAP2
-        DW lit,0,xdo
+;      STACK-BOUNDS ?DO     ( xt )
+;          I @ SWAP DUP >R EXECUTE R>
+;      CELL +LOOP
+;      DROP ;
+    head_utils(STACKMAP,STACK-MAP,docolon)
+        DW STACKBOUNDS
+        DW TWODUP,EQUAL,qbranch,STACKMAP0
+        DW TWODROP,DROP,EXIT
+STACKMAP0:
+        DW xdo
 STACKMAP1:
-        DW CELLMINUS,TWODUP,FETCH,SWOP,EXECUTE
-        DW xloop,STACKMAP1
+        DW II,FETCH,SWOP,DUP,TOR,EXECUTE,RFROM
+        DW CELL,xplusloop,STACKMAP1
 STACKMAP2:
-        DW DROP,DROP
+        DW DROP
         DW EXIT
 
-; : STACK-UNTIL  ( xt lifo -- x*i flag )  ( execute xt for every item in stack, until xt returns true )
+; : STACK-UNTIL  ( x*i xt lifo -- x*j flag )  ( execute xt for every item in stack, until xt returns true )
 ; \ XT should return flag on stack
-;      DUP @ SWAP STACK-DEPTH   ( xt tos+2 n )
-;      ?DUP IF   0 DO           ( xt tos+2 )
-;         CELL-                 ( xt tos )
-;         2DUP >R >R            ( xt tos ; tos xt )
-;         @ SWAP EXECUTE   ( i*x flag ; tos xt )
-;         R> R> ROT        ( i*x xt tos flag )
-;         ?DUP IF
-;            NIP NIP UNLOOP EXIT      ( i*x flag )
-;         THEN
-;      LOOP   THEN
-;      DROP DROP 0 ;
-    head(STACKUNTIL,STACK-UNTIL,docolon)
-        DW DUP,FETCH,SWOP,STACKDEPTH
-        DW QDUP,qbranch,STACKUNTIL3
-        DW lit,0,xdo
+;    STACK-BOUNDS ?DO          ( x*i xt )
+;      I @ SWAP           ( x*i item xt )
+;      DUP >R        ( x*i item xt ; xt )
+;      EXECUTE             ( x*j f ; xt )
+;      R>                    ( x*j f xt )
+;      OVER IF DROP UNLOOP EXIT
+;           ELSE NIP
+;      THEN
+;    CELL +LOOP                  ( xt )
+;    DROP FALSE
+;     ;
+    head_utils(STACKUNTIL,STACK-UNTIL,docolon)
+        DW STACKBOUNDS
+        DW TWODUP,EQUAL,qbranch,STACKUNTIL0
+        DW TWODROP,DROP,FALSE,EXIT
+STACKUNTIL0:
+        DW xdo
 STACKUNTIL1:
-        DW CELLMINUS,TWODUP,TOR,TOR
-        DW FETCH,SWOP,EXECUTE
-        DW RFROM,RFROM,ROT
-        DW QDUP,qbranch,STACKUNTIL2
-        DW NIP,NIP,UNLOOP,EXIT
+        DW II,FETCH,SWOP
+        DW DUP,TOR
+        DW EXECUTE
+        DW RFROM
+        DW OVER,qbranch,STACKUNTIL2
+        DW DROP,UNLOOP,EXIT
 STACKUNTIL2:
-        DW xloop,STACKUNTIL1
+        DW NIP
+        DW CELL,xplusloop,STACKUNTIL1
 STACKUNTIL3:
-        DW DROP,DROP,lit,0
-        DW EXIT
+        DW DROP,FALSE,EXIT
 
 
 ; RC2014 EXTENSION CONSTANTS ====================
@@ -678,8 +728,9 @@ dnl
 
 SECTION data
 
+defc STACK_WORDLISTS_SIZE = 36 ; 16 cells + stack top pointer
 STACK_WORDLISTS:
-        ds 34    ; 16 cells + stack top pointer
+        ds STACK_WORDLISTS_SIZE
 
 vocab_wordlist_head:
         ds 2
@@ -2138,8 +2189,9 @@ XSAVEHDR:
 
 SECTION data
 
+defc STACK_RECOGNIZERS_SIZE = 36 ; 16 cells + stack top pointer
 STACK_RECOGNIZERS:
-        ds 34    ; 16 cells + stack top pointer
+        ds STACK_RECOGNIZERS_SIZE
 
 SECTION code_16k
 
@@ -2559,7 +2611,9 @@ SLASH16KROM:
         DW lit,editor_lastword,EDITOR_WORDLIST,STORE
         DW lit,utils_lastword,UTILS_WORDLIST,STORE
         DW lit,vocab_lastword,VOCAB_WORDLIST,STORE
-        DW VOCAB_WORDLIST,FORTH_WORDLIST,lit,2,SET_ORDER
+        DW WORDLISTS,lit,STACK_WORDLISTS_SIZE,SLASHSTACK
+        DW VOCAB_WORDLIST,FORTH_WORDLIST,lit,2,WORDLISTS,STACKSET
+        DW RECOGNIZERS,lit,STACK_RECOGNIZERS_SIZE,SLASHSTACK
         DW lit,REC_IHEX,lit,REC_NUMBER,lit,REC_FIND,lit,3,RECOGNIZERS,STACKSET
         DW FORTH_WORDLIST,CURRENT,STORE
         DW SLASHBLKCTX

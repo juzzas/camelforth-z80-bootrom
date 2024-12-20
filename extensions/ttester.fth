@@ -1,5 +1,4 @@
 ( ttester is based on the original tester suite by Hayes: 0/5  )
-
 \ Usage:
 \ The basic usage takes the form:
 \     T{ <code> -> <expected stack> }T
@@ -12,8 +11,9 @@
 \               INCORRECT RESULT: T{ 1 2 3 SWAP -> 1 2 2 }T OK
 \     T{ 1 2 3 SWAP -> 1 2 }T
 \          WRONG NUMBER OF RESULTS: T{ 1 2 3 SWAP -> 1 2 }T OK
-DECIMAL  FORTH DEFINITIONS
-1 5 +THRU
+DECIMAL  FORTH DEFINITIONS   .( Loading ttester... )
+1 5 +THRU                    .( done )  CR
+
 ( ttester is based on the original tester suite by Hayes: 1/5  )
 VARIABLE ACTUAL-DEPTH
 CREATE ACTUAL-RESULTS 32 CELLS ALLOT

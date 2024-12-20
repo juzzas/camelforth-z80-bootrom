@@ -119,17 +119,18 @@ dnl ;     0 DO DUP I + C@ 2 .W LOOP
 dnl ;     DROP R>
 dnl ;     SPACE     ( addr u )
 dnl ;     TYPE$  ;
-dnl     head(XMEMDUMP,(MEMDUMP),docolon)
-dnl         dw DUP,TOR
-dnl         dw OVER,lit,4,UDOTW,XSQUOTE
-dnl         db 2,": "
-dnl         dw TYPE
-dnl         dw lit,0,xdo
-dnl XMEMDUMP1:
-dnl         dw DUP,II,PLUS,CFETCH,lit,2,DOTW
-dnl         dw xloop,XMEMDUMP1
-dnl         dw DROP,RFROM,SPACE
-dnl         dw TYPESTRING,EXIT
+XMEMDUMP:
+         call docolon
+         dw DUP,TOR
+         dw OVER,lit,4,UDOTR,XSQUOTE
+         db 2,": "
+         dw TYPE
+         dw lit,0,xdo
+ XMEMDUMP1:
+         dw DUP,II,PLUS,CFETCH,lit,3,UDOTR
+         dw xloop,XMEMDUMP1
+         dw DROP,RFROM,SPACE
+         dw TYPESTRING,EXIT
 
 
 dnl ;Z MEMDUMP  ( addr u --    memory dump utility )
@@ -138,13 +139,14 @@ dnl ;     OVER +               ( addr addr+u )
 dnl ;     SWAP                 ( addr+u  addr )
 dnl ;     DO I DUP 16 CR (MEMDUMP) 16 +LOOP
 dnl ;     R> BASE ! ;
-dnl     head(MEMDUMP,MEMDUMP,docolon)
-dnl         dw BASE,FETCH,TOR,HEX
-dnl         dw OVER,PLUS,SWOP
-dnl         dw xdo
-dnl MEMDUMP1:
-dnl         dw II,DUP,lit,16,CR,XMEMDUMP,lit,16,xplusloop,MEMDUMP1
-dnl         dw RFROM,BASE,STORE
-dnl         dw EXIT
+     head_utils(MEMDUMP,MEMDUMP,docolon)
+         dw BASE,FETCH,TOR,HEX
+         dw OVER,PLUS,SWOP
+         dw xdo
+ MEMDUMP1:
+         dw II,DUP,lit,16,CR,XMEMDUMP,lit,16,xplusloop,MEMDUMP1
+         DW CR
+         dw RFROM,BASE,STORE
+         dw EXIT
 
 

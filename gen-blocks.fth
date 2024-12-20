@@ -42,6 +42,7 @@ OPEN:  build/cf-image.blk
 
 600 AT-BLOCK: test/hexload_test.fth
 612 AT-BLOCK: test/hexload_test2.fth
-621 AT-TEXT: test/blkfile_test1.fth
+621 AT-BLOCK: test/blkfile_test1.fth
+630 AT-BLOCK: test/stack_test.fth
 FLUSH
 BYE
