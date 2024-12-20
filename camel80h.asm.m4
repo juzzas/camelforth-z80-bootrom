@@ -369,8 +369,15 @@ KEY1:
 
     ;C COUNT   c-addr1 -- c-addr2 u  counted->adr/len
     ;   DUP CHAR+ SWAP C@ ;
-        head(COUNT,COUNT,docolon)
-            dw DUP,CHARPLUS,SWOP,CFETCH,EXIT
+        head(COUNT,COUNT,docode)
+            inc bc
+            push bc
+            dec bc
+            ld a,(bc)
+            ld c,a
+            xor a
+            ld b,a
+            next
 
     ;C CR      --               output newline
     ;   0D EMIT 0A EMIT ;
@@ -690,8 +697,11 @@ WORD1:  DW RFROM,RFROM,ROT,MINUS,TOIN,PLUSSTORE
 
 ;Z NFA>LFA   nfa -- lfa    name adr -> link field
 ;   3 - ;
-    head(NFATOLFA,NFA>LFA,docolon)
-        DW lit,3,MINUS,EXIT
+    head(NFATOLFA,NFA>LFA,docode)
+        dec bc
+        dec bc
+        dec bc
+        next
 
 ;Z NFA>CFA   nfa -- cfa    name adr -> code field
 ;   COUNT 7F AND + ;       mask off 'smudge' bit
@@ -750,10 +760,20 @@ LITER1: DW EXIT
 ;   DUP 140 > 107 AND -   30 -     but it works!
 ;   DUP BASE @ U< ;
     head(DIGITQ,DIGIT?,docolon)
-        DW DUP,lit,39H,GREATER,lit,100H,AND,PLUS
-        DW DUP,lit,140H,GREATER,lit,107H,AND
-        DW MINUS,lit,30H,MINUS
+        DW digit_val
         DW DUP,BASE,FETCH,ULESS,EXIT
+
+digit_val:
+        ld a,c
+        sub '0'
+        cp 10
+        jr c, end_digit_val           ; if A<10 just return
+        sub 7           ; else subtract 'A'-'0' (17) and add 10
+end_digit_val:
+        ld c,a
+        xor a
+        ld b,a
+        next
 
 ;Z ?SIGN   adr n -- adr' n' f  get optional sign
 ;Z  advance adr/n if sign; return NZ if negative
