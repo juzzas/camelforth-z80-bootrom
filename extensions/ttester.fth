@@ -22,11 +22,11 @@ VARIABLE XCURSOR      ( for ...}T )
 VARIABLE ERROR-XT     ( error reporting vector )
 VARIABLE #ERRORS 0 #ERRORS !
 
-: TRUE -1 ;
-: FALSE 0 ;
 
 VARIABLE VERBOSE
-   TRUE VERBOSE !
+   TRUE  VERBOSE !
+
+
 
 
 

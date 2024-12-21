@@ -3,10 +3,6 @@
 .( Loading blkfile... ) CR
 
 
--1 CONSTANT TRUE
-
-0 CONSTANT FALSE
-
 1 CONSTANT BIN 
 2 CONSTANT R/O
 4 CONSTANT R/W
@@ -14,6 +10,10 @@ ALSO UTILS
 37 LOAD  
 1 8 +THRU
 /BLKFILE  ONLY FORTH
+
+
+
+
 \ start of BLKFILE extension
 BEGIN-STRUCTURE BLKFILE-CONTEXT
    FIELD: blk.origin
@@ -29,7 +29,7 @@ END-STRUCTURE
 CREATE blkfiles BLKFILE-CONTEXT #BLKFILE * ALLOT
 CREATE blkfile-buffer BLKFILE-BUFFER-SIZE ALLOT
 VARIABLE 'blkfile   0 'blkfile !
-8 STACK blkfile-ids
+8 STACK: blkfile-ids
 \ initialise blkfile 
 : /BLKFILE
     #BLKFILE 0 DO
@@ -48,7 +48,7 @@ VARIABLE 'blkfile   0 'blkfile !
       DUP 'blkfile !  BLKFILE@ BEGIN-BLKFILE ELSE DROP THEN ;
 \ start of BLKFILE extension
 : OPEN-BLKFILE ( blk fam -- blkfileid ior )
-   blkfile-ids STACK-EMPTY? IF -69 THROW THEN
+   blkfile-ids SEMPTY? IF -69 THROW THEN
    blkfile-ids S>   ( blk fam blkfile-id )
    SWAP OVER  blkfile.fam !   ( blk blkfile-id )
    SWAP   ( blkfile-id blk )
@@ -125,8 +125,8 @@ VARIABLE blkfile-eof
    BEGIN
      REFILL  IF
        ( SOURCE TYPE  CR )
-       INTERPRET .S CR
-     ELSE  .S CR SOURCE-ID @  CLOSE-BLKFILE .S CR THROW  EXIT
+       INTERPRET
+     ELSE  SOURCE-ID @  CLOSE-BLKFILE .S CR THROW  EXIT
      THEN
    AGAIN  ;
 
