@@ -101,50 +101,50 @@ cflash_init:
     ; THAT ANY OTHER DEVICE WILL RETURN $00 FOR ALL REGISTERS.
     ; (code, and comment, borrowed from RomWBW)
 
-    ld  hl,500          ; 5 SECONDS
-pico_wait001:
-    ld  c,__IO_CF_IDE_DATA
-    ld  b,8         ; NUMBER OF REGISTERS TO CHECK
-pico_wait002:
-    in  a,(c)           ; GET REGISTER VALUE
-    or  a           ; SET FLAGS
-    jr  nz,pico_waitend       ; IF NOT ZERO, MOVE ON
-    inc c           ; NEXT REGISTER
-    djnz    pico_wait002     ; CHECK ALL 8 REGS
-    push bc
-    push de
-    push hl
-    ld bc,100   ; delay 100ms
-    call asm_z80_delay_ms
-    pop hl
-    pop de
-    pop bc
-    dec hl
-    ld  a,h
-    or  l
-    jr  nz,pico_wait001      ; LOOP
-    jp init_error     ; GIVE UP?
+;    ld  hl,500          ; 5 SECONDS
+;pico_wait001:
+;    ld  c,__IO_CF_IDE_DATA
+;    ld  b,8         ; NUMBER OF REGISTERS TO CHECK
+;pico_wait002:
+;    in  a,(c)           ; GET REGISTER VALUE
+;    or  a           ; SET FLAGS
+;    jr  nz,pico_waitend       ; IF NOT ZERO, MOVE ON
+;    inc c           ; NEXT REGISTER
+;    djnz    pico_wait002     ; CHECK ALL 8 REGS
+;    push bc
+;    push de
+;    push hl
+;    ld bc,100   ; delay 100ms
+;    call asm_z80_delay_ms
+;    pop hl
+;    pop de
+;    pop bc
+;    dec hl
+;    ld  a,h
+;    or  l
+;    jr  nz,pico_wait001      ; LOOP
+;    jp init_error     ; GIVE UP?
 
 
-pico_waitend:
+;pico_waitend:
     ; probe
     ; $AA -> LBA0
-    ld  A,0xAA
-    out (__IO_CF_IDE_LBA0),a
-
-    ; $55 => LBA1
-    ld a,0x55
-    out (__IO_CF_IDE_LBA1),a
-
+;    ld  A,0xAA
+;    out (__IO_CF_IDE_LBA0),a
+;
+;    ; $55 => LBA1
+;    ld a,0x55
+;    out (__IO_CF_IDE_LBA1),a
+;
     ; TEST LBA0 == $AA
-    in a, (__IO_CF_IDE_LBA0)
-    cp 0xaa
-    jr nz, init_error
-
-    ; TEST LBA1 == $55
-    in a, (__IO_CF_IDE_LBA1)
-    cp 0x55
-    jr nz, init_error
+;    in a, (__IO_CF_IDE_LBA0)
+;    cp 0xaa
+;    jr nz, init_error
+;
+;    ; TEST LBA1 == $55
+;    in a, (__IO_CF_IDE_LBA1)
+;    cp 0x55
+;    jr nz, init_error
 
 
     call ide_wait_ready         ;make sure drive is ready to proceed
