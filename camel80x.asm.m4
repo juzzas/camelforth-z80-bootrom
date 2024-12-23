@@ -235,7 +235,7 @@ SECTION code_16k
 ;   ['] xdo ,XT   HERE     target for bwd branch
 ;   0 >L ; IMMEDIATE           marker for LEAVEs
     immed(QDO,?DO,docolon)
-        DW lit,-1
+        DW TRUE
         DW lit,TWODUP,COMMAXT
         DW lit,NOTEQUAL,COMMAXT
         DW IF,SWOP
@@ -289,10 +289,10 @@ DLITER1: DW EXIT
         DW EQUAL,NIP,NIP
         DW qbranch,DLESS1
 
-        DW lit,0,EXIT
+        DW FALSE,EXIT
 
 DLESS1:
-        DW lit,-1,EXIT
+        DW TRUE,EXIT
 
 
 DLESS2:
@@ -863,7 +863,7 @@ FINDIN1:
         DW sequal,RFROM,SWOP
         DW branch,FINDIN3
 FINDIN2:
-        DW lit,-1
+        DW TRUE
 FINDIN3:
         DW DUP,qbranch,FINDIN4
         DW DROP,NFATOLFA,FETCH,DUP
@@ -1134,7 +1134,7 @@ BLKCTXF1:
 BLKCTXF2:
         dw RFROM,BLKCTXSIZE,PLUS
         dw xloop,BLKCTXF1
-        dw TWODROP,DROP,lit,0
+        dw TWODROP,DROP,FALSE
         dw EXIT
 
 ;Z BLKCTX-GET  ( blk dsk -- ctx )  increment buffer structure
@@ -1271,7 +1271,7 @@ DISKCTX:
         dw EXIT
 
 DISK1:
-        dw DROP,lit,0
+        dw DROP,FALSE
         dw EXIT
 
 
@@ -1369,7 +1369,7 @@ SLASHCFLASH1:
         dw XSQUOTE
         db 9,"NO CFLASH"
         dw TYPE
-        dw lit,0
+        dw FALSE
         dw EXIT
 
 ;Z CF-CAPACITY  ( d -- )   Fetch Compact Flash capacity (sectors)
@@ -1562,8 +1562,8 @@ UPDATEDQ1:
 ;    THEN ;
 XFLUSH:
         call docolon
-        dw DUP,BLKCTXTOFLAGS,FETCH,lit,-1,EQUAL,qbranch,FLUSH1
-        dw DUP,lit,-1,BLOCK_READWRITE
+        dw DUP,BLKCTXTOFLAGS,FETCH,TRUE,EQUAL,qbranch,FLUSH1
+        dw DUP,TRUE,BLOCK_READWRITE
         dw BLKCTXTOFLAGS,lit,0,SWOP,STORE
         dw EXIT
 FLUSH1:
@@ -1606,7 +1606,7 @@ SECTION code_16k
 ;
 ;     BLK @ BLOCK    ( addr )
 ;     load-index @ +  ( index )
-;         load_buffer @  C/L MOVE
+;         load_buffer @  C/L CMOVE
 ;
 ;     load_buffer @ C/L  'SOURCE 2!
 ;
@@ -1621,17 +1621,17 @@ LOAD_REFILL:
 
 LOAD_REFILL1:
         dw lit,load_blknum,FETCH,ZEROEQUAL,qbranch,LOAD_REFILL2
-        dw lit,0,EXIT
+        dw FALSE,EXIT
 
 LOAD_REFILL2:
         dw BLK,FETCH,BLOCK
         dw lit,load_index,FETCH,PLUS
-        dw lit,load_buffer,FETCH,C_L,MOVE
+        dw lit,load_buffer,FETCH,C_L,CMOVE
 
         dw lit,load_buffer,FETCH,C_L,TICKSOURCE,TWOSTORE
 
         dw lit,0,TOIN,STORE
-        dw C_L,lit,load_index,PLUSSTORE,lit,-1
+        dw C_L,lit,load_index,PLUSSTORE,TRUE
         dw EXIT
 
 ; : (LOAD)  ( blk blk# -- )
