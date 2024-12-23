@@ -1049,31 +1049,27 @@ SLASHBLKCTX1:
 ;Z BLKCTX>DISK  ( ctx -- a-addr' )  get address of DISK number
 ;    ;
 BLKCTXTODISK:
-        next
+        jp blkctx_next
 
 ;Z BLKCTX>BLOCK  ( ctx -- a-addr' )  get address of BLOCK number
 ;    ;
 BLKCTXTOBLOCK:
-        inc bc
-        inc bc
-        jr blkctx_next
+        jp blkctx_plus_2
 
 ;Z BLKCTX>BUFFER  ( ctx -- a-addr' )  get address of BUFFER
 ;    ;
 BLKCTXTOBUFFER:
-        inc bc
-        inc bc
-        inc bc
-        inc bc
-        jr blkctx_next
+        jp blkctx_plus_4
 
 ;Z BLKCTX>FLAGS  ( ctx -- a-addr' )  get address of FLAGS
 ;    ;
 BLKCTXTOFLAGS:
         inc bc
         inc bc
+blkctx_plus_4:
         inc bc
         inc bc
+blkctx_plus_2:
         inc bc
         inc bc
 blkctx_next:
@@ -1083,13 +1079,13 @@ blkctx_next:
 BLKCTXSIZE:
         push bc
         ld bc,BLOCKCTX_SIZE
-        jr blkctx_next
+        jp blkctx_next
 
 ;Z BLKCTX#  ( -- u )  number of buffer structures
 BLKCTXNUM:
         push bc
         ld bc,BLOCKCTX_NUM
-        jr blkctx_next
+        jp blkctx_next
 
 
 ;Z BLKFIRST      -- a-adrs      address of first block buffer
@@ -1212,28 +1208,27 @@ DEFC DRIVECTX_SIZE = 8
 
 ;Z DRIVE>READ  ( drive-id -- a-addr' )  get address of  READ xt
     head_utils(DRIVETOREAD,DRIVE>READ,docode)
-drvctx_next:
-        next
+        jp drvctx_next
 
 ;Z DRIVE>WRITE  ( drive-id -- a-addr' )  get address of WRITE xt
     head_utils(DRIVETOWRITE,DRIVE>WRITE,docode)
-        inc bc
-        inc bc
-        jr drvctx_next
+        jp drvctx_plus_2
 
 ;Z DRIVE>CAPACITY  ( drive-id -- a-addr' )  get address of CAPACITY xt
     head_utils(DRIVETOCAPACITY,DRIVE>CAPACITY,docode)
         inc bc
         inc bc
+drvctx_plus_2:
         inc bc
         inc bc
-        jr drvctx_next
+drvctx_next:
+        next
 
 ;Z DRIVECTX  (  -- u )  size of stucture
     head_utils(DRIVECTX,DRIVECTX,docode)
         push bc
         ld bc,DRIVECTX_SIZE
-        jr drvctx_next
+        jp drvctx_next
 
 
 
@@ -1252,6 +1247,7 @@ DEFC DISKCTX_NUM = 8
 
 ;Z DISK>DRIVE  ( disk-id -- a-addr' )  get address of drive ID for disk
     head_utils(DISKTODRIVE,DISK>DRIVE,docode)
+        jp diskctx_next
         next
 
 ;Z DISK>OFFSET  ( disk-id -- a-addr' )  get address of LBA OFFSET for disk
@@ -1282,13 +1278,13 @@ diskctx_next:
 DISKCTX:
         push bc
         ld bc,DISKCTX_SIZE
-        jr diskctx_next
+        jp diskctx_next
 
 ;Z #DISK  (  -- u )  number of DISK entries
     head_utils(NUMDISK,``#DISK'',docode)
         push bc
         ld bc,DISKCTX_NUM
-        jr diskctx_next
+        jp diskctx_next
 
 ;Z DISK  ( n -- disk-id | 0 )  get disk id from disk number. 0 if out of range
     head_utils(DISK,DISK,docolon)
