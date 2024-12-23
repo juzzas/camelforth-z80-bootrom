@@ -1049,39 +1049,47 @@ SLASHBLKCTX1:
 ;Z BLKCTX>DISK  ( ctx -- a-addr' )  get address of DISK number
 ;    ;
 BLKCTXTODISK:
-        call docolon
-        dw EXIT
+        next
 
 ;Z BLKCTX>BLOCK  ( ctx -- a-addr' )  get address of BLOCK number
 ;    ;
 BLKCTXTOBLOCK:
-        call docolon
-        dw lit,2,PLUS
-        dw EXIT
+        inc bc
+        inc bc
+        jr blkctx_next
 
 ;Z BLKCTX>BUFFER  ( ctx -- a-addr' )  get address of BUFFER
 ;    ;
 BLKCTXTOBUFFER:
-        call docolon
-        dw lit,4,PLUS
-        dw EXIT
+        inc bc
+        inc bc
+        inc bc
+        inc bc
+        jr blkctx_next
 
 ;Z BLKCTX>FLAGS  ( ctx -- a-addr' )  get address of FLAGS
 ;    ;
 BLKCTXTOFLAGS:
-        call docolon
-        dw lit,6,PLUS
-        dw EXIT
+        inc bc
+        inc bc
+        inc bc
+        inc bc
+        inc bc
+        inc bc
+blkctx_next:
+        next
 
 ;Z BLKCTX%  (  -- u )  size of stucture
 BLKCTXSIZE:
-        call docon
-        dw BLOCKCTX_SIZE
+        push bc
+        ld bc,BLOCKCTX_SIZE
+        jr blkctx_next
 
 ;Z BLKCTX#  ( -- u )  number of buffer structures
 BLKCTXNUM:
-        call docon
-        dw BLOCKCTX_NUM
+        push bc
+        ld bc,BLOCKCTX_NUM
+        jr blkctx_next
 
 
 ;Z BLKFIRST      -- a-adrs      address of first block buffer
@@ -1735,14 +1743,14 @@ SECTION code_16k
 ;   -1 blkfile-dirty !  ;
 SET_DIRTY:
     call docolon
-    DW lit,-1,lit,blkfile_dirty,STORE
+    DW TRUE,lit,blkfile_dirty,STORE
     DW EXIT
 
 ;: clear-dirty  ( -- )
 ;   0 blkfile-dirty !  ;
 CLEAR_DIRTY:
     call docolon
-    DW lit,0,lit,blkfile_dirty,STORE
+    DW FALSE,lit,blkfile_dirty,STORE
     DW EXIT
 
 ;: is-dirty?  ( -- )
@@ -2246,9 +2254,9 @@ XRECOGNIZE:
         dw ROT,ROT,TWODUP,TOR,TOR,ROT,EXECUTE,RFROM,RFROM,ROT
         dw DUP,RECTYPE_NULL
         dw EQUAL,qbranch,XRECOGNIZE1
-        dw DROP,lit,0,branch,XRECOGNIZE2
+        dw DROP,FALSE,branch,XRECOGNIZE2
 XRECOGNIZE1:
-        dw NIP,NIP,lit,-1
+        dw NIP,NIP,TRUE
 XRECOGNIZE2:
         dw EXIT
 
@@ -2357,7 +2365,7 @@ REC_FIND_POST:
         DW RFROM,TWODROP,TWODROP,lit,0
         DW branch,RECNUM3
 RECNUM1:  DW TWODROP,RFROM,qbranch,RECNUM2,NEGATE
-RECNUM2:  DW lit,-1
+RECNUM2:  DW TRUE
 
 RECNUM3:
         DW qbranch,RECNUM4
