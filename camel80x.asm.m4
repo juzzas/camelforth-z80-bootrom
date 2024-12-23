@@ -1750,30 +1750,34 @@ SECTION data
 blk_ptr: DS 2
 blk_curr: DS 2
 blk_offset: DS 2
-blkfile_dirty: DS 2
+blkfile_dirty: DS 1
 
 SECTION code_16k
 
 ;: set-dirty  ( -- )
 ;   -1 blkfile-dirty !  ;
 SET_DIRTY:
-    call docolon
-    DW TRUE,lit,blkfile_dirty,STORE
-    DW EXIT
+    xor a
+    dec a
+do_set_dirty:
+    ld hl,blkfile_dirty
+    ld (hl),a
+    next
 
 ;: clear-dirty  ( -- )
 ;   0 blkfile-dirty !  ;
 CLEAR_DIRTY:
-    call docolon
-    DW FALSE,lit,blkfile_dirty,STORE
-    DW EXIT
+    xor a
+    jp do_set_dirty
 
 ;: is-dirty?  ( -- )
 ;   blkfile-dirty @  ;
 IS_DIRTYQ:
-    call docolon
-    DW lit,blkfile_dirty,FETCH
-    DW EXIT
+    push bc
+    ld hl,blkfile_dirty
+    ld b,(hl)
+    ld c,b
+    next
 
 ;: current-block ( -- )
 ;   is-dirty? IF UPDATE clear-dirty THEN
@@ -1856,23 +1860,14 @@ PUTCHARS2:
         DW DROP
         DW EXIT
 
-;: (read-char) ( -- c )
+;: GETCH ( -- c )
 ;   blk-ptr @  ( blk-ptr )
 ;   blk-offset @ + c@   ( c )
 ;   inc-offset ;
-XREAD_CHAR:
-        call docolon
+    head_utils(GETCH,GETCH,docolon)
         DW lit,blk_ptr,FETCH
         DW lit,blk_offset,FETCH,PLUS,CFETCH
         DW INC_OFFSET
-        DW EXIT
-
-;: GETCH ( -- c )
-;   current-block
-;   (read-char) ;
-    head_utils(GETCH,GETCH,docolon)
-        DW CURRENT_BLOCK
-        DW XREAD_CHAR
         DW EXIT
 
 ;: GETCHARS ( c-addr u -- u )
@@ -1889,7 +1884,7 @@ XREAD_CHAR:
         DW CURRENT_BLOCK
         DW lit,0,xdo
 GETCHARS1:
-        DW XREAD_CHAR
+        DW GETCH
         DW OVER,II,PLUS,CSTORE
         DW xloop,GETCHARS1
 
@@ -1900,11 +1895,12 @@ GETCHARS2:
 ;: BEGIN-BLKFILE ( blk offset -- )
 ;   blk-offset !
 ;   blk-cur !
-;   clear-dirty  ;
+;   clear-dirty  current-block ;
     head_utils(BEGIN_BLKFILE,``BEGIN-BLKFILE'',docolon)
         DW lit,blk_offset,STORE
         DW lit,blk_curr,STORE
         DW CLEAR_DIRTY
+        DW CURRENT_BLOCK
         DW EXIT
 
 ;: open-blkfile ( blk -- )
