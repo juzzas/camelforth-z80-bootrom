@@ -1211,22 +1211,29 @@ DEFC DRIVECTX_SIZE = 8
 
 
 ;Z DRIVE>READ  ( drive-id -- a-addr' )  get address of  READ xt
-    head_utils(DRIVETOREAD,DRIVE>READ,docolon)
-        dw EXIT
+    head_utils(DRIVETOREAD,DRIVE>READ,docode)
+drvctx_next:
+        next
 
 ;Z DRIVE>WRITE  ( drive-id -- a-addr' )  get address of WRITE xt
-    head_utils(DRIVETOWRITE,DRIVE>WRITE,docolon)
-        dw lit,2,PLUS
-        dw EXIT
+    head_utils(DRIVETOWRITE,DRIVE>WRITE,docode)
+        inc bc
+        inc bc
+        jr drvctx_next
 
 ;Z DRIVE>CAPACITY  ( drive-id -- a-addr' )  get address of CAPACITY xt
-    head_utils(DRIVETOCAPACITY,DRIVE>CAPACITY,docolon)
-        dw lit,4,PLUS
-        dw EXIT
+    head_utils(DRIVETOCAPACITY,DRIVE>CAPACITY,docode)
+        inc bc
+        inc bc
+        inc bc
+        inc bc
+        jr drvctx_next
 
 ;Z DRIVECTX  (  -- u )  size of stucture
-    head_utils(DRIVECTX,DRIVECTX,docon)
-        dw DRIVECTX_SIZE
+    head_utils(DRIVECTX,DRIVECTX,docode)
+        push bc
+        ld bc,DRIVECTX_SIZE
+        jr drvctx_next
 
 
 
@@ -1244,32 +1251,44 @@ DEFC DISKCTX_NUM = 8
 
 
 ;Z DISK>DRIVE  ( disk-id -- a-addr' )  get address of drive ID for disk
-    head_utils(DISKTODRIVE,DISK>DRIVE,docolon)
-        dw EXIT
+    head_utils(DISKTODRIVE,DISK>DRIVE,docode)
+        next
 
 ;Z DISK>OFFSET  ( disk-id -- a-addr' )  get address of LBA OFFSET for disk
-    head_utils(DISKTOOFFSET,DISK>OFFSET,docolon)
-        dw lit,2,PLUS
-        dw EXIT
+    head_utils(DISKTOOFFSET,DISK>OFFSET,docode)
+        jp diskctx_plus_2
 
 ;Z DISK>LIMIT  ( disk-id -- a-addr' )  get address of LIMIT for disk
-    head_utils(DISKTOLIMIT,DISK>LIMIT,docolon)
-        dw lit,6,PLUS
-        dw EXIT
+    head_utils(DISKTOLIMIT,DISK>LIMIT,docode)
+        jp diskctx_plus_6
 
 ;Z DISK>TRANSLATOR  ( disk-id -- a-addr' )  get address of XT to translate virtual to phys b blockss
-    head_utils(DISKTOTRANSLATOR,DISK>TRANSLATOR,docolon)
-        dw lit,8,PLUS
-        dw EXIT
+    head_utils(DISKTOTRANSLATOR,DISK>TRANSLATOR,docode)
+        inc bc
+        inc bc
+diskctx_plus_6:
+        inc bc
+        inc bc
+diskctx_plus_4:
+        inc bc
+        inc bc
+diskctx_plus_2:
+        inc bc
+        inc bc
+diskctx_next:
+        next
 
 ;Z DISKCTX  (  -- u )  size of stucture
 DISKCTX:
-        call docon
-        dw DISKCTX_SIZE
+        push bc
+        ld bc,DISKCTX_SIZE
+        jr diskctx_next
 
 ;Z #DISK  (  -- u )  number of DISK entries
-    head_utils(NUMDISK,``#DISK'',docon)
-        dw DISKCTX_NUM
+    head_utils(NUMDISK,``#DISK'',docode)
+        push bc
+        ld bc,DISKCTX_NUM
+        jr diskctx_next
 
 ;Z DISK  ( n -- disk-id | 0 )  get disk id from disk number. 0 if out of range
     head_utils(DISK,DISK,docolon)
