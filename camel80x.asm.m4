@@ -1000,14 +1000,21 @@ WORDS_16K:
 
 ; ================================================
 
-; PICK  ( xu...x1 x0 u -- xu...x1 x0 xu )
+; : PICK  ( xu...x1 x0 u -- xu...x1 x0 xu )
 ; Remove u. Copy the xu to the top of the stack. An ambiguous
 ; condition exists if there are less than u+2 items on the stack
 ; before PICK is executed.
+;   0 PICK is equivalent to DUP and
+;   1 PICK is equivalent to OVER.
 ;   1+ CELLS SP@ + @ ;
-    head(PICK,PICK,docolon)
-        DW ONEPLUS,CELLS,SPFETCH,PLUS,FETCH
-        DW EXIT
+    head(PICK,PICK,docode)
+        ld hl,bc
+        add hl,hl
+        add hl,sp
+        ld c,(hl)
+        inc hl
+        ld b,(hl)
+        next
 
 
 ; BLOCK implementation ==========================
