@@ -56,7 +56,7 @@ VARIABLE 'blkfile   0 'blkfile !
    0 OVER blk.offset !   0 ;
 
 : CLOSE-BLKFILE ( blkfileid -- ior )
-   'blkfile @ IF DUP END-BLKFILE BLKFILE! 0 'blkfile !  THEN
+   'blkfile @ ?DUP IF END-BLKFILE BLKFILE! 0 'blkfile !  THEN
    blkfile-ids >S   0 ;
 
 
@@ -86,7 +86,7 @@ VARIABLE blkfile-eof
      GETCH
        DUP 13 = IF DROP 2DROP chars-count @ -1 0 EXIT  THEN
        DUP 26 = IF DROP 2DROP chars-count @ 0  0 EXIT  THEN
-       OVER C! 1+
+       OVER C! 1+   ( u c-addr' )
        1 chars-count +!
    REPEAT
    DROP 0 0 ( u f ior )  ;
@@ -117,7 +117,7 @@ VARIABLE blkfile-eof
     IF 
        blkfile-buffer SWAP  'SOURCE 2!
        0 >IN !  TRUE
-    ELSE  FALSE  THEN ;
+    ELSE DROP  FALSE  THEN ;
 
 : (TLOAD) ( blk -- )
    R/O  OPEN-BLKFILE THROW  ( blkfile-id )
@@ -126,7 +126,8 @@ VARIABLE blkfile-eof
      REFILL  IF
        ( SOURCE TYPE  CR )
        INTERPRET
-     ELSE  SOURCE-ID @  CLOSE-BLKFILE .S CR THROW  EXIT
+     ELSE  SOURCE-ID @ 
+           CLOSE-BLKFILE  THROW  EXIT
      THEN
    AGAIN  ;
 
