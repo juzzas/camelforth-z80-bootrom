@@ -342,6 +342,8 @@ DMIN1:
         DW TWODROP,EXIT
 
 
+
+
 ; RC2014 EXTENDED STRINGS =======================
 
 ; RC2014 EXTENDED STRUCTURES ====================
@@ -1054,6 +1056,52 @@ roll_do:
         pop hl  ; do nip and discard
 roll_end:
         next
+
+
+; : CASE ( -- 0 ) 0 >L ; IMMEDIATE
+    immed(CASE,CASE,docolon)
+        DW lit,0,TOL,EXIT
+
+; : OF ( dest? -- orig )
+;     POSTPONE OVER POSTPONE =
+;     POSTPONE IF POSTPONE DROP ; IMMEDIATE
+    immed(OF,OF,docolon)
+        DW lit,OVER,COMMAXT
+        DW lit,EQUAL,COMMAXT
+        DW IF
+        DW lit,DROP,COMMAXT
+        DW EXIT
+
+; : ?OF ( dest? -- orig )
+;     POSTPONE DUP POSTPONE IF POSTPONE DROP ; IMMEDIATE
+    immed(QOF,?OF,docolon)
+        DW lit,DUP,COMMAXT
+        DW IF
+        DW lit,DROP,COMMAXT
+        DW EXIT
+
+; : ENDOF ( orig -- ) POSTPONE ELSE ; IMMEDIATE
+;   ['] branch ,BRANCH   HERE DUP ,DEST  >L
+;   POSTPONE THEN
+;   ; IMMEDIATE      unconditional forward branch
+    immed(ENDOF,ENDOF,docolon)
+        DW lit,branch,COMMABRANCH
+        DW HERE,DUP,COMMADEST,TOL
+        DW THEN,EXIT
+
+; : ENDCASE ( dest? -- )
+;     POSTPONE DROP
+;     BEGIN L> ?DUP WHILE POSTPONE THEN REPEAT
+;                                 resolve LEAVEs
+;     ; IMMEDIATE
+    immed(ENDCASE,ENDCASE,docolon)
+        DW lit,DROP,COMMAXT
+ENDCASE1:
+        DW LFROM,QDUP,qbranch,ENDCASE2
+        DW THEN,branch,ENDCASE1
+
+ENDCASE2:
+        DW EXIT
 
 
 ; BLOCK implementation ==========================
