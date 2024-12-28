@@ -1016,6 +1016,45 @@ WORDS_16K:
         ld b,(hl)
         next
 
+; : ROLL   ( xu xu-1 ... x0 u -- xu-1 ... x0 xu )
+;  Remove u. Rotate u+1 items on the top of the stack. An
+;  ambiguous condition exists if there are less than u+2
+;  items on the stack before ROLL is executed.
+;   2 ROLL is equivalent to ROT
+;   1 ROLL is equivalent to SWAP and
+;   0 ROLL is a null operation.
+    head(ROLL,ROLL,docode)
+        ld a,b
+        or c
+        jr nz,roll_do
+        pop bc
+        jr roll_end
+roll_do:
+        inc bc   ; correct for stack offset
+        sla c    ; convert to cells
+        rl b
+	push bc   ; push count
+
+        ld hl,bc   ; do pick
+        add hl,sp
+        push hl    ; but, push as shift destination
+        ld c,(hl)
+        inc hl
+        ld b,(hl)
+
+        exx
+        pop de    ; shift stack
+        pop bc
+        ld hl,de
+        dec hl
+        dec hl
+        lddr
+        exx
+
+        pop hl  ; do nip and discard
+roll_end:
+        next
+
 
 ; BLOCK implementation ==========================
 
