@@ -378,12 +378,14 @@ XIHEXQ4:
 
 ;Z IHEX?
 ;    ['] (IHEXQ?) CATCH
-;       0<> IF  0  THEN  EXIT  ;
+;       0<> IF  FALSE  THEN   ;
 
     head_utils(IHEXQ,IHEX?,docolon)
+        DW lit,ihex_flag,FETCH,qbranch,IHEXQ0
         DW lit,XIHEXQ,CATCH
         DW qbranch,IHEXQ1
-        DW lit,0,EXIT
+IHEXQ0:
+        DW FALSE
 
 IHEXQ1:
         DW EXIT
@@ -418,17 +420,22 @@ IHEXCOMMA:
     head(HEXLOAD,HEXLOAD,docolon)
         DW lit,0,lit,ihex_start,STORE
         DW lit,0,lit,ihex_length,STORE
+	DW TRUE,lit,ihex_flag,STORE
         DW EXIT
 
 ;: ;HEXLOAD     ( -- ihex_start ihex_length )
 ;    IHEX_START @
 ;    IHEX_LENGTH @   ;
     head(SEMIHEXLOAD,;HEXLOAD,docolon)
+	DW FALSE,lit,ihex_flag,STORE
         DW lit,ihex_start,FETCH
         DW lit,ihex_length,FETCH
         DW EXIT
 
 SECTION data
+
+ihex_flag:
+	DEFS 2
 
 ihxcrc_ptr:
         DEFS 2

@@ -834,44 +834,62 @@ RESTOREORDER1:
             dw CURRENT,FETCH
             dw EXIT
 
+;Z COMPARE-NAME ( c-addr len  cstring -- c-addr len  cstring  f )
+COMPARE_NAME:
+        push bc
+        exx
+
+        pop de   ; cstring
+        pop bc   ; len
+        pop hl   ; c-addr
+        push hl
+        push bc
+        push de
+
+        ld a,(de)
+        cp c
+        jr nz, CMPNAME_NOT_EQ
+        inc de   ; skip cstring count byte
+
+        ld b,c
+CMPNAME_LOOP:
+        ld a,(de)
+        cp (hl)
+        jr nz,CMPNAME_NOT_EQ
+        inc de
+        inc hl
+        djnz CMPNAME_LOOP
+
+        exx
+        jp tostrue
+
+CMPNAME_NOT_EQ:
+        exx
+        jp tosfalse
+
 ;C FIND-NAME-IN   c-addr len wid   --  c-addr len 0       if not found
 ;                                      c-addr len nfa     if found
 ;   WID>NFA DUP 0= IF DROP 0 EXIT THEN
 ;   BEGIN                      -- a len nfa
-;       2DUP                   -- a len nfa len nfa
-;       C@  =                   -- a len nfa f
-;       IF                     -- a len nfa
-;         >R OVER              -- a len a ; nfa
-;         R@ COUNT                -- a len a nfa+1 nfa-len ; nfa
-;         S= R> SWAP              -- a len nfa f
+;       COMPARE_NAME           -- a len nfa f
+;       IF  EXIT
 ;       ELSE
-;         -1                      -- a len nfa f
-;       THEN
-;       DUP IF
-;           DROP
-;           NFA>LFA @      -- a len link
+;           NFA>LFA @ DUP      -- a len link
 ;       THEN
 ;   0= UNTIL                   -- a len nfa  OR  a len 0
-;      ;
+;    ;
     head(FIND_NAME_IN,FIND-NAME-IN,docolon)
         DW WIDTONFA
         DW DUP,ZEROEQUAL,qbranch,FINDIN1
-        DW DROP,lit,0,EXIT
+        DW DROP,FALSE,EXIT
 FINDIN1:
-        DW TWODUP,CFETCH,EQUAL
+        DW COMPARE_NAME
         DW qbranch,FINDIN2
-        DW TOR,OVER
-        DW RFETCH,COUNT
-        DW sequal,RFROM,SWOP
-        DW branch,FINDIN3
+        DW EXIT
 FINDIN2:
-        DW TRUE
-FINDIN3:
-        DW DUP,qbranch,FINDIN4
-        DW DROP,NFATOLFA,FETCH,DUP
-FINDIN4:
+        DW NFATOLFA,FETCH,DUP
         DW ZEROEQUAL,qbranch,FINDIN1
-FINDIN5:
+FINDIN3:
         DW EXIT
 
 ;C FIND-NAME   c-addr len      -- 0   if not found

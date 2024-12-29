@@ -811,17 +811,17 @@ TONUM3: DW EXIT
 ;Z                 -- c-addr 0  if convert error
 ;   DUP  0 0 ROT COUNT      -- ca ud adr n
 ;   ?SIGN >R  >NUMBER       -- ca ud adr' n'
-;   IF   R> 2DROP 2DROP 0   -- ca 0   (error)
+;   IF   R> 2DROP 2DROP FALSE   -- ca 0   (error)
 ;   ELSE 2DROP NIP R>
 ;       IF NEGATE THEN  -1  -- n -1   (ok)
 ;   THEN ;
     head(QNUMBER,?NUMBER,docolon)
         DW DUP,lit,0,DUP,ROT,COUNT
         DW QSIGN,TOR,TONUMBER,qbranch,QNUM1
-        DW RFROM,TWODROP,TWODROP,lit,0
+        DW RFROM,TWODROP,TWODROP,FALSE
         DW branch,QNUM3
 QNUM1:  DW TWODROP,NIP,RFROM,qbranch,QNUM2,NEGATE
-QNUM2:  DW lit,-1
+QNUM2:  DW TRUE
 QNUM3:  DW EXIT
 
 ; INTERPRET_IHEX   ( src dest len flag  if flag = -1 -- )
