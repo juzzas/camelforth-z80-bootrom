@@ -2317,19 +2317,26 @@ SECTION code_16k
         DW EXIT
 
 ;: RECTYPE>POST ( RECTYPE-TOKEN -- XT-POSTPONE ) CELL+ CELL+ @ ;
-    head_utils(RECTYPETOPOST,RECTYPE>POST,docolon)
-        DW CELLPLUS,CELLPLUS,FETCH
-        DW EXIT
+    head_utils(RECTYPETOPOST,RECTYPE>POST,docode)
+        inc bc
+        inc bc
+rectype_plus2:
+        inc bc
+        inc bc
+rectype_plus0:
+        ld hl,bc
+        ld c,(hl)
+        inc hl
+        ld b,(hl)
+        next
 
 ;: RECTYPE>COMP ( RECTYPE-TOKEN -- XT-COMPILE  )       CELL+ @ ;
-    head_utils(RECTYPETOCOMP,RECTYPE>COMP,docolon)
-        DW CELLPLUS,FETCH
-        DW EXIT
+    head_utils(RECTYPETOCOMP,RECTYPE>COMP,docode)
+	jp rectype_plus2
 
 ;: RECTYPE>INT  ( RECTYPE-TOKEN -- XT-INTERPRET)             @ ;
-    head_utils(RECTYPETOINT,RECTYPE>INT,docolon)
-        DW FETCH
-        DW EXIT
+    head_utils(RECTYPETOINT,RECTYPE>INT,docode)
+	jp rectype_plus0
 
 ; :NONAME  ABORT" ?"  ;
 REC_NULL_XT:
