@@ -2477,34 +2477,120 @@ REC_FIND_POST:
         DW REC_FIND_COMP
         DW REC_FIND_POST
 
-;: REC-NUMBER ( addr len -- n RECTYPE_NUM  |  RECTYPE_NULL )
-;   0 0 2SWAP               -- ud adr n
-;   ?SIGN >R  >NUMBER       -- ud adr' n'
-;   IF   R> 2DROP 2DROP 0   -- 0   (error)
-;   ELSE 2DROP R>
-;       IF NEGATE THEN  -1  -- n -1   (ok)
-;   THEN
-;    IF
-;       RECTYPE-NUM
-;    ELSE
-;       RECTYPE-NULL
-;    THEN   ;
-    head_utils(REC_NUMBER,REC-NUMBER,docolon)
-        DW lit,0,DUP,TWOSWAP
-        DW QSIGN,TOR,TONUMBER,qbranch,RECNUM1
-        DW RFROM,TWODROP,TWODROP,lit,0
-        DW branch,RECNUM3
-RECNUM1:  DW TWODROP,RFROM,qbranch,RECNUM2,NEGATE
-RECNUM2:  DW TRUE
+dnl ; \
+dnl ; \ helper words for number recognizers
+dnl ; \
+dnl ; \ set BASE according the the character at addr
+dnl ; \ returned string is stripped of the prefix
+dnl ; \ character(s) if found.
+dnl ; \ #: 10, $: 16, %: 2, &: 10 (again)
+dnl ; create num-bases 10 , 16 , 2 , 10 ,
 
-RECNUM3:
-        DW qbranch,RECNUM4
+num_bases:
+    defb 10,16,2,10
+
+dnl ; : set-base ( addr len -- addr' len' )
+dnl ;   over c@ [CHAR] # - dup 0 4 within if 
+dnl ;     cells num-bases + @ base ! 1 /string
+dnl ;   else
+dnl ;     drop
+dnl ;   then 
+SET_BASE:
+        call docolon
+        dw OVER,CFETCH,lit,'#',MINUS,DUP
+        dw lit,0,lit,4,WITHIN,qbranch,SET_BASE1
+        dw lit,num_bases,PLUS,CFETCH,BASE,STORE
+        dw lit,1,SLASHSTRING
+        dw branch,SET_BASEX
+SET_BASE1:
+        DW DROP
+SET_BASEX:
+        dw EXIT
+
+
+dnl ; \ check for a character. return string is 
+dnl ; \ without it if found. f is true if found.
+dnl ; : skip-char? ( addr len c -- addr' len' f)
+dnl ;   >r over c@ r> = dup >r
+dnl ;   if 1 /string then r> 
+dnl ; ;
+SKIP_CHARQ:
+       call docolon
+       DW TOR,OVER,CFETCH,RFROM,EQUAL,DUP,TOR
+       DW qbranch,SKIP_CHARQ1
+       DW lit,1,SLASHSTRING
+SKIP_CHARQ1:
+       DW RFROM
+       DW EXIT
+
+dnl ; : -sign? ( addr len -- addr' len' f )
+dnl ;    [char] - skip-char?
+dnl ; ;
+MINUS_SIGNQ:
+       call docolon
+       DW lit,'-',SKIP_CHARQ
+       DW EXIT
+
+dnl ; : +sign  ( addr len -- addr' len' )
+dnl ;    [char] + skip-char? drop
+dnl ; ;
+PLUS_SIGN:
+       call docolon
+       DW lit,'+',SKIP_CHARQ,DROP
+       DW EXIT
+
+dnl ; \ allows $- and -$ combinations. skip +
+dnl ; \ f is true is - sign is found (and stripped off)
+dnl ; : base-and-sign? ( addr len -- addr' len' f)
+dnl ;   set-base +sign -sign? >r set-base r>
+dnl ; ;
+BASE_AND_SIGNQ:
+        call docolon
+        DW SET_BASE,PLUS_SIGN,MINUS_SIGNQ,TOR,SET_BASE,RFROM
+        DW EXIT
+
+dnl ;\ a factor the recognizers below.
+dnl ; : (rec-number) ( addr len -- d addr' len' f )
+dnl ;    base @ >r           \ save BASE
+dnl ;    base-and-sign? >r   \ handle prefix and sign characters
+dnl ;    2>r 0 0 2r> >number \ do the actual conversion
+dnl ;    r> r> base !        \ restore BASE and sign information
+dnl ; ;
+XREC_NUMBER:
+        call docolon
+        DW BASE,FETCH,TOR
+        DW BASE_AND_SIGNQ,TOR
+        DW TOR,TOR,lit,0,DUP,RFROM,RFROM,TONUMBER
+        DW RFROM,RFROM,BASE,STORE
+        DW EXIT
+
+dnl ;: rec-snum ( addr len -- n rectype-num | rectype-null )
+dnl ;    (rec-number) >r
+dnl ;    nip if 
+dnl ;      2drop r> drop rectype-null
+dnl ;    else
+dnl ;      \ a "d" with a non-empty upper cell cannot be an "n"
+dnl ;      if    r> drop rectype-null
+dnl ;      else  r> if negate then rectype-num 
+dnl ;      then
+dnl ;    then
+dnl ;;
+    head_utils(REC_SNUM,REC-SNUM,docolon)
+        DW XREC_NUMBER,TOR
+        DW NIP,qbranch,REC_SNUM1
+        DW TWODROP,RFROM,DROP,RECTYPE_NULL
+        DW branch,REC_SNUMX
+REC_SNUM1:
+        DW qbranch,REC_SNUM2
+        DW RFROM,DROP,RECTYPE_NULL
+        DW branch,REC_SNUMX
+REC_SNUM2:
+        DW RFROM,qbranch,REC_SNUM3
+        DW NEGATE
+REC_SNUM3:
         DW RECTYPE_NUM
+REC_SNUMX:
         DW EXIT
-RECNUM4:
-        DW RECTYPE_NULL
-        DW EXIT
-
 
 ;    RECTYPE: RECTYPE-NUM
     head_utils(RECTYPE_NUM,RECTYPE-NUM,docreate)
@@ -2752,7 +2838,7 @@ SLASH16KROM:
         DW WORDLISTS,lit,STACK_WORDLISTS_SIZE,SLASHSTACK
         DW VOCAB_WORDLIST,FORTH_WORDLIST,lit,2,WORDLISTS,STACKSET
         DW RECOGNIZERS,lit,STACK_RECOGNIZERS_SIZE,SLASHSTACK
-        DW lit,REC_IHEX,lit,REC_NUMBER,lit,REC_FIND,lit,3,RECOGNIZERS,STACKSET
+        DW lit,REC_IHEX,lit,REC_SNUM,lit,REC_FIND,lit,3,RECOGNIZERS,STACKSET
         DW FORTH_WORDLIST,CURRENT,STORE
         DW SLASHBLKCTX
         DW SLASHTEMPBUFF
