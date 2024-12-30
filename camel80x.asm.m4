@@ -2592,6 +2592,36 @@ REC_SNUM3:
 REC_SNUMX:
         DW EXIT
 
+
+dnl ; : rec-dnum ( addr len -- d rectype-dnum | rectype-null )
+dnl ;     \ simple syntax check: last character in addr/len is a dot . ?
+dnl ;     2dup + 1- c@ [char] . = if
+dnl ;       1-              \ strip trailing dot
+dnl ;       (rec-number) >r \ do the dirty work
+dnl ;       \ a number and only a number?
+dnl ;       nip if
+dnl ;         2drop r> drop rectype-null
+dnl ;       else 
+dnl ;         r> if dnegate then rectype-dnum 
+dnl ;       then
+dnl ;     else 
+dnl ;       2drop rectype-null  \ no, it cannot be a double cell number.
+dnl ;     then 
+dnl ; ;
+
+dnl ;: rec-char ( addr len -- n rectype-num | rectype-null )
+dnl ;  3 = if                       \ a three character string
+dnl ;    dup c@ [char] ' = if       \ that starts with a ' (tick)
+dnl ;      dup 2 + c@ [char] ' = if \ and ends with a ' (tick)
+dnl ;        1+ c@ rectype-num exit
+dnl ;      then
+dnl ;    then
+dnl ;  then
+dnl ;  drop rectype-null
+dnl ;;
+
+
+
 ;    RECTYPE: RECTYPE-NUM
     head_utils(RECTYPE_NUM,RECTYPE-NUM,docreate)
         DW NOOP
