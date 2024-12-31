@@ -1067,7 +1067,7 @@ roll_do:
         pop bc
         ld hl,de
         dec hl
-        dec hl
+        inc de
         lddr
         exx
 

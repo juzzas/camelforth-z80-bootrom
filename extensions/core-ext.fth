@@ -14,25 +14,8 @@ FORTH DEFINITIONS
 
 
 
-   \ Forth 2012 Core-ext -- CASE/ENDCASE
-: CASE ( -- 0 ) 0 ; IMMEDIATE
-: OF ( -- )
-    POSTPONE OVER POSTPONE =
-    POSTPONE IF POSTPONE DROP ; IMMEDIATE
-: ENDOF ( -- ) POSTPONE ELSE ; IMMEDIATE
-: ENDCASE ( -- )
-    POSTPONE DROP
-    BEGIN ?DUP WHILE POSTPONE THEN REPEAT ; IMMEDIATE
-
-
-
-
-
-
-
-: TRUE -1 ;
-: FALSE 0 ;
 : 2NIP  2SWAP 2DROP  ;
+: 2ROT  5 ROLL  5 ROLL ;
 
 : DEFER    ( "name" -- )        create a deferred word
     CREATE ['] NOOP ,
