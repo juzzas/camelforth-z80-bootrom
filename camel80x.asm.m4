@@ -2575,7 +2575,7 @@ dnl ;      else  r> if negate then rectype-num
 dnl ;      then
 dnl ;    then
 dnl ;;
-    head_utils(REC_SNUM,REC-SNUM,docolon)
+    head_utils(REC_NUM,REC-NUM,docolon)
         DW XREC_NUMBER,TOR
         DW NIP,qbranch,REC_SNUM1
         DW TWODROP,RFROM,DROP,RECTYPE_NULL
@@ -2592,23 +2592,6 @@ REC_SNUM3:
 REC_SNUMX:
         DW EXIT
 
-
-dnl ; : rec-dnum ( addr len -- d rectype-dnum | rectype-null )
-dnl ;     \ simple syntax check: last character in addr/len is a dot . ?
-dnl ;     2dup + 1- c@ [char] . = if
-dnl ;       1-              \ strip trailing dot
-dnl ;       (rec-number) >r \ do the dirty work
-dnl ;       \ a number and only a number?
-dnl ;       nip if
-dnl ;         2drop r> drop rectype-null
-dnl ;       else 
-dnl ;         r> if dnegate then rectype-dnum 
-dnl ;       then
-dnl ;     else 
-dnl ;       2drop rectype-null  \ no, it cannot be a double cell number.
-dnl ;     then 
-dnl ; ;
-
 dnl ;: rec-char ( addr len -- n rectype-num | rectype-null )
 dnl ;  3 = if                       \ a three character string
 dnl ;    dup c@ [char] ' = if       \ that starts with a ' (tick)
@@ -2619,7 +2602,14 @@ dnl ;    then
 dnl ;  then
 dnl ;  drop rectype-null
 dnl ;;
-
+    head_utils(REC_CHAR,REC-CHAR,docolon)
+        DW lit,3,EQUAL,qbranch,REC_CHARX
+        DW DUP,CFETCH,lit,39,EQUAL,qbranch,REC_CHARX
+        DW DUP,ONEPLUS,ONEPLUS,CFETCH,lit,39,EQUAL,qbranch,REC_CHARX
+        DW ONEPLUS,CFETCH,RECTYPE_NUM,EXIT
+REC_CHARX:
+        DW DROP,RECTYPE_NULL
+        DW EXIT
 
 
 ;    RECTYPE: RECTYPE-NUM
@@ -2868,7 +2858,7 @@ SLASH16KROM:
         DW WORDLISTS,lit,STACK_WORDLISTS_SIZE,SLASHSTACK
         DW VOCAB_WORDLIST,FORTH_WORDLIST,lit,2,WORDLISTS,STACKSET
         DW RECOGNIZERS,lit,STACK_RECOGNIZERS_SIZE,SLASHSTACK
-        DW lit,REC_IHEX,lit,REC_SNUM,lit,REC_FIND,lit,3,RECOGNIZERS,STACKSET
+        DW lit,REC_IHEX,lit,REC_CHAR,lit,REC_NUM,lit,REC_FIND,lit,4,RECOGNIZERS,STACKSET
         DW FORTH_WORDLIST,CURRENT,STORE
         DW SLASHBLKCTX
         DW SLASHTEMPBUFF
