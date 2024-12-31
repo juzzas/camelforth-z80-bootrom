@@ -258,6 +258,14 @@ dnl         dw EXIT
         DW lit,dlit,COMMAXT,COMMA,COMMA
 DLITER1: DW EXIT
 
+;C 2>R   d d --           2 cells to R
+    head(TWOTOR,2>R,docolon)
+        DW SWOP,RFROM,SWOP,TOR,SWOP,TOR,TOR,EXIT
+
+;C 2R>   -- d d           fetch 2 cells from R
+    head(TWORFROM,2R>,docolon)
+        DW RFROM,RFROM,RFROM,SWOP,ROT,TOR,EXIT
+
 
 
 ;C 0<>     x1 -- flag    test not eq to 0

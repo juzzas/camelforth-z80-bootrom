@@ -504,9 +504,9 @@ XSBUFFER:
 ;     supports 4 x 128byte strings at SQUOTE_TOP
 ;  STATE @ IF
 ;   COMPILE (S")  [ HEX ]
-;   22 WORD C@ 1+ ALIGNED ALLOT EXIT
+;   22 PARSE HERE >counted HERE C@ 1+ ALIGNED ALLOT EXIT
 ;  ELSE
-;   22 WORD COUNT      ( addr u )
+;   22 PARSE       ( addr u )
 ;   (XSBUFFER)          ( addr u addr' )
 ;   SWAP 2DUP >R >R    ( addr addr' u   r: u addr )
 ;   MOVE R> R>         ( addr u )
@@ -514,11 +514,11 @@ XSBUFFER:
     immed(SQUOTE,S",docolon)
         DW STATE,FETCH,qbranch,SQUOTE1
         DW lit,XSQUOTE,COMMAXT
-        DW lit,22H,WORD,CFETCH,ONEPLUS
+        DW lit,22H,PARSE,HERE,TOCOUNTED,HERE,CFETCH,ONEPLUS
         DW ALIGNED,ALLOT,EXIT
 
 SQUOTE1:
-        DW lit,22H,WORD,COUNT
+        DW lit,22H,PARSE
         DW XSBUFFER
         DW SWOP,TWODUP,TOR,TOR
         DW MOVE,RFROM,RFROM
@@ -694,6 +694,22 @@ WORD1:  DW RFROM,RFROM,ROT,MINUS,TOIN,PLUSSTORE
         DW TUCK,MINUS
         DW HERE,TOCOUNTED,HERE
         DW BL,OVER,COUNT,PLUS,CSTORE,EXIT
+
+;X PARSE   char -- c-addr u
+;   SOURCE >IN @ /STRING   -- c adr n
+;   DUP >R     -- c adr n  ; n
+;   OVER >R  ROT SCAN           -- adr" n"  ; n addr
+;   DUP IF CHAR- THEN        skip trailing delim.
+;   R> R> ROT -   >IN +!        update >IN offset
+;   TUCK -  ;
+    head(PARSE,PARSE,docolon)
+        DW SOURCE,TOIN,FETCH,SLASHSTRING
+        DW DUP,TOR
+        DW OVER,TOR,ROT,scan
+        DW DUP,qbranch,PARSE1,ONEMINUS  ; char-
+PARSE1: DW RFROM,RFROM,ROT,MINUS,TOIN,PLUSSTORE
+        DW TUCK,MINUS
+        DW EXIT
 
 ;Z NFA>LFA   nfa -- lfa    name adr -> link field
 ;   3 - ;
@@ -1415,14 +1431,6 @@ DOTS2:  DW EXIT
         ld c,l
         next
 
-;C 2>R   d d --           2 cells to R
-    head(TWOTOR,2>R,docolon)
-        DW SWOP,RFROM,SWOP,TOR,SWOP,TOR,TOR,EXIT
-
-;C 2R>   -- d d           fetch 2 cells from R
-    head(TWORFROM,2R>,docolon)
-        DW RFROM,RFROM,RFROM,SWOP,ROT,TOR,EXIT
-
 
 TNEGATE:
         call docolon
@@ -1440,9 +1448,9 @@ TSTAR:
         call docolon
         DW TWODUP,XOR,TOR
         DW TOR,DABS,RFROM,ABS
-        DW TWOTOR
+        DW TOR,TOR
         DW RFETCH,UMSTAR,lit,0
-        DW TWORFROM,UMSTAR
+        DW RFROM,RFROM,UMSTAR
         DW DPLUS
         DW RFROM
         DW qtneg
@@ -1566,8 +1574,8 @@ PAUSEVEC:
         dw sysvar_tickpause
 
 camel_signon:
-        DB "Z80 CamelForth v1.02  25 Jan 1995"
-	defc camel_signon_len = 33
+        DB "Z80 CamelForth v1.02+extras"
+	defc camel_signon_len = 27
 
 SECTION data
 
