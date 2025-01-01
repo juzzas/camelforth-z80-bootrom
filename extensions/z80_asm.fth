@@ -68,7 +68,7 @@ HEX
   0 CC-SET !   0 C-CODE !   0 (C)-MODE !  ;
 
 \ Define addressing modes                          sfp 18/05/87
-
+.( Compiling addressing modes ) CR
 ( mode register -- ; -- )
 : OP1           CREATE  , ,  DOES> DUP  @ R1 !  CELL+ @ M1 !  ;
 : OP2           CREATE  , ,  DOES> DUP  @ R2 !  CELL+ @ M2 !  ;
@@ -141,21 +141,21 @@ SP-IND (SP)-REG OP1 (SP),       SP-IND (SP)-REG OP2 (SP)
 : ?IXY, ( addr -- )
         DUP  XY?                        ( addr t/f -- )
         IF  DUP @ TC,  HL-REG SWAP !  ( lay prefix, subst. HL)
-        ELSE  DROP  ENDIF  ;            ( do nothing )
+        ELSE  DROP  THEN  ;            ( do nothing )
 
 : ?(IXY),       ( addr -- )
         DUP  XY?
         IF  DUP @ TC,  (HL)-REG SWAP !
-        ELSE  DROP  ENDIF  ;
+        ELSE  DROP  THEN  ;
 
 : ?INDEX,       ( [ disp ] addr -- )
-        @ IND-MODE = IF  INDEX,  ENDIF  ;
+        @ IND-MODE = IF  INDEX,  THEN  ;
 \
 
 \ <<3  <<4  op+rp,  op+r8,  prefix, ?warn ....  sfp sept 85
 ( n -- n<< )
-: <<3           DUP +  DUP +  DUP +  ;
-: <<4           <<3  DUP +  ;
+: <<3           3 LSHIFT  ;
+: <<4           4 LSHIFT  ;
 
 ( opcode addr-of-R1/R2 -- ; adds register pair and embeds it )
 : OP+RP,        @ <<4 + TC,  ;
@@ -167,7 +167,7 @@ SP-IND (SP)-REG OP1 (SP),       SP-IND (SP)-REG OP2 (SP)
 
 ( t/f n -- )
 : ?WARN         SWAP IF  CR THERE U. ( MESSAGE CR )
-                     ELSE  DROP  ENDIF  ;       \
+                     ELSE  DROP  THEN  ;       \
 \ 3modes tri-mode ..........................       sfp 15/04/87
 ( ... opcode -- t/f ; true returned if one of three modes )
 : 3MODES        ACC1?                   ( A, check )
@@ -177,14 +177,14 @@ SP-IND (SP)-REG OP1 (SP),       SP-IND (SP)-REG OP2 (SP)
                           IF  R2 ?(IXY),  R2 @ + TC,
                               M2 ?INDEX,  1
                           ELSE DROP 0
-                          ENDIF
-                    ENDIF
-                ELSE  DROP 0  ENDIF  ;
+                          THEN
+                    THEN
+                ELSE  DROP 0  THEN  ;
 
 ( n -- ; ... -- ; used for AND CP OR SUB XOR  )
-: TRI-MODE      create  ,  DOES> @ 3MODES ?SYNTAX  RESETCC  ;
+: TRI-MODE      CREATE  ,  DOES> @ 3MODES ?SYNTAX  RESETCC  ;
 
-\ No operand operations
+.( No operand operations ) CR
 
 : 1MI   CREATE  C, DOES> C@ C, RESETCC ;
 : 2MI   CREATE  PREFIX, C, DOES> C@ C, RESETCC ;
@@ -210,12 +210,12 @@ E9 1MI JPHL,   F9 1MI LDSPHL,  E3 1MI EXSPHL,  0EB 1MI EXDEHL
 : ADC,           088 3MODES 0=
                 IF  HL,RP? ?SYNTAX  R2 NOT-XY
                     PREFIX,  04A R2 OP+RP,
-                ENDIF
+                THEN
                 RESETCC  ;
 \
 
 \ add - sufficiently special case
-: ADD,           080 3MODES 0=    ( 0 if not 1 of 3 main modes )
+: ADD,           080 3MODES 0=  (  0 if not 1 of 3 main modes )
                 IF  HL,RP?                     ( HL, rp check )
                     IF  R2 NOT-XY       ( xy not allowed here )
                         09 R2 OP+RP,
@@ -225,23 +225,23 @@ E9 1MI JPHL,   F9 1MI LDSPHL,  E3 1MI EXSPHL,  0EB 1MI EXDEHL
                           R2 XY?           ( both index regs? )
                           IF  R1 @ R2 @ = ?SYNTAX
                               HL-REG R2 !
-                          ENDIF
+                          THEN
                           R1 @ TC,  09 R2 OP+RP,
-                     ENDIF
-                ENDIF  RESETCC  ; \
+                     THEN
+                THEN  RESETCC  ; \
 \ sbc .....................................
 
 : SBC,           098 3MODES 0=
                 IF  HL,RP? ?SYNTAX  R2 NOT-XY
                     PREFIX,  042 R2 OP+RP,
-                ENDIF
+                THEN
                 RESETCC  ;
 
 
 \ bit-ins ...................................      sfp 15/04/87
 
 : BIT-INS       ( e.g. b 5 [ixy] bit )
-        create  ,  DOES> @ >R  8R2? IND2? OR ?SYNTAX
+        CREATE  ,  DOES> @ >R  8R2? IND2? OR ?SYNTAX
         R2 ?(IXY),                               ( lay prefix )
         EXTEND,                            ( extension opcode )
         M2 ?INDEX,                               ( ix,iy disp )
@@ -254,9 +254,9 @@ E9 1MI JPHL,   F9 1MI LDSPHL,  E3 1MI EXSPHL,  0EB 1MI EXDEHL
 \ Conditionals - indicators                        sfp 15/04/87
 
 : CONDITION
-                create  ,  DOES> @ C-CODE !  1 CC-SET !  ;
+                CREATE  ,  DOES> @ C-CODE !  1 CC-SET !  ;
 ( -- )
-: C-TOGGLE      CC-SET @ IF  C-CODE @ 1 XOR C-CODE !  ENDIF  ;
+: C-TOGGLE      CC-SET @ IF  C-CODE @ 1 XOR C-CODE !  THEN  ;
 
 0 CONDITION NZ,         1 CONDITION Z,
 2 CONDITION NC,         2 CONDITION NCY,
@@ -269,7 +269,7 @@ HEX
 
 : +COND,        ( opcode -- )
         CC-SET @
-        IF  C-CODE @ <<3  ELSE  9  ENDIF
+        IF  C-CODE @ <<3  ELSE  9  THEN
         + TC,  ;
 
 : CALL,
@@ -282,12 +282,12 @@ HEX
 
 ( -- ; -- )
 : INC/DEC
-        create  , ,  DOES>
+        CREATE  , ,  DOES>
         8R2? IND2? OR                  ( indexed or 8bit reg? )
-        IF  R2 ?(IXY),  cell+ @ R2 OP+R8,  M2 ?INDEX,
+        IF  R2 ?(IXY),  CELL+ @ R2 OP+R8,  M2 ?INDEX,
         ELSE  16R2? ?SYNTAX
               R2 ?IXY,  @ R2 OP+RP,
-        ENDIF
+        THEN
         RESETCC  ;
 
 \
@@ -310,13 +310,13 @@ HEX
         IF  R1 @ AF-REG =  R2 @ AF'-REG = AND
             IF  08 TC,
             ELSE  R1 @ DE-REG =  R2 HL?  AND
-                  r1 hl?  r2 @ de-reg =  and  or
+                  R1 HL?  R2 @ DE-REG =  AND  OR
                   0= IF 025 THROW THEN   0EB TC,
-            ENDIF
+            THEN
         ELSE  M1 @ SP-IND =  R1 @ (SP)-REG =  AND  ?SYNTAX
               16R2? ?SYNTAX
               R2 ?IXY,  R2 HL? ?SYNTAX  0E3 TC,
-        ENDIF
+        THEN
         RESETCC  ;
 \ in out .....................................     sfp 18/04/87
 : PORT, DUP  0 0FF WITHIN 0= 027 ?SYNTAX  TC,  ;
@@ -327,127 +327,127 @@ HEX
         IF  0DB TC, PORT,                          ( a, port )
         ELSE  8R1? (C)-MODE @  AND  ?SYNTAX         ( reg, [c] )
               PREFIX,  040 R1 OP+R8,
-        ENDIF  RESETCC  ;
+        THEN  RESETCC  ;
 : OUT,   DIR1? ACC2? AND  (C)-MODE @ 0= AND
         IF  0D3 TC, PORT,     ( port , a )
         ELSE  8R2? (C)-MODE @  AND  ?SYNTAX   (HL)2? 02A ?WARN
               PREFIX,  041 R2 OP+R8,
-        ENDIF  RESETCC  ;
+        THEN  RESETCC  ;
 \ jp jr ......................................
 : JP,    DIR2?
         IF  CC-SET @
-            IF  0C2 C-CODE @ <<3 +  ELSE  0C3  ENDIF
+            IF  0C2 C-CODE @ <<3 +  ELSE  0C3  THEN
             TC,  ABSOLUTE
         ELSE  (HL)2? IND2? OR ?SYNTAX
               R2 ?(IXY), 0E9 TC,
-        ENDIF
+        THEN
         RESETCC  ;
 
 : JR,    CC-SET @
         IF  C-CODE @ DUP  3 > IF 028 THROW THEN  <<3 020 +
-        ELSE  018 ENDIF
+        ELSE  018 THEN
         TC, REL8  RESETCC  ;
 \
 \ ld - screen 1 ...........................
 
-\ : LD,    CASE
-\         #?      ?OF  CASE  M1 @
-\                      8BR   OF  06 R1 OP+R8, TC,  ENDOF
-\                      16BR  OF  R1 ?IXY,
-\                                01 R1 OP+RP,  ABSOLUTE  ENDOF
-\                      IND-MODE
-\                            OF  R1 ?(IXY),  036 TC,
-\                                SWAP  INDEX,  TC,  ENDOF
-\                            0 ?SYNTAX
-\                      ENDCASE
-\                 ENDOF
+: LD,    CASE
+        #?      ?OF  CASE  M1 @
+                     8BR   OF  06 R1 OP+R8, TC,  ENDOF
+                     16BR  OF  R1 ?IXY,
+                               01 R1 OP+RP,  ABSOLUTE  ENDOF
+                     IND-MODE
+                           OF  R1 ?(IXY),  036 TC,
+                               SWAP  INDEX,  TC,  ENDOF
+                           0 ?SYNTAX
+                     ENDCASE
+                ENDOF
 
-\
+
 
 \ ld - screen 2 ...........................        sfp 15/04/87
-\         DIR2?   ?OF  ACC1?
-\                      IF  03A TC, ABSOLUTE     ( a, nnnn )
-\                      ELSE  16R1? ?SYNTAX   ( rp, nnn )
-\                            R1 ?IXY,  R1 HL?
-\                            IF  02A TC,
-\                            ELSE  PREFIX,  04B R1 OP+RP,  ENDIF
-\                            ABSOLUTE
-\                      ENDIF      ENDOF
+        DIR2?   ?OF  ACC1?
+                     IF  03A TC, ABSOLUTE     ( a, nnnn )
+                     ELSE  16R1? ?SYNTAX   ( rp, nnn )
+                           R1 ?IXY,  R1 HL?
+                           IF  02A TC,
+                           ELSE  PREFIX,  04B R1 OP+RP,  THEN
+                           ABSOLUTE
+                     THEN      ENDOF
 
-\         8R1?  8R2? IND2? OR  AND        ( r, r or r, d [xy] )
-\                 ?OF  R1 (HL)?  IND2? AND  02A ?WARN
-\                      R2 ?(IXY), 040 R2 @ + R1 OP+R8,  M2 ?INDEX,
-\                 ENDOF
-\
+        8R1?  8R2? IND2? OR  AND        ( r, r or r, d [xy] )
+                ?OF  R1 (HL)?  IND2? AND  02A ?WARN
+                     R2 ?(IXY), 040 R2 @ + R1 OP+R8,  M2 ?INDEX,
+                ENDOF
+
 
 \ ld - screen 3 ...............................
 
-\         DIR1?   ?OF  ACC2?
-\                      IF  032 TC, ABSOLUTE     ( nnnn , a )
-\                      ELSE  16R2? ?SYNTAX
-\                            R2 ?IXY,  R2 HL?
-\                            IF  022 TC,
-\                            ELSE  PREFIX,  043 R2 OP+RP,  ENDIF
-\                            ABSOLUTE
-\                      ENDIF      ENDOF
-\ 
-\         IND1? 8R2? AND                  ( d [ixy], r )
-\                 ?OF  (HL)2? 02A ?WARN
-\                      R1 ?(IXY),  070 R2 @ + TC,  INDEX,  ENDOF
-\ 
-\ \
+        DIR1?   ?OF  ACC2?
+                     IF  032 TC, ABSOLUTE     ( nnnn , a )
+                     ELSE  16R2? ?SYNTAX
+                           R2 ?IXY,  R2 HL?
+                           IF  022 TC,
+                           ELSE  PREFIX,  043 R2 OP+RP,  THEN
+                           ABSOLUTE
+                     THEN      ENDOF
+
+        IND1? 8R2? AND                  ( d [ixy], r )
+                ?OF  (HL)2? 02A ?WARN
+                     R1 ?(IXY),  070 R2 @ + TC,  INDEX,  ENDOF
+
+\
 \ ld - screen 4 ...........................
 
-\         16R1? 16R2? AND                 ( sp, hl or sp, ixy )
-\                 ?OF  R1 @ SP-REG = ?SYNTAX
-\                      R2 ?IXY,  R2 HL? ?SYNTAX
-\                      0F9 TC,          ENDOF
-\ 
-\         ACC1?   ?OF  CASE  M2 @
-\                        SPEC-REG  OF  PREFIX,  R2 @ I-REG =
-\                                      IF  057  ELSE  05F  ENDIF
-\                                      TC,      ENDOF
-\                        SP-IND    OF  R2 @ (BC)-REG =
-\                                      IF  0A  ELSE  01A  ENDIF
-\                                      TC,      ENDOF
-\                                  0 ?SYNTAX
-\                       ENDCASE           ENDOF           \
+        16R1? 16R2? AND                 ( sp, hl or sp, ixy )
+                ?OF  R1 @ SP-REG = ?SYNTAX
+                     R2 ?IXY,  R2 HL? ?SYNTAX
+                     0F9 TC,          ENDOF
+
+        ACC1?   ?OF  CASE  M2 @
+                       SPEC-REG  OF  PREFIX,  R2 @ I-REG =
+                                     IF  057  ELSE  05F  THEN
+                                     TC,      ENDOF
+                       SP-IND    OF  R2 @ (BC)-REG =
+                                     IF  0A  ELSE  01A  THEN
+                                     TC,      ENDOF
+                                 0 ?SYNTAX
+                      ENDCASE           ENDOF           \
 \ ld - screen 5 ...........................
 
-\         ACC2?   ?OF  CASE  M1 @
-\                      SPEC-REG   OF  PREFIX,  R1 @ I-REG =
-\                                     IF  047  ELSE  04F  ENDIF
-\                                     TC,       ENDOF
-\                      SP-IND     OF  R1 @ (BC)-REG =
-\                                     IF  02  ELSE  012  ENDIF
-\                                     TC,       ENDOF
-\                                 0 ?SYNTAX
-\                      ENDCASE            ENDOF
-\                 0 ?SYNTAX  1
-\         ENDCASE
-\         RESETCC  ;
+        ACC2?   ?OF  CASE  M1 @
+                     SPEC-REG   OF  PREFIX,  R1 @ I-REG =
+                                    IF  047  ELSE  04F  THEN
+                                    TC,       ENDOF
+                     SP-IND     OF  R1 @ (BC)-REG =
+                                    IF  02  ELSE  012  THEN
+                                    TC,       ENDOF
+                                0 ?SYNTAX
+                     ENDCASE            ENDOF
+                0 ?SYNTAX  1
+        ENDCASE
+        RESETCC  ;
 
 \ pop/push ...................................     sfp 15/04/87
 
 : POP/PUSH
-        create  ,  DOES> @
+        CREATE  ,  DOES> @
         16R2? ?SYNTAX                       ( 16-bit regs only)
         R2 @  DUP SP-REG = 0= ?SYNTAX       ( not stack point!)
-        AF-REG = IF SP-REG R2 ! ENDIF       ( take AF instead )
+        AF-REG = IF SP-REG R2 ! THEN       ( take AF instead )
         R2 ?IXY,  R2 OP+RP,  RESETCC  ;       ( check xy, add op)
 
 \
 
 \ shift rst ..................................     sfp 15/04/87
 
-: SHIFT         create  ,  DOES> @ >R
+: SHIFT         CREATE  ,  DOES> @ >R
                 8R2? IND2? OR ?SYNTAX
                 R2 ?(IXY),  EXTEND,  M2 ?INDEX,
                 R> R2 @ + TC,
                 RESETCC  ;
 
 : RST,           DIR2? ?SYNTAX
-                DUP 8 < IF  <<3  ENDIF
+                DUP 8 < IF  <<3  THEN
                 0C7 + TC,  RESETCC  ;
 
 
