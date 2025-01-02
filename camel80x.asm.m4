@@ -266,16 +266,26 @@ DLITER1: DW EXIT
     head(TWORFROM,2R>,docolon)
         DW RFROM,RFROM,RFROM,SWOP,ROT,TOR,EXIT
 
-
+;C 2R@   -- d d           fetch 2 cells from R
+    head(TWORFETCH,2R@,docolon)
+        DW TWORFROM,TWODUP,TWOTOR,EXIT
 
 ;C 0<>     x1 -- flag    test not eq to 0
-    head(ZERONOTEQUAL,0<>,docolon)
-        DW ZEROEQUAL,INVERT,EXIT
+    head(ZERONOTEQUAL,0<>,docode)
+        ld a,b
+        or c
+        jp nz, tostrue
+        jp tosfalse
 
 ;C 0>     n -- flag     test greater than 0
-    head(ZEROGREATER,0>,docolon)
-        DW lit,0x7fff,AND,EXIT
-
+    head(ZEROGREATER,0>,docode)
+        ld a,b
+        or c
+        jp z,tosfalse
+        ld a,b
+        and 0x80
+        jp nz, tosfalse
+        jp tostrue
 
 ;C D-
 ;   dnegate d+ ;
