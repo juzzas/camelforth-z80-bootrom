@@ -781,10 +781,15 @@ LITER1: DW EXIT
 
 digit_val:
         ld a,c
+        cp 97                         ; is it lowercase?
+        jr c,not_lowercase
+;        cp 122
+;        jr nc,not_lowercase
+        and 0b11011111                       ; convert to ucase
+not_lowercase:
         sub '0'
         cp 10
         jr c, end_digit_val           ; if A<10 just return
-        and 0b11011111                ; convert to ucase
         sub 7           ; else subtract 'A'-'0' (17) and add 10
 end_digit_val:
         ld c,a
