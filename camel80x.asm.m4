@@ -1531,7 +1531,7 @@ BLK2LBA:
 EXTERN cflash_init
 EXTERN cflash_identify
 ;Z /CFLASH   ( -- drive-id ) initialise the Compact Flash driver
-;   clash_init CALL    ( f )
+;   clash_init CALL    ( ior )
 ;   IF
 ;       ." CFLASH OK"
 ;       CF_DRIVE-ID
@@ -1540,6 +1540,13 @@ EXTERN cflash_identify
         dw lit,cflash_init,CALL
         dw qbranch,SLASHCFLASH1
         dw XSQUOTE
+        db 9,"NO CFLASH"
+        dw TYPE
+        dw lit,0
+        dw EXIT
+
+SLASHCFLASH1:
+        dw XSQUOTE
         db 11,"CFLASH OK ("
         dw TYPE,CF_CAPACITY,DTWOSLASH,DDOT
         dw XSQUOTE
@@ -1547,12 +1554,7 @@ EXTERN cflash_identify
         dw TYPE,CR
         dw CF_DRIVE_ID
         dw EXIT
-SLASHCFLASH1:
-        dw XSQUOTE
-        db 9,"NO CFLASH"
-        dw TYPE
-        dw FALSE
-        dw EXIT
+
 
 ;Z CF-CAPACITY  ( d -- )   Fetch Compact Flash capacity (sectors)
     head_utils(CF_CAPACITY,CF_CAPACITY,docolon)
@@ -1571,42 +1573,20 @@ CF_CAPACITY_DATA:
 SECTION code_16k
 
 EXTERN cflash_read_sector
-;Z CF-SECTOR-READ  ( lba-l lba-h adrs -- )   Compact Flash read sector at LBA
+;Z CF-SECTOR-READ  ( lba-l lba-h adrs -- ior )   Compact Flash read sector at LBA
 ; Reads the sector from the Compact Flash card into memory
 ; address found at 'adrs'. 'dsk' and 'blk' are the disk
 ; and block numbers respectively
 ;   clash_read_sector CALL ;
     head_utils(CF_SECTOR_READ,CF_SECTOR_READ,docolon)
         dw lit,cflash_read_sector,CALL
-        dw branch,SECTOR_READ3
-
-SECTOR_READ2:
-        dw INVERT,XSQUOTE
-        db 9,"NO DRIVER"
-        dw QABORT,EXIT
-
-SECTOR_READ3:
-        dw INVERT,XSQUOTE
-        db 10,"READ ERROR"
-        dw QABORT
         dw EXIT
 
 EXTERN cflash_write_sector
-;Z CF-SECTOR-WRITE  ( lba-l lba-h adrs -- )   Compact Flash write sector at LBA
+;Z CF-SECTOR-WRITE  ( lba-l lba-h adrs -- ior )   Compact Flash write sector at LBA
 ;   clash_write_sector CALL ;
     head_utils(CF_SECTOR_WRITE,CF_SECTOR_WRITE,docolon)
         dw lit,cflash_write_sector,CALL
-        dw branch,SECTOR_WRITE3
-
-SECTOR_WRITE2:
-        dw INVERT,XSQUOTE
-        db 9,"NO DRIVER"
-        dw QABORT,EXIT
-
-SECTOR_WRITE3:
-        dw INVERT,XSQUOTE
-        db 11,"WRITE ERROR"
-        dw QABORT
         dw EXIT
 
 
@@ -1626,15 +1606,15 @@ SECTOR_WRITE3:
 ;     CF_SECTOR_READ       ( LBA-L LBA-H ;  R: adrs )
 ;     1 M+                 ( LBA-L' LBA-H' ;  R: adrs )
 ;     R>  512 +            ( LBA-L' LBA-H' adrs' )
-;     CF_SECTOR_READ       ( )
+;     CF_SECTOR_READ  THROW     ( )
 ;     EXIT
 BLOCK_READ:
         call docolon
         dw TOR,BLK2LBA,TWODUP,RFETCH    ; convert block to LBA
-        dw SECTRDVEC,FETCH,EXECUTE
+        dw SECTRDVEC,FETCH,EXECUTE,THROW
         dw lit,1,MPLUS
         dw RFROM,lit,512,PLUS
-        dw SECTRDVEC,FETCH,EXECUTE
+        dw SECTRDVEC,FETCH,EXECUTE,THROW
         dw EXIT
 
 ;Z BLOCK-WRITE  ( dsk blk adrs -- )  Compact Flash write BLK and DSK
@@ -1644,10 +1624,10 @@ BLOCK_READ:
 BLOCK_WRITE:
         call docolon
         dw TOR,BLK2LBA,TWODUP,RFETCH    ; convert block to LBA
-        dw SECTWRVEC,FETCH,EXECUTE
+        dw SECTWRVEC,FETCH,EXECUTE,THROW
         dw SWOP,ONEPLUS,SWOP
         dw RFROM,lit,512,PLUS
-        dw SECTWRVEC,FETCH,EXECUTE
+        dw SECTWRVEC,FETCH,EXECUTE,THROW
         dw EXIT
 
 ;Z BLOCK-READWRITE    ( ctx f -- )  read or write block

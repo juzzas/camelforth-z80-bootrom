@@ -76,12 +76,12 @@ cflash_write_sector:
     jr nc, read_write_error
 
 read_write_ok:
-    ld bc, 0xffff
+    ld bc, 0x0000
     rst 0x20
     ret
 
 read_write_error:
-    ld bc, 0x0000
+    ld bc, -34
     rst 0x20
     ret
 
@@ -166,12 +166,12 @@ cflash_init:
     call ide_wait_ready
 
 init_ok:
-    ld bc, 0xffff
+    ld bc, 0
     rst 0x20
     ret
 
 init_error:
-    ld bc, 0x0000
+    ld bc, -21
     rst 0x20
     ret
 
