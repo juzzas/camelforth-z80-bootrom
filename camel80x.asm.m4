@@ -54,6 +54,10 @@ SECTION code_16k
         head(SCR,SCR,douser)
             dw 24
 
+    ;Z ENTRY      -- a-addr  address of xt for entry point of task
+    ;  28 USER ENTRY
+        head(ENTRY,ENTRY,douser)
+            dw 28
 
     ;Z 'KEY      -- xt     if set, use XT as KEY destination
     ;  36 USER 'KEY
@@ -81,14 +85,10 @@ SECTION code_16k
             dw 44
 
     ;Z STACKTOP      -- a-addr  address of stored stack top for task
-    ;  2 USER STACKTOP
+    ;  46 USER STACKTOP
         head(STACKTOP,STACKTOP,douser)
-            dw 2
+            dw 46
 
-    ;Z ENTRY      -- a-addr  address of xt for entry point of task
-    ;  8 USER ENTRY
-        head(ENTRY,ENTRY,douser)
-            dw 8
 
 EXTERN intvec_ptr
 ;Z 'INT      -- a-addr   pointer to address holding interrupt vector
@@ -113,8 +113,8 @@ EXTERN pausevec_ptr
 ; Return wid, the identifier of the word list that includes all standard
 ; words provided by the implementation. This word list is initially the
 ; compilation word list and is part of the initial search order.
-        head(FORTH_WORDLIST,FORTH-WORDLIST,docolon)
-            dw LATEST,EXIT
+        head(FORTH_WORDLIST,FORTH-WORDLIST,docode)
+            jp LATEST
 
 ;: EDITOR-WORDLIST ( -- wid )
         head(EDITOR_WORDLIST,EDITOR-WORDLIST,docon)
@@ -1445,14 +1445,14 @@ DISKCTX:
         ld bc,DISKCTX_NUM
         jp diskctx_next
 
-;Z DISK  ( n -- disk-id | 0 )  get disk id from disk number. 0 if out of range
-    head_utils(DISK,DISK,docolon)
+;Z SELECT  ( n -- disk-id | 0 )  get disk id from disk number. 0 if out of range
+    head_utils(SELECT,SELECT,docolon)
         dw DUP,lit,0,NUMDISK,WITHIN
-        dw qbranch,DISK1
+        dw qbranch,SELECT1
         dw DISKCTX,STAR,lit,DISKCTX_PTR,PLUS
         dw EXIT
 
-DISK1:
+SELECT1:
         dw DROP,FALSE
         dw EXIT
 
@@ -1495,22 +1495,22 @@ SECTION code_16k
 
 SECTRDVEC:
         call docolon
-        dw DSK,FETCH,DISK,DISKTODRIVE,FETCH,DRIVETOREAD
+        dw DSK,FETCH,SELECT,DISKTODRIVE,FETCH,DRIVETOREAD
         dw EXIT
 
 SECTWRVEC:
         call docolon
-        dw DSK,FETCH,DISK,DISKTODRIVE,FETCH,DRIVETOWRITE
+        dw DSK,FETCH,SELECT,DISKTODRIVE,FETCH,DRIVETOWRITE
         dw EXIT
 
 BLKLIMIT:
         call docolon
-        dw DSK,FETCH,DISK,DISKTOLIMIT
+        dw DSK,FETCH,SELECT,DISKTOLIMIT
         dw EXIT
 
 CURRDISKID:
         call docolon
-        DW DSK,FETCH,DISK
+        DW DSK,FETCH,SELECT
         DW DUP,ZEROEQUAL,qbranch,CURRDISK1
         DW lit,-256,THROW
 CURRDISK1:
@@ -1518,12 +1518,12 @@ CURRDISK1:
 
 ;Z BLK2LBA   ( dsk blk -- LBA-L LBA-H )
 ;  S>D D2*   ( dsk LBA-L LBA-H )
-;  ROT DISK   ( LBA-L LBA-H  disk-id )
+;  ROT SELECT   ( LBA-L LBA-H  disk-id )
 ;  DISK>OFFSET 2@ D+ ;  ( LBA-L' LBA-H' )
 BLK2LBA:
         call docolon
         dw STOD,DTWOSTAR
-        dw ROT,DISK
+        dw ROT,SELECT
         dw DISKTOOFFSET,TWOFETCH,DPLUS
         dw EXIT
 
@@ -2196,10 +2196,10 @@ defc SNAPSHOT_RST_LEN = 128-24
 ;        DUP SNAPSHOT.USER 8 + @ DP !
 ;        DROP   ;
     head_utils(SNAPSHOTFROM,SNAPSHOT>,docolon)
-        dw DUP,SNAPSHOTDOTUSER,lit,SNAPSHOT_RST_START,PLUS
-        dw U0,lit,SNAPSHOT_RST_START,PLUS,lit,SNAPSHOT_RST_LEN,MOVE
+        dw SAVE_INPUT
+        dw DUP,SNAPSHOTDOTUSER,U0,lit,128,MOVE
+        dw RESTORE_INPUT
         dw DUP,SNAPSHOTDOTORDER,RESTORE_ORDER
-        dw DUP,SNAPSHOTDOTUSER,lit,8,PLUS,FETCH,DP,STORE
         dw DUP,SNAPSHOTDOTLINKS
         dw    DUP,FETCH,VOCAB_WORDLIST,STORE,CELLPLUS
         dw    DUP,FETCH,FORTH_WORDLIST,STORE,CELLPLUS
@@ -2225,9 +2225,9 @@ defc SNAPSHOT_RST_LEN = 128-24
         DW XDOES
         call dodoes
         DW SNAPSHOTFROM
-        DW XSQUOTE
-        db 3," OK"
-        dw TYPE,CR,QUIT
+;        DW XSQUOTE
+;        db 3," OK"
+;        dw TYPE,CR,QUIT
         dw EXIT
 
 ;: BSAVE   ( c-addr u blk -- )
@@ -2754,10 +2754,11 @@ REC_IHEX2:
         DW REFILLVEC,FETCH
         DW SOURCE_ID,FETCH
         DW BLK,FETCH
+        DW DSK,FETCH
         DW TICKSOURCE,TWOFETCH
         DW TOIN,FETCH
 
-        DW lit,6
+        DW lit,7
 
         DW DUP
 NTOR1:  DW DUP
@@ -2783,6 +2784,7 @@ NR2:    DW DROP
         DW DROP
         DW TOIN,STORE
         DW TICKSOURCE,TWOSTORE
+        DW DSK,STORE
         DW BLK,STORE
         DW SOURCE_ID,STORE
         DW REFILLVEC,STORE
@@ -2893,7 +2895,7 @@ SLASH16KROM:
         DB 10," - 16K ROM"
         DW TYPE,CR
         DW SLASHCFLASH
-        DW lit,0,DISK
+        DW lit,0,SELECT
         DW DUP,TOR,DISKTODRIVE,STORE
         DW lit,0x2000,RFETCH,DISKTOLIMIT,STORE
         DW lit,0,lit,0,RFETCH,DISKTOOFFSET,TWOSTORE

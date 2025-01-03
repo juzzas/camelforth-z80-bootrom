@@ -54,7 +54,10 @@ SECTION code
         head(U0,U0,douser)
             dw 0
 
-    ; USER 2  STACKTOP
+;C >IN     -- a-addr        holds offset into TIB
+;  2 USER >IN
+    head(TOIN,>IN,douser)
+        dw 2
 
     ;C BASE    -- a-addr       holds conversion radix
     ;  4 USER BASE
@@ -66,12 +69,20 @@ SECTION code
         head(STATE,STATE,douser)
             dw 6
 
-    ; USER 8  ENTRY
+;Z dp      -- a-addr       holds dictionary ptr
+;  8 USER DP
+    head(DP,DP,douser)
+        dw 8
 
     ;Z 'source  -- a-addr      two cells: len, adrs
     ; 10 USER 'SOURCE
         head(TICKSOURCE,'SOURCE,douser)
             dw 10
+
+;Z latest    -- a-addr     last word in dict.
+;   14 USER LATEST
+    head(LATEST,LATEST,douser)
+        dw 14
 
     ;Z hp       -- a-addr     HOLD pointer
     ;   16 USER HP
@@ -92,7 +103,7 @@ SECTION code
         head(HANDLER,HANDLER,douser)
             dw 26
 
-    ;  28 USER empty
+    ; 28 USER ENTRY
 
     ;Z CURRENT      -- a-addr   address of CURRENT wid
     ;  30 USER CURRENT
@@ -131,8 +142,11 @@ SECTION code
             dw 42
 
     ; 44 USER LINK
-    ; 46 USER ACTIVE
+    ; 46 USER STACKTOP
 
+    PAUSEVEC:
+            call douser
+            dw 48
 
     ;Z s0       -- a-addr     end of parameter stack
         head(S0,S0,douser)
@@ -158,14 +172,14 @@ UINIT:
             DW 0,0,10,0     ; reserved,>IN,BASE,STATE
             DW enddict      ; DP                         8
             DW 0,0          ; SOURCE init'd elsewhere    10
-            DW 0            ; LINK
+            DW lastword     ; LATEST                     14
             DW 0            ; HP init'd elsewhere
             DW 0            ; LP init'd elsewhere
             DW 0            ; BLK                        20
             DW 1            ; DSK
             DW 0            ; SCR
             DW 0            ; HANDLER
-            DW lastword     ; LATEST
+            DW NOOP         ; ENTRY
             DW 1            ; CURRENT                    30
             DW 0            ; SOURCE-ID
             DW NOOP         ; 'PAUSE
@@ -173,11 +187,14 @@ UINIT:
             DW RXQ          ; 'KEY?
             DW TX           ; 'EMIT                      40
             DW XREFILL8K    ; 'REFILL
+            DW NOOP         ; 'LINK
+            DW NOOP         ; 'STACKTOP
+            DW NOOP         ; 'PAUSE
 
 
     ;Z #init    -- n    #bytes of user area init data
         head(NINIT,``#INIT'',docon)
-            DW 44
+            DW 50
 
     ; ARITHMETIC OPERATORS ==========================
 
@@ -1493,9 +1510,9 @@ tdiv1:
 ;   ABORT ;
     head(COLD,COLD,docolon)
         DW UINIT,U0,NINIT,CMOVE
-        DW lit,NOOP,PAUSEVEC,STORE
-        DW lit,enddict,DP,STORE
-        DW lit,lastword,LATEST,STORE
+       ; DW lit,NOOP,PAUSEVEC,STORE
+       ; DW lit,enddict,DP,STORE
+       ; DW lit,lastword,LATEST,STORE
         DW lit,camel_signon
         DW lit,camel_signon_len
         DW TYPE,CR
@@ -1562,21 +1579,7 @@ CONTEXT1:
             dw LATEST
             dw EXIT
 
-;Z latest    -- a-addr     last word in dict.
-        head(LATEST,LATEST,docon)
-            dw sysvar_latest
 
-;Z dp      -- a-addr       holds dictionary ptr
-    head(DP,DP,docon)
-        dw sysvar_dp
-
-;C >IN     -- a-addr        holds offset into TIB
-    head(TOIN,>IN,docon)
-        dw sysvar_toin
-
-PAUSEVEC:
-        call docon
-        dw sysvar_tickpause
 
 camel_signon:
         DB "Z80 CamelForth v1.02+extras"
@@ -1593,13 +1596,5 @@ xt_postpone:
 xt_find:
         DEFS 2
 xt_words:
-        DEFS 2
-sysvar_dp:
-        DEFS 2
-sysvar_toin:
-        DEFS 2
-sysvar_latest:
-        DEFS 2
-sysvar_tickpause:
         DEFS 2
 SECTION code
