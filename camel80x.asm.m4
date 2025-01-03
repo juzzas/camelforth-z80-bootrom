@@ -389,7 +389,11 @@ DMIN1:
         DW TWODROP,EXIT
 
 
-
+;: BUFFER:    ( u "name" -- )
+;             ( execution:   -- addr )
+    head(BUFFERCOLON,BUFFER:,docolon)
+        DW CREATE,ALLOT
+        DW EXIT
 
 ; RC2014 EXTENDED STRINGS =======================
 
@@ -1398,9 +1402,8 @@ drvctx_next:
 ;    DRIVE-ID sector (1 cell)
 ;    LBA OFFSET  (2 cells)
 ;    LIMIT number of blocks (1 cell)
-;    BLOCK XLATE   xt of Block translation routine (1 cell)
 
-DEFC DISKCTX_SIZE = 10
+DEFC DISKCTX_SIZE = 8
 DEFC DISKCTX_NUM = 8
 
 
@@ -1415,13 +1418,6 @@ DEFC DISKCTX_NUM = 8
 
 ;Z DISK>LIMIT  ( disk-id -- a-addr' )  get address of LIMIT for disk
     head_utils(DISKTOLIMIT,DISK>LIMIT,docode)
-        jp diskctx_plus_6
-
-;Z DISK>TRANSLATOR  ( disk-id -- a-addr' )  get address of XT to translate virtual to phys b blockss
-    head_utils(DISKTOTRANSLATOR,DISK>TRANSLATOR,docode)
-        inc bc
-        inc bc
-diskctx_plus_6:
         inc bc
         inc bc
 diskctx_plus_4:
@@ -2898,8 +2894,7 @@ SLASH16KROM:
         DW lit,0,SELECT
         DW DUP,TOR,DISKTODRIVE,STORE
         DW lit,0x2000,RFETCH,DISKTOLIMIT,STORE
-        DW lit,0,lit,0,RFETCH,DISKTOOFFSET,TWOSTORE
-        DW lit,NOOP,RFROM,DISKTOTRANSLATOR,STORE
+        DW lit,0,lit,0,RFROM,DISKTOOFFSET,TWOSTORE
         DW lit,0,DSK,STORE
         dw EXIT
 
