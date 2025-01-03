@@ -259,16 +259,45 @@ dnl         dw EXIT
 DLITER1: DW EXIT
 
 ;C 2>R   d d --           2 cells to R
-    head(TWOTOR,2>R,docolon)
-        DW SWOP,RFROM,SWOP,TOR,SWOP,TOR,TOR,EXIT
+    head(TWOTOR,2>R,docode)
+        ld l,c
+        ld h,b
+        pop bc
+        dec ix          ; push TOS onto rtn stk
+        ld (ix+0),b
+        dec ix
+        ld (ix+0),c
+        dec ix          ; push TOS onto rtn stk
+        ld (ix+0),h
+        dec ix
+        ld (ix+0),l
+        pop bc          ; pop new TOS
+        next
+
 
 ;C 2R>   -- d d           fetch 2 cells from R
-    head(TWORFROM,2R>,docolon)
-        DW RFROM,RFROM,RFROM,SWOP,ROT,TOR,EXIT
+    head(TWORFROM,2R>,docode)
+        push bc         ; push old TOS
+        ld c,(ix+0)     ; pop top rtn stk item
+        inc ix          ;       to TOS
+        ld b,(ix+0)
+        inc ix
+        ld l,(ix+0)     ; pop top rtn stk item
+        inc ix          ;       to TOS
+        ld h,(ix+0)
+        inc ix
+        push hl
+        next
 
 ;C 2R@   -- d d           fetch 2 cells from R
-    head(TWORFETCH,2R@,docolon)
-        DW TWORFROM,TWODUP,TWOTOR,EXIT
+    head(TWORFETCH,2R@,docode)
+        push bc         ; push old TOS
+        ld c,(ix+2)     ; fetch top rtn stk item
+        ld b,(ix+3)     ;       to TOS
+        push bc
+        ld c,(ix+0)     ; fetch top rtn stk item
+        ld b,(ix+1)     ;       to TOS
+        next
 
 ;C 0<>     x1 -- flag    test not eq to 0
     head(ZERONOTEQUAL,0<>,docode)
