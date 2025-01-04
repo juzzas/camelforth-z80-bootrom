@@ -196,7 +196,7 @@ TEMPBUFF_BASE1:
         DW EXIT
 
 ;Z   TBUFFER-ALLOC  ( u -- addr ) allocates u byte buffer
-    head(TEMPBUFF_ALLOC,TBUFFER-ALLOC,docolon)
+    head(TEMPBUFF_ALLOC,TB-ALLOC,docolon)
         DW lit,STACK_TEMPBUFF,STACKEMPTYQ,INVERT,qbranch,TEMPBUFF_ALLOC1
         DW lit,STACK_TEMPBUFF,STACKFETCH,PLUS
 TEMPBUFF_ALLOC1:
@@ -205,7 +205,7 @@ TEMPBUFF_ALLOC1:
         dw EXIT
 
 ;Z   TBUFFER-FREE  ( --  ) frees last 256byte buffer
-    head(TEMPBUFF_FREE,TBUFFER-FREE,docolon)
+    head(TEMPBUFF_FREE,TB-FREE,docolon)
         DW lit,STACK_TEMPBUFF,STACKEMPTYQ,INVERT,qbranch,TEMPBUFF_FREE1
         DW lit,STACK_TEMPBUFF,STACKDROP
 TEMPBUFF_FREE1:
@@ -394,6 +394,133 @@ DMIN1:
     head(BUFFERCOLON,BUFFER:,docolon)
         DW CREATE,ALLOT
         DW EXIT
+
+;Z SKIP-SPACE   c-addr u -- c-addr' u'
+;Z                          skip chars <32
+    head(SKIP_SPACES,SKIP-SPACES,docode)
+        push bc
+        exx
+        pop bc      ; count
+        pop hl      ; address
+skipspaceloop:
+        ld a,b
+        or c
+        ld e,a      ; test for count=0
+        ld a,b
+        or c
+        jr z,skipspacedone
+        ld a,32
+        cp (hl)     ; If A >= (hl), then C flag is reset. 
+        jr c,skipspacedone  ; match, BC & HL ok
+        inc hl
+        dec bc
+        jr skipspaceloop
+skipspacedone:
+        push hl     ; updated address
+        push bc     ; updated count
+        exx
+        pop bc      ; TOS in bc
+        next
+
+;Z SCAN-SPACE    c-addr u -- c-addr' u'
+;Z                      find char <32
+    head(SCAN_SPACE,SCAN-SPACE,docode)
+        push bc
+        exx
+        pop bc      ; count
+        pop hl      ; address
+scanspaceloop:
+        ld a,b      ; test for count=0
+        or c
+        jr z,scanspacedone
+        ld a,32
+        cp (hl)     ; If A >= (hl), then C flag is reset. 
+        jr nc,scanspacedone  ; match, BC & HL ok
+        inc hl
+        dec bc
+        jr scanspaceloop
+scanspacedone:
+        push hl     ; updated address
+        push bc     ; updated count
+        exx
+        pop bc      ; TOS in bc
+        next
+
+;: PARSE-NAME  ( "<spaces>name<space>" -- c-addr u )
+; 
+; Skip leading space delimiters. Parse name delimited by a space.
+; 
+; c-addr is the address of the selected string within the input
+; buffer and u is its length in characters. If the parse area
+; is empty or contains only white space, the resulting string
+; has length zero. 
+;   SOURCE >IN @ /STRING
+;   SKIP-SPACES OVER >R
+;   SCAN-SPACE   ( end-word restlen r: start-word )
+;   2DUP 1 MIN + SOURCE DROP - >IN !
+;   DROP R> TUCK - ;
+    head(PARSE_NAME,PARSE-NAME,docolon)
+        dw SOURCE,TOIN,FETCH,SLASHSTRING
+        dw SKIP_SPACES,OVER,TOR
+        dw SCAN_SPACE
+        dw TWODUP,lit,1,MIN,PLUS,SOURCE,DROP,MINUS,TOIN,STORE
+        dw DROP,RFROM,TUCK,MINUS
+        dw EXIT
+
+
+; : DEFER    ( "name" -- )        create a deferred word
+;    CREATE ['] NOOP ,
+;    DOES>
+;    @ EXECUTE ;
+    head(DEFER,DEFER,docolon)
+        dw CREATE,lit,NOOP,COMMA
+        DW XDOES
+
+        call dodoes
+        dw FETCH,EXECUTE
+        dw EXIT
+
+; : DEFER!   ( xt2 xt1 -- )             store xt2 in xt1
+;    >BODY ! ;
+    head(DEFERSTORE,DEFER!,docolon)
+        dw TOBODY,STORE
+        dw EXIT
+; 
+; : DEFER@   ( xt1 -- xt2 )             fetch xt2 from xt1
+;    >BODY @ ;
+    head(DEFERFETCH,DEFER@,docolon)
+        dw TOBODY,FETCH
+        dw EXIT
+
+; : IS       ( xt "name" -- )     define a deferred word
+;    STATE @ IF
+;       POSTPONE ['] POSTPONE DEFER!
+;    ELSE
+;       ' DEFER!
+;    THEN ; IMMEDIATE
+    immed(IS,IS,docolon)
+        dw STATE,FETCH,qbranch,IS1
+        dw BRACTICK,lit,DEFERSTORE,COMMAXT
+        dw branch,IS2
+IS1:
+        dw TICK,DEFERSTORE
+IS2:
+        dw EXIT
+
+; : ACTION-OF  ( "name -- xt" )     get the action of a deferred word
+;    STATE @ IF
+;       POSTPONE ['] POSTPONE DEFER@
+;    ELSE
+;       ' DEFER@
+;    THEN ; IMMEDIATE
+    immed(ACTION_OF,ACTION-OF,docolon)
+        dw STATE,FETCH,qbranch,ACTIONOF1
+        dw BRACTICK,lit,DEFERFETCH,COMMAXT
+        dw branch,ACTIONOF2
+ACTIONOF1:
+        dw TICK,DEFERFETCH
+ACTIONOF2:
+        dw EXIT
 
 ; RC2014 EXTENDED STRINGS =======================
 
@@ -693,12 +820,6 @@ STACKUNTIL3:
         dw EXIT
 
 
-;C NOOP        ( -- )        no operation
-;    ;
-    head(NOOP,NOOP,docode)
-        next
-
-
 ; RC2014 EXTENSIONS (TERMINAL) ==================
 
 ;Z D.R                       ( d width -- right align )
@@ -975,15 +1096,6 @@ FINDNG1:
 
 ;WORDLIST CONSTANT ROOT   ROOT SET-CURRENT
 
-;: DO-VOCABULARY  ( -- ) \ Implementation factor
-;    DOES>  @ >R           (  ) ( R: widnew )
-;     GET-ORDER  SWAP DROP ( wid1 ... widn-1 n )
-;     R> SWAP SET-ORDER
-;  ;
-
-;: DISCARD  ( x1 .. xu u - ) \ Implementation factor
-;   ?DUP IF  0 DO DROP LOOP  THEN        \ DROP u+1 stack items
-;  ;
 
 ;CREATE FORTH  FORTH-WORDLIST , DO-VOCABULARY
     head_vocab(FORTH,FORTH,docolon)

@@ -16,28 +16,9 @@ FORTH DEFINITIONS
 
 : 2NIP  2SWAP 2DROP  ;
 : 2ROT  5 ROLL  5 ROLL ;
-
-: DEFER    ( "name" -- )        create a deferred word
-    CREATE ['] NOOP ,
-   DOES>
-    @ EXECUTE ;
-
-: DEFER!   ( xt2 xt1 -- )             store xt2 in xt1
-   >BODY ! ;
-
-: DEFER@   ( xt2 xt1 -- )             store xt2 in xt1
-   >BODY ! ;
-
-: IS       ( xt "name" -- )     define a deferred word
-   STATE @ IF
-      POSTPONE ['] POSTPONE DEFER!
-   ELSE
-      ' DEFER!
-   THEN ; IMMEDIATE
-
-: ACTION-OF  ( "name -- xt" )     get the action of a deferred word
-   STATE @ IF
-      POSTPONE ['] POSTPONE DEFER@
-   ELSE
-      ' DEFER@
-   THEN ; IMMEDIATE
+: VALUE CREATE , 
+   DOES> @  ;
+: TO ;
+: (C")    ( -- c-addr ) \   run-time code for C"
+   R> COUNT OVER + ALIGNED >R  ;
+: C"   [CHAR] "   PARSE ;

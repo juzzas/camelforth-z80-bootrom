@@ -43,9 +43,16 @@ SECTION code
 ; Many of these are synonyms for other words,
 ; and so are defined as CODE words.
 
+;C NOOP        ( -- )        no operation
+;    ;
+    head(NOOP,NOOP,docode)
+noop:   next
+
+
+
 ;C ALIGN    --                         align HERE
     head(ALIGN,ALIGN,docode)
-noop:   next
+        jr noop
 
 ;C ALIGNED  addr -- a-addr       align given addr
     head(ALIGNED,ALIGNED,docode)
