@@ -38,76 +38,76 @@ SECTION code_16k
 
 ; RC2014 basic line editor
 
-;Z S    ( n -- )     select screen n
-;     DUP SCR ! BLOCK DROP ;
-    head_editor(S,S,docolon)
-        dw DUP,SCR,STORE,BLOCK,DROP
-        dw EXIT
+dnl ;Z S    ( n -- )     select screen n
+dnl ;     DUP SCR ! BLOCK DROP ;
+dnl     head_editor(S,S,docolon)
+dnl         dw DUP,SCR,STORE,BLOCK,DROP
+dnl         dw EXIT
 
-;Z IA   ( column row -- )  insert at column,row
-;     (LINE) + >R 13 WORD COUNT R> SWAP MOVE UPDATE ;
-    head_editor(IA,IA,docolon)
-        dw XLINE,PLUS,TOR
-        dw lit,13,WORD,COUNT,RFROM
-        dw SWOP,MOVE,UPDATE
-        dw EXIT
+dnl ;Z IA   ( column row -- )  insert at column,row
+dnl ;     (LINE) + >R 13 WORD COUNT R> SWAP MOVE UPDATE ;
+dnl     head_editor(IA,IA,docolon)
+dnl         dw XLINE,PLUS,TOR
+dnl         dw lit,13,WORD,COUNT,RFROM
+dnl         dw SWOP,MOVE,UPDATE
+dnl         dw EXIT
 
-;Z Y   ( n -- )        yank line into PAD
-    head_editor(Y,Y,docolon)
-        dw XLINE,PAD,ONEPLUS,C_L,MOVE
-        dw C_L,PAD,STORE
-        dw EXIT
+dnl ;Z Y   ( n -- )        yank line into PAD
+dnl     head_editor(Y,Y,docolon)
+dnl         dw XLINE,PAD,ONEPLUS,C_L,MOVE
+dnl         dw C_L,PAD,STORE
+dnl         dw EXIT
 
-;Z P   ( n -- )        paste contents of PAD at line n
-    head_editor(P,P,docolon)
-        dw PAD,COUNT,XLINE,SWOP,MOVE,UPDATE
-        dw EXIT
+dnl ;Z P   ( n -- )        paste contents of PAD at line n
+dnl     head_editor(P,P,docolon)
+dnl         dw PAD,COUNT,XLINE,SWOP,MOVE,UPDATE
+dnl         dw EXIT
 
-;Z I   ( n -- )            put text at line n
-;     0 SWAP IA ;
-    head_editor(I,I,docolon)
-        dw lit,0,SWOP,IA
-        dw EXIT
+dnl ;Z I   ( n -- )            put text at line n
+dnl ;     0 SWAP IA ;
+dnl     head_editor(I,I,docolon)
+dnl         dw lit,0,SWOP,IA
+dnl         dw EXIT
 
-;Z E   ( n -- )       erase line n
-;    (LINE) C/L BL FILL V* ;
-    head_editor(E,E,docolon)
-        dw XLINE,C_L,BL,FILL,UPDATE
-        dw EXIT
+dnl ;Z E   ( n -- )       erase line n
+dnl ;    (LINE) C/L BL FILL V* ;
+dnl     head_editor(E,E,docolon)
+dnl         dw XLINE,C_L,BL,FILL,UPDATE
+dnl         dw EXIT
 
-;Z B   ( -- )
-;     -1 SCR +!
-;     SCR @ 0 BLKLIMIT @
-;     WITHIN INVERT IF
-;        0 SCR !
-;     THEN ;
-    head_editor(BEE,B,docolon)
-        dw lit,-1,SCR,PLUSSTORE
-        dw SCR,FETCH,lit,0,BLKLIMIT,FETCH
-        dw WITHIN,INVERT,qbranch,B1
-        dw lit,0,SCR,STORE
-B1:
-        dw EXIT
+dnl ;Z B   ( -- )
+dnl ;     -1 SCR +!
+dnl ;     SCR @ 0 BLKLIMIT @
+dnl ;     WITHIN INVERT IF
+dnl ;        0 SCR !
+dnl ;     THEN ;
+dnl     head_editor(BEE,B,docolon)
+dnl         dw lit,-1,SCR,PLUSSTORE
+dnl         dw SCR,FETCH,lit,0,BLKLIMIT,FETCH
+dnl         dw WITHIN,INVERT,qbranch,B1
+dnl         dw lit,0,SCR,STORE
+dnl B1:
+dnl         dw EXIT
 
-;Z N   ( -- )
-;     1 SCR +! ;
-;     SCR @ 0 BLKLIMIT @
-;     WITHIN INVERT IF
-;        BLKLIMIT @ 1- SCR !
-;     THEN ;
-    head_editor(N,N,docolon)
-        dw lit,1,SCR,PLUSSTORE
-        dw SCR,FETCH,lit,0,BLKLIMIT,FETCH
-        dw WITHIN,INVERT,qbranch,N1
-        dw BLKLIMIT,FETCH,ONEMINUS,SCR,STORE
-N1:
-        dw EXIT
+dnl ;Z N   ( -- )
+dnl ;     1 SCR +! ;
+dnl ;     SCR @ 0 BLKLIMIT @
+dnl ;     WITHIN INVERT IF
+dnl ;        BLKLIMIT @ 1- SCR !
+dnl ;     THEN ;
+dnl     head_editor(N,N,docolon)
+dnl         dw lit,1,SCR,PLUSSTORE
+dnl         dw SCR,FETCH,lit,0,BLKLIMIT,FETCH
+dnl         dw WITHIN,INVERT,qbranch,N1
+dnl         dw BLKLIMIT,FETCH,ONEMINUS,SCR,STORE
+dnl N1:
+dnl         dw EXIT
 
-;Z L   ( -- )
-;     SCR @ LIST ;
-    head_editor(L,L,docolon)
-        dw SCR,FETCH,LIST
-        dw EXIT
+dnl ;Z L   ( -- )
+dnl ;     SCR @ LIST ;
+dnl     head_editor(L,L,docolon)
+dnl         dw SCR,FETCH,LIST
+dnl         dw EXIT
 
 
 ;  RC2014 Memdump =========================
