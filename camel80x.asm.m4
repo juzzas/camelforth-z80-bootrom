@@ -299,6 +299,59 @@ DLITER1: DW EXIT
         ld b,(ix+1)     ;       to TOS
         next
 
+;C N>R    ( i * n +n -- ) ( R: -- j * x +n ) n cells to R
+    head(NTOR,N>R,docode)
+        push bc
+        exx
+        pop hl          ; hl = count
+        ld a,h
+        or l
+        jr z, ntor_done
+        ld b,l
+ntor_loop:
+        pop de
+        dec ix          ; push item onto rtn stk
+        ld (ix+0),d
+        dec ix
+        ld (ix+0),e
+        djnz ntor_loop
+ntor_done:
+        dec ix          ; push stack count onto rtn stk
+        ld (ix+0),h
+        dec ix
+        ld (ix+0),l
+        exx 
+        pop bc
+        next
+
+;C NR>   ( -- i * x +n ) ( R: j * x +n -- )
+    head(NRFROM,NR>,docode)
+        push bc
+        exx
+        ld l,(ix+0)     ; pop count from rtn skt
+        inc ix          ;       
+        ld h,(ix+0)
+        inc ix
+
+        ld a,h
+        or l
+        jr z, nrfrom_done
+        ld b, l
+nrfrom_loop:
+        ld e,(ix+0)     ; pop item from rtn skt
+        inc ix          ;       
+        ld d,(ix+0)
+        inc ix
+        push de
+        djnz nrfrom_loop
+
+nrfrom_done:
+        push hl
+        exx
+        pop bc
+        next
+        
+
 ;C 0<>     x1 -- flag    test not eq to 0
     head(ZERONOTEQUAL,0<>,docode)
         ld a,b
@@ -1906,7 +1959,7 @@ LOAD_REFILL2:
 
 ; : (LOAD)  ( blk blk# -- )
 ;    OVER 0= IF -35 THROW THEN
-;    SAVE-INPUT
+;    2>R SAVE-INPUT 2R>
 ;    ['] load-refill REFILLVEC !
 ;    load-buffer @ >R 
 ;    64  TEMPBUFF-ALLOC  load_buffer   !
@@ -1930,7 +1983,7 @@ XLOAD:
         dw OVER,ZEROEQUAL,qbranch,LOAD0
         dw lit,-35,THROW
 LOAD0:
-        dw SAVE_INPUT
+        dw TWOTOR,SAVE_INPUT,TWORFROM
         dw lit,LOAD_REFILL,REFILLVEC,STORE
         dw lit,load_buffer,FETCH,TOR
         dw lit,64,TEMPBUFF_ALLOC,lit,load_buffer,STORE
@@ -1948,7 +2001,7 @@ XLOAD2:
         dw RFROM,lit,load_blknum,STORE
         dw RFROM,lit,load_buffer,STORE
         dw TEMPBUFF_FREE
-        dw RESTORE_INPUT
+        dw RESTORE_INPUT,DROP
         dw EXIT
 
 
@@ -2304,9 +2357,9 @@ defc SNAPSHOT_RST_LEN = 128-24
 ;        DUP SNAPSHOT.USER 8 + @ DP !
 ;        DROP   ;
     head_utils(SNAPSHOTFROM,SNAPSHOT>,docolon)
-        dw SAVE_INPUT
+        dw SAVE_INPUT,NTOR
         dw DUP,SNAPSHOTDOTUSER,U0,lit,128,MOVE
-        dw RESTORE_INPUT
+        dw NRFROM,RESTORE_INPUT,DROP
         dw DUP,SNAPSHOTDOTORDER,RESTORE_ORDER
         dw DUP,SNAPSHOTDOTLINKS
         dw    DUP,FETCH,VOCAB_WORDLIST,STORE,CELLPLUS
@@ -2856,8 +2909,8 @@ REC_IHEX2:
         DW DROP,RECTYPE_IHEX,EXIT
 
 
-;Z SAVE-INPUT
-;   REFILL-VEC @ SOURCE-ID @ BLK @ 'SOURCE 2@  >IN @  4 N>R  ;
+;Z SAVE-INPUT    ( -- xn ... x1 n ) 
+;   REFILL-VEC @ SOURCE-ID @ BLK @ 'SOURCE 2@  >IN @   ;
     head(SAVE_INPUT,SAVE-INPUT,docolon)
         DW REFILLVEC,FETCH
         DW SOURCE_ID,FETCH
@@ -2865,37 +2918,24 @@ REC_IHEX2:
         DW DSK,FETCH
         DW TICKSOURCE,TWOFETCH
         DW TOIN,FETCH
-
         DW lit,7
-
-        DW DUP
-NTOR1:  DW DUP
-        DW qbranch,NTOR2
-        DW ROT,RFROM,SWOP,TOR,TOR
-        DW ONEMINUS
-        DW branch,NTOR1
-NTOR2:
-        DW DROP,RFROM,SWOP,TOR,TOR
         DW EXIT
 
-;Z RESTORE-INPUT
-;   NR> DROP  >IN !  'SOURCE 2! BLK ! SOURCE-ID ! REFILL-VEC ! ;
+;Z RESTORE-INPUT    ( xn ... x1 n -- flag ) 
+;   7 = IF DROP  >IN !  'SOURCE 2! BLK ! SOURCE-ID ! REFILL-VEC !  FALSE ELSE TRUE THEN ;
     head(RESTORE_INPUT,RESTORE-INPUT,docolon)
-        DW RFROM,RFROM,SWOP,TOR,DUP
-NR1:    DW DUP
-        DW qbranch,NR2
-        DW RFROM,RFROM,SWOP,TOR,ROT,ROT
-        DW ONEMINUS
-        DW branch,NR1
-NR2:    DW DROP
-
-        DW DROP
+        DW lit,7,EQUAL,qbranch,RESTORE_INPUT1
         DW TOIN,STORE
         DW TICKSOURCE,TWOSTORE
         DW DSK,STORE
         DW BLK,STORE
         DW SOURCE_ID,STORE
         DW REFILLVEC,STORE
+        DW FALSE
+        DW EXIT
+
+RESTORE_INPUT1:
+        DW TRUE
         DW EXIT
 
 

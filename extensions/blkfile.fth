@@ -133,7 +133,7 @@ VARIABLE blkfile-eof
 
 
 : TLOAD ( blk -- )
-   SAVE-INPUT
+   >R SAVE-INPUT R>
    ['] tload-refill 'REFILL !
    (TLOAD)
-   RESTORE-INPUT  ;
+   RESTORE-INPUT DROP  ;
