@@ -575,6 +575,22 @@ ACTIONOF1:
 ACTIONOF2:
         dw EXIT
 
+
+; : HOLDS ( addr u -- )
+; Adds the string represented by c-addr u to the pictured 
+; numeric output string. An ambiguous condition exists if 
+; HOLDS executes outside of a <# #> delimited number 
+; conversion.
+;    BEGIN DUP WHILE 1- 2DUP + C@ HOLD REPEAT 2DROP ;
+    head(HOLDS,HOLDS,docolon)
+HOLDS1:
+        dw DUP
+        dw qbranch,HOLDS2
+        dw ONEMINUS,TWODUP,PLUS,CFETCH,HOLD
+        dw branch,HOLDS1
+HOLDS2:
+        dw TWODROP,EXIT
+
 ; RC2014 EXTENDED STRINGS =======================
 
 ; RC2014 EXTENDED STRUCTURES ====================
@@ -880,8 +896,10 @@ STACKUNTIL3:
 ;    R> OVER - SPACES TYPE ;
     head(DDOTR,D.R,docolon)
         dw TOR,XDDOT
-        dw RFROM,OVER,MINUS,SPACES,TYPE
-        dw EXIT
+        dw RFROM,OVER,MINUS,DUP,ZEROLESS,qbranch,DDOTR1
+        dw DROP,TYPE,EXIT
+DDOTR1:
+        dw SPACES,TYPE,EXIT
 
 ;Z .R                ( n width -- right align )
 ;    >R S>D R> D.R ;
