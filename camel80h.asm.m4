@@ -110,9 +110,9 @@ SECTION code
         head(CURRENT,CURRENT,douser)
             dw 30
 
-    ;Z SOURCE-ID      -- addr   current source ID for interpreter
+    ;Z 'SOURCE-ID      -- addr   current source ID for interpreter
     ;  32 USER SOURCE-ID
-        head(SOURCE_ID,SOURCE-ID,douser)
+        head(TICKSOURCE_ID,'SOURCE-ID,douser)
             dw 32
 
     ; 34 USER empty
@@ -181,12 +181,12 @@ UINIT:
             DW 0            ; HANDLER
             DW NOOP         ; ENTRY
             DW 1            ; CURRENT                    30
-            DW 0            ; SOURCE-ID
+            DW 0            ; 'SOURCE-ID
             DW NOOP         ; 'PAUSE
             DW RX           ; 'KEY
             DW RXQ          ; 'KEY?
             DW TX           ; 'EMIT                      40
-            DW XREFILL8K    ; 'REFILL
+            DW XREFILL0     ; 'REFILL
             DW NOOP         ; 'LINK
             DW NOOP         ; 'STACKTOP
             DW NOOP         ; 'PAUSE
@@ -475,9 +475,8 @@ SECTION code
         DW OVER,PLUS,ONEMINUS,OVER
 ACC1:   DW DO_KEY,DUP,lit,0DH,NOTEQUAL,qbranch,ACC5
         DW DUP,EMIT
-        DW DUP,lit,8,EQUAL,qbranch,ACC2
-        DW BL,EMIT,lit,8,EMIT
 ACC2:   DW DUP,lit,8,EQUAL,qbranch,ACC3
+        DW BL,EMIT,lit,8,EMIT
         DW DROP,ONEMINUS,TOR,OVER,RFROM,UMAX
         DW branch,ACC4
 ACC3:   DW OVER,CSTORE,ONEPLUS,OVER,UMIN
@@ -860,7 +859,7 @@ TONUM3: DW EXIT
         DW RFROM,TWODROP,TWODROP,FALSE
         DW branch,QNUM3
 QNUM1:  DW TWODROP,NIP,RFROM,qbranch,QNUM2,NEGATE
-QNUM2:  DW TRUE
+QNUM2:  DW lit,-1
 QNUM3:  DW EXIT
 
 ; INTERPRET_IHEX   ( src dest len flag  if flag = -1 -- )
@@ -936,29 +935,34 @@ XREFILL8K:
         DW lit,0,TOIN,STORE,SPACE,lit,-1
         DW EXIT
 
+XREFILL0:
+        push bc
+        jp tosfalse
+
+
 ;X REFILL      -- f  refill input buffer
-;   REFILLVEC @ EXECUTE   ;
+;   ixt_refill @ EXECUTE   ;
     head(REFILL,REFILL,docolon)
-        DW REFILLVEC,FETCH,EXECUTE
+        DW lit,xt_refill,FETCH,EXECUTE
         DW EXIT
 
 ;C EVALUATE  i*x c-addr u -- j*x  interpret string
-;   SOURCE-ID @ R>
-;   -1 SOURCE-ID !
+;   SOURCE-ID R>
+;   -1 'SOURCE-ID !
 ;   'SOURCE 2@ >R >R  >IN @ >R
 ;   'SOURCE 2! 0 >IN !
 ;   INTERPRET
-;   R> >IN !  R> R> 'SOURCE 2! R> SOURCE-ID !;
+;   R> >IN !  R> R> 'SOURCE 2! R> 'SOURCE-ID ! ;
     head(EVALUATE,EVALUATE,docolon)
-        DW SOURCE_ID,FETCH,TOR
-        DW lit,65535,SOURCE_ID,STORE
+        DW SOURCE_ID,TOR
+        DW lit,65535,TICKSOURCE_ID,STORE
         DW TICKSOURCE,TWOFETCH,TOR,TOR
         DW TOIN,FETCH,TOR
         DW TICKSOURCE,TWOSTORE,lit,0,TOIN,STORE
         DW INTERPRET
         DW RFROM,TOIN,STORE,RFROM,RFROM
         DW TICKSOURCE,TWOSTORE
-        DW RFROM,SOURCE_ID,STORE,EXIT
+        DW RFROM,TICKSOURCE_ID,STORE,EXIT
 
 ;C CATCH   xt --          ( exception# | 0 ; r: return addr on stack)
 ;     SP@ >R             ( xt )       \ save data stack pointer
@@ -1003,7 +1007,7 @@ CHECK_SP1:
         DW EXIT
 
 ;C QUIT     --    R: i*x --    interpret from kbd
-;   L0 LP !  R0 RP!   0 STATE ! 0 HANDLER !  0 SOURCE-ID !
+;   L0 LP !  R0 RP!   0 STATE ! 0 HANDLER !  0 'SOURCE-ID !
 ;   ['] XREFILL8K REFILLVEC !
 ;   BEGIN
 ;     CHECK_SP
@@ -1016,7 +1020,7 @@ CHECK_SP1:
 ;       DUP ." EXCEPTION" . CR
 ;       ENDCASE
 ;     ELSE
-;       0 SOURCE-ID !
+;       0 'SOURCE-ID !
 ;       0 BLK !
 ;     THEN
 ;   AGAIN ;
@@ -1024,9 +1028,9 @@ CHECK_SP1:
         DW L0,LP,STORE
         DW R0,RPSTORE,lit,0,STATE,STORE
         DW lit,0,HANDLER,STORE
-        DW lit,0,SOURCE_ID,STORE
+        DW lit,0,TICKSOURCE_ID,STORE
         DW lit,0,BLK,STORE
-        DW lit,XREFILL8K,REFILLVEC,STORE
+        DW lit,XREFILL0,REFILLVEC,STORE
 
 QUIT1:  DW REFILL
 
@@ -1062,7 +1066,7 @@ QUIT4:
         DW branch,QUIT1
 
 QUITX:
-        DW lit,0,SOURCE_ID,STORE
+        DW lit,0,TICKSOURCE_ID,STORE
         DW lit,0,BLK,STORE
         DW branch,QUIT1
 
@@ -1529,6 +1533,7 @@ COLD1:  DW lit,lastword8k,LATEST,STORE
         DW lit,POSTPONE_8K,lit,xt_postpone,STORE
         DW lit,INTERPRET_8K,lit,xt_interpret,STORE
         DW lit,WORDS_8K,lit,xt_words,STORE
+        DW lit,XREFILL8K,lit,xt_refill,STORE
         DW ABORT       ; ABORT never returns
 
 ;Z WARM     --      warm start Forth system
@@ -1579,8 +1584,6 @@ CONTEXT1:
             dw LATEST
             dw EXIT
 
-
-
 camel_signon:
         DB "Z80 CamelForth v1.02+extras"
 	defc camel_signon_len = 27
@@ -1596,5 +1599,7 @@ xt_postpone:
 xt_find:
         DEFS 2
 xt_words:
+        DEFS 2
+xt_refill:
         DEFS 2
 SECTION code

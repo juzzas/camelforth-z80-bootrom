@@ -116,9 +116,9 @@ EXTERN pausevec_ptr
         head(FORTH_WORDLIST,FORTH-WORDLIST,docode)
             jp LATEST
 
-;: EDITOR-WORDLIST ( -- wid )
-        head(EDITOR_WORDLIST,EDITOR-WORDLIST,docon)
-            dw editor_wordlist_head
+dnl ;: EDITOR-WORDLIST ( -- wid )
+dnl        head(EDITOR_WORDLIST,EDITOR-WORDLIST,docon)
+dnl            dw editor_wordlist_head
 
 ;: VOCAB-WORDLIST ( -- wid )
         head(VOCAB_WORDLIST,VOCAB-WORDLIST,docon)
@@ -1174,11 +1174,11 @@ FINDNG1:
         dw WORDLISTS,STACKSTORE
         dw EXIT
 
-;CREATE EDITOR  EDITOR-WORDLIST , DO-VOCABULARY
-    head_vocab(EDITOR,EDITOR,docolon)
-        dw EDITOR_WORDLIST
-        dw WORDLISTS,STACKSTORE
-        dw EXIT
+dnl ;CREATE EDITOR  EDITOR-WORDLIST , DO-VOCABULARY
+dnl     head_vocab(EDITOR,EDITOR,docolon)
+dnl         dw EDITOR_WORDLIST
+dnl         dw WORDLISTS,STACKSTORE
+dnl         dw EXIT
 
 ;CREATE UTILS  UTILS-WORDLIST , DO-VOCABULARY
     head_vocab(UTILS,UTILS,docolon)
@@ -1977,7 +1977,7 @@ LOAD_REFILL2:
 
 ; : (LOAD)  ( blk blk# -- )
 ;    OVER 0= IF -35 THROW THEN
-;    2>R SAVE-INPUT 2R>
+;    SAVE-INPUT N>R
 ;    ['] load-refill REFILLVEC !
 ;    load-buffer @ >R 
 ;    64  TEMPBUFF-ALLOC  load_buffer   !
@@ -1992,7 +1992,7 @@ LOAD_REFILL2:
 ;        R> load-blk# !
 ;        R> load-buffer !
 ;        TEMPBUFF-FREE
-;        RESTORE-INPUT
+;        NR> RESTORE-INPUT DROP
 ;        EXIT
 ;      THEN
 ;    AGAIN  ;
@@ -2001,7 +2001,7 @@ XLOAD:
         dw OVER,ZEROEQUAL,qbranch,LOAD0
         dw lit,-35,THROW
 LOAD0:
-        dw TWOTOR,SAVE_INPUT,TWORFROM
+        dw SAVE_INPUT,NTOR
         dw lit,LOAD_REFILL,REFILLVEC,STORE
         dw lit,load_buffer,FETCH,TOR
         dw lit,64,TEMPBUFF_ALLOC,lit,load_buffer,STORE
@@ -2019,7 +2019,7 @@ XLOAD2:
         dw RFROM,lit,load_blknum,STORE
         dw RFROM,lit,load_buffer,STORE
         dw TEMPBUFF_FREE
-        dw RESTORE_INPUT,DROP
+        dw NRFROM,RESTORE_INPUT,DROP
         dw EXIT
 
 
@@ -2358,7 +2358,7 @@ SNAPSHOTDOTORDER:
         dw DUP,SNAPSHOTDOTLINKS
         dw    VOCAB_WORDLIST,FETCH,OVER,STORE,CELLPLUS
         dw    FORTH_WORDLIST,FETCH,OVER,STORE,CELLPLUS
-        dw    EDITOR_WORDLIST,FETCH,OVER,STORE,CELLPLUS
+dnl        dw    EDITOR_WORDLIST,FETCH,OVER,STORE,CELLPLUS
         dw    UTILS_WORDLIST,FETCH,OVER,STORE,CELLPLUS
         dw    DROP
         dw DROP
@@ -2382,7 +2382,7 @@ defc SNAPSHOT_RST_LEN = 128-24
         dw DUP,SNAPSHOTDOTLINKS
         dw    DUP,FETCH,VOCAB_WORDLIST,STORE,CELLPLUS
         dw    DUP,FETCH,FORTH_WORDLIST,STORE,CELLPLUS
-        dw    DUP,FETCH,EDITOR_WORDLIST,STORE,CELLPLUS
+dnl        dw    DUP,FETCH,EDITOR_WORDLIST,STORE,CELLPLUS
         dw    DUP,FETCH,UTILS_WORDLIST,STORE,CELLPLUS
         dw    DROP
         dw DROP
@@ -2881,7 +2881,37 @@ INTRP_NG9: DW CHECK_SP,DROP
 
 
 
+;X REFILL      -- f  refill input buffer
+; 16K version
+; SOURCE-ID  
+;   0 OVER = IF DROP 
+;       BLK @ IF LOAD_REFILL EXIT 
+;             ELSE  XREFILL8K  EXIT ( TIB version )  THEN
+;   THEN
+;   -1 OVER = IF DROP FALSE EXIT THEN
+;   DROP  'REFILL @ EXECUTE   ;
+XREFILL_16K:
+        call docolon
+        dw SOURCE_ID
+        dw lit,0,OVER,EQUAL,qbranch,XREFILL16K2
 
+        dw DROP,BLK,FETCH,qbranch,XREFILL16K3
+        dw LOAD_REFILL,EXIT
+
+XREFILL16K3:
+        dw XREFILL8K,EXIT
+
+XREFILL16K2:
+        dw lit,-1,OVER,EQUAL,qbranch,XREFILL16K4
+        dw DROP,FALSE,EXIT
+
+XREFILL16K4:
+        dw DROP,TICKREFILL,FETCH,EXECUTE,EXIT
+
+
+;: SOURCE-ID   'SOURCE-ID @ ;
+        head(SOURCE_ID,SOURCE-ID,docolon)
+            dw TICKSOURCE_ID,FETCH,EXIT
 
 
 ;  NONAME:    ( src dest len --     xt for rectype-ihex )
@@ -2928,10 +2958,10 @@ REC_IHEX2:
 
 
 ;Z SAVE-INPUT    ( -- xn ... x1 n ) 
-;   REFILL-VEC @ SOURCE-ID @ BLK @ 'SOURCE 2@  >IN @   ;
+;   REFILL-VEC @ SOURCE-ID   BLK @ 'SOURCE 2@  >IN @   ;
     head(SAVE_INPUT,SAVE-INPUT,docolon)
         DW REFILLVEC,FETCH
-        DW SOURCE_ID,FETCH
+        DW SOURCE_ID
         DW BLK,FETCH
         DW DSK,FETCH
         DW TICKSOURCE,TWOFETCH
@@ -2940,14 +2970,14 @@ REC_IHEX2:
         DW EXIT
 
 ;Z RESTORE-INPUT    ( xn ... x1 n -- flag ) 
-;   7 = IF DROP  >IN !  'SOURCE 2! BLK ! SOURCE-ID ! REFILL-VEC !  FALSE ELSE TRUE THEN ;
+;   7 = IF DROP  >IN !  'SOURCE 2! BLK ! 'SOURCE-ID ! REFILL-VEC !  FALSE ELSE TRUE THEN ;
     head(RESTORE_INPUT,RESTORE-INPUT,docolon)
         DW lit,7,EQUAL,qbranch,RESTORE_INPUT1
         DW TOIN,STORE
         DW TICKSOURCE,TWOSTORE
         DW DSK,STORE
         DW BLK,STORE
-        DW SOURCE_ID,STORE
+        DW TICKSOURCE_ID,STORE
         DW REFILLVEC,STORE
         DW FALSE
         DW EXIT
@@ -3047,7 +3077,8 @@ SLASH16KROM:
         DW lit,POSTPONE_16K,lit,xt_postpone,STORE
         DW lit,INTERPRET_16K,lit,xt_interpret,STORE
         DW lit,WORDS_16K,lit,xt_words,STORE
-        DW lit,editor_lastword,EDITOR_WORDLIST,STORE
+        DW lit,XREFILL_16K,lit,xt_refill,STORE
+dnl        DW lit,editor_lastword,EDITOR_WORDLIST,STORE
         DW lit,utils_lastword,UTILS_WORDLIST,STORE
         DW lit,vocab_lastword,VOCAB_WORDLIST,STORE
         DW WORDLISTS,lit,STACK_WORDLISTS_SIZE,SLASHSTACK

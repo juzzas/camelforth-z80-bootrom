@@ -112,7 +112,7 @@ VARIABLE blkfile-eof
 
 \ TLOADer
 : tload-refill  ( -- flag )
-    blkfile-buffer BLKFILE-BUFFER-SIZE SOURCE-ID @ 
+    blkfile-buffer BLKFILE-BUFFER-SIZE SOURCE-ID 
        READLINE-BLKFILE THROW
     IF 
        blkfile-buffer SWAP  'SOURCE 2!
@@ -121,19 +121,19 @@ VARIABLE blkfile-eof
 
 : (TLOAD) ( blk -- )
    R/O  OPEN-BLKFILE THROW  ( blkfile-id )
-   SOURCE-ID  !
+   'SOURCE-ID  !
    BEGIN
      REFILL  IF
        ( SOURCE TYPE  CR )
        INTERPRET
-     ELSE  SOURCE-ID @ 
+     ELSE  'SOURCE-ID @ 
            CLOSE-BLKFILE  THROW  EXIT
      THEN
    AGAIN  ;
 
 
 : TLOAD ( blk -- )
-   >R SAVE-INPUT R>
+   SAVE-INPUT N>R
    ['] tload-refill 'REFILL !
    (TLOAD)
-   RESTORE-INPUT DROP  ;
+   NR> RESTORE-INPUT DROP  ;
