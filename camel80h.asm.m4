@@ -155,7 +155,7 @@ SECTION code
     ;X PAD       -- a-addr    user PAD buffer
     ;                         = end of hold area!
         head(PAD,PAD,douser)
-            dw 228h
+            dw 128h
 
     ;Z l0       -- a-addr     bottom of Leave stack
         head(L0,L0,douser)
