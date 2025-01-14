@@ -2278,11 +2278,15 @@ TYPS5:  DW EXIT
 
 
 ;Z  (LIST)            --    runtime for list screen
-;     L/B 0 DO I 2 .R SPACE I LL LOOP ;
+;     BLK @
+;     L/B 0 DO I 2 .R SPACE I LL LOOP
+;     BLK !  ;
     head_utils(XLIST,(LIST),docolon)
+        dw BLK,FETCH
         dw L_B,lit,0,xdo
 XLIST1:
         dw II,lit,2,DOTR,SPACE,II,LL,xloop,XLIST1
+        dw BLK,STORE
         dw EXIT
 
 ;C LIST ( n -- )            list screen number
