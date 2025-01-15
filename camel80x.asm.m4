@@ -980,8 +980,8 @@ STACK_WORDLISTS:
 vocab_wordlist_head:
         ds 2
 
-editor_wordlist_head:
-        ds 2
+; editor_wordlist_head:
+;        ds 2
 
 utils_wordlist_head:
         ds 2
@@ -2299,21 +2299,27 @@ XLIST1:
         dw EXIT
 
 ;C INDEX ( from to -- )     print first line of each screen
-;     CR 1+ SWAP DO I 2 .R SPACE I DUP SCR ! BLOCK DROP 0 LL LOOP ;
+;     BLK @ >R
+;     CR 1+ SWAP DO I 2 .R SPACE I DUP SCR ! BLOCK DROP 0 LL LOOP
+;     R> BLK !   ;
     head(INDEX,INDEX,docolon)
+        dw BLK,FETCH,TOR
         dw CR,ONEPLUS,SWOP,xdo
 INDEX1:
         dw II,lit,5,DOTR,SPACE
         dw II,DUP,SCR,STORE,BLOCK,DROP
         dw lit,0,LL,xloop,INDEX1
+        dw RFROM,BLK,STORE
         dw EXIT
 
 ;Z WIPE     ( n -- erase block n )
 ;    BUFFER 1024 BLANKS
 ;    UPDATE ;
     head(WIPE,WIPE,docolon)
+        dw BLK,FETCH,TOR
         dw BUFFER,lit,1024,BLANKS
         dw UPDATE
+        dw RFROM,BLK,STORE
         dw EXIT
 
 ; snapshots
@@ -2360,9 +2366,10 @@ SNAPSHOTDOTORDER:
         dw DUP,SNAPSHOTDOTUSER,U0,SWOP,lit,128,MOVE
         dw DUP,SNAPSHOTDOTORDER,SAVE_ORDER
         dw DUP,SNAPSHOTDOTLINKS
+        dw    INTVEC,FETCH,OVER,STORE,CELLPLUS
+        dw    NMIVEC,FETCH,OVER,STORE,CELLPLUS
         dw    VOCAB_WORDLIST,FETCH,OVER,STORE,CELLPLUS
         dw    FORTH_WORDLIST,FETCH,OVER,STORE,CELLPLUS
-dnl        dw    EDITOR_WORDLIST,FETCH,OVER,STORE,CELLPLUS
         dw    UTILS_WORDLIST,FETCH,OVER,STORE,CELLPLUS
         dw    DROP
         dw DROP
@@ -2384,9 +2391,10 @@ defc SNAPSHOT_RST_LEN = 128-24
         dw NRFROM,RESTORE_INPUT,DROP
         dw DUP,SNAPSHOTDOTORDER,RESTORE_ORDER
         dw DUP,SNAPSHOTDOTLINKS
+        dw    DUP,FETCH,INTVEC,STORE,CELLPLUS
+        dw    DUP,FETCH,NMIVEC,STORE,CELLPLUS
         dw    DUP,FETCH,VOCAB_WORDLIST,STORE,CELLPLUS
         dw    DUP,FETCH,FORTH_WORDLIST,STORE,CELLPLUS
-dnl        dw    DUP,FETCH,EDITOR_WORDLIST,STORE,CELLPLUS
         dw    DUP,FETCH,UTILS_WORDLIST,STORE,CELLPLUS
         dw    DROP
         dw DROP
@@ -2408,30 +2416,35 @@ dnl        dw    DUP,FETCH,EDITOR_WORDLIST,STORE,CELLPLUS
         DW XDOES
         call dodoes
         DW SNAPSHOTFROM
-;        DW XSQUOTE
-;        db 3," OK"
-;        dw TYPE,CR,QUIT
         dw EXIT
 
 ;: BSAVE   ( c-addr u blk -- )
+;     BLK @ >R
 ;     0 (OPEN-BLKFILE)
 ;     WRITE-BLKFILE
-;     (CLOSE-BLKFILE)   ;
+;     (CLOSE-BLKFILE)   
+;     R> BLK !   ;
     head(BSAVE,BSAVE,docolon)
+        dw BLK,FETCH,TOR
         dw lit,0,BEGIN_BLKFILE
         dw PUTCHARS
         dw END_BLKFILE,TWODROP
+        dw RFROM,BLK,STORE
         dw EXIT
 
 
 ;: BLOAD   ( c-addr u blk -- )
+;     BLK @ >R
 ;     0 (OPEN-BLKFILE)
 ;     READ-BLKFILE,DROP
-;     (CLOSE-BLKFILE)   ;
+;     (CLOSE-BLKFILE)  
+;     R> BLK !   ;
     head(BLOAD,BLOAD,docolon)
+        dw BLK,FETCH,TOR
         dw lit,0,BEGIN_BLKFILE
         dw GETCHARS,DROP
         dw END_BLKFILE,TWODROP
+        dw RFROM,BLK,STORE
         dw EXIT
 
 
@@ -2462,6 +2475,7 @@ XSAVEHDR:
         dw EXIT
 
 ;: SAVE   ( blk -- )
+;     BLK @ >R
 ;    DUP WIPE
 ;    enddict   DP @ enddict -    ( blk c-addr u )
 ;    ROT BUFFER                  ( c-addr u buffer -- ; blk in BLK)
@@ -2471,8 +2485,10 @@ XSAVEHDR:
 ;    BEGIN-BLKFILE
 ;    PUTCHARS
 ;    END-BLKFILE  2DROP
+;     R> BLK !   
 ;    FLUSH  ;
     head(SAVE,SAVE,docolon)
+        dw BLK,FETCH,TOR
         dw DUP,WIPE
         dw lit,enddict,DP,FETCH,lit,enddict,MINUS  ;  ( block c-addr u )
         dw ROT,BUFFER                              ;  ( c-addr u buffer )
@@ -2481,10 +2497,13 @@ XSAVEHDR:
         dw BLK,FETCH,lit,BLK_HEADER_SIZE
         dw BEGIN_BLKFILE
         dw PUTCHARS
-        dw END_BLKFILE,TWODROP,FLUSH
+        dw END_BLKFILE,TWODROP
+        dw RFROM,BLK,STORE
+        dw FLUSH
         dw EXIT
 
 ;: RESTORE   ( blk -- )
+;     BLK @ >R
 ;    BLOCK                       ( buffer -- ; blk in BLK)
 ;    DUP @                       ( buffer hdr_size )
 ;    OVER +                      ( buffer buffer' )
@@ -2496,8 +2515,10 @@ XSAVEHDR:
 ;    BLK @  BLK_HEADER_SIZE
 ;    BEGIN-BLKFILE
 ;    GETCHARS,DROP
-;    END-BLKFILE 2DROP    ;
+;    END-BLKFILE 2DROP  
+;     R> BLK !   ;
     head(RESTORE,RESTORE,docolon)
+        dw BLK,FETCH,TOR
         dw BLOCK
         dw DUP,FETCH               ; header size
         dw OVER,PLUS
@@ -2511,6 +2532,8 @@ XSAVEHDR:
         dw BEGIN_BLKFILE
         dw GETCHARS,DROP
         dw END_BLKFILE,TWODROP
+        dw RFROM,BLK,STORE
+        dw ENTRY,FETCH,EXECUTE
         dw EXIT
 
 
