@@ -1638,7 +1638,7 @@ diskctx_next:
 ;  R> DISK>OFFSET 2!
 ;  ELSE  -257 THROW THEN   ;
     head_utils(SLICE,SLICE,docolon)
-      ;  DW FLUSH
+        DW FLUSH
         DW TOR,lit,SLICE_SECTORS,UMSTAR
         DW TWODUP,RFETCH,DISKTODRIVE,FETCH,DRIVETOCAPACITY,FETCH,EXECUTE
         DW TWOOVER,TWOOVER,DLESS,qbranch,SLICE1
@@ -1667,6 +1667,9 @@ SLICE1:
         DW RFROM
         DW EXIT
 
+;Z SELECT  ( disk-id -- )
+    head_utils(SELECT,SELECT,docolon)
+        DW DSK,STORE,EXIT
 
 
 ; DISK/DRIVE helpers ==========================
