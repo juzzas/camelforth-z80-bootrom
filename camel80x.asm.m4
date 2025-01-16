@@ -128,6 +128,13 @@ dnl            dw editor_wordlist_head
         head(UTILS_WORDLIST,UTILS-WORDLIST,docon)
             dw utils_wordlist_head
 
+
+;C .(    --                     emit input until )
+;   [ HEX ] 29 WORD COUNT TYPE ; IMMEDIATE
+    immed(DOTPAREN,``.('',docolon)
+        DW lit,29H,WORD,COUNT,TYPE,EXIT
+
+
 dnl ;Z :NONAME       ( -- xt      define anonymous xt )
 dnl ;    CURRENT @ @ , 0 C,    ( last link + immed flag )
 dnl ;    HERE CURRENT @ !      ( new "latest" )
@@ -1570,13 +1577,15 @@ drvctx_plus_2:
 drvctx_next:
         next
 
-;Z DRIVECTX  (  -- u )  size of stucture
-    head_utils(DRIVECTX,DRIVECTX,docode)
-        push bc
-        ld bc,DRIVECTX_SIZE
-        jp drvctx_next
+;Z DRIVE%  (  -- u )  size of stucture
+    head_utils(DRIVECTX,DRIVE%,docon)
+        DW DRIVECTX_SIZE
 
-
+;Z DRIVE:  ( xt-read xt-write xt-capacity    "ccc" -- drive-id )
+    head_utils(DRIVECOLON,DRIVE:,docolon)
+        DW CREATE,HERE,TOR
+        DW ROT,COMMA,SWOP,COMMA,COMMA
+        DW RFROM,EXIT
 
 ; DISK implementation ==========================
 
@@ -1612,33 +1621,15 @@ diskctx_plus_2:
 diskctx_next:
         next
 
-;Z DISKCTX  (  -- u )  size of stucture
-DISKCTX:
-        push bc
-        ld bc,DISKCTX_SIZE
-        jp diskctx_next
+;Z DISKSIZE  (  -- u )  size of disk context stucture
+    head_utils(DISKSIZE,DISK%,docon)
+        dw DISKCTX_SIZE
 
-;Z #DISK  (  -- u )  number of DISK entries
-    head_utils(NUMDISK,``#DISK'',docode)
-        push bc
-        ld bc,DISKCTX_NUM
-        jp diskctx_next
-
-;Z SELECT  ( n -- disk-id | 0 )  get disk id from disk number. 0 if out of range
-    head_utils(SELECT,SELECT,docolon)
-        dw DUP,lit,0,NUMDISK,WITHIN
-        dw qbranch,SELECT1
-        dw DISKCTX,STAR,lit,DISKCTX_PTR,PLUS
-        dw EXIT
-
-SELECT1:
-        dw DROP,FALSE
-        dw EXIT
 
 
         DEFC SLICE_SECTORS = 8192*2
-;Z SLICE  ( n -- )     set LBA offset to current DSK (n * 8MB)
-;  CURRDISKID >R SLICE_SECTORS UM*                ( lba-offset ; disk-id )
+;Z SLICE  ( n disk-id -- )     set LBA offset to current DSK (n * 8MB)
+;  >R SLICE_SECTORS UM*                ( lba-offset ; disk-id )
 ;  2DUP R@ DISK>DRIVE @ DRIVE>CAPACITY @ EXECUTE  ( lba-offset lba-offset capacity )
 ;  2OVER 2OVER  D<  IF                            ( lba-offset lba-offset capacity )
 ;  2SWAP SLICE_SECTORS M+  DMIN                   ( lba-offset lba-end )
@@ -1647,8 +1638,8 @@ SELECT1:
 ;  R> DISK>OFFSET 2!
 ;  ELSE  -257 THROW THEN   ;
     head_utils(SLICE,SLICE,docolon)
-        DW FLUSH
-        DW CURRDISKID,TOR,lit,SLICE_SECTORS,UMSTAR
+      ;  DW FLUSH
+        DW TOR,lit,SLICE_SECTORS,UMSTAR
         DW TWODUP,RFETCH,DISKTODRIVE,FETCH,DRIVETOCAPACITY,FETCH,EXECUTE
         DW TWOOVER,TWOOVER,DLESS,qbranch,SLICE1
         DW TWOSWAP,lit,SLICE_SECTORS,MPLUS
@@ -1660,49 +1651,50 @@ SLICE1:
         DW lit,-257,THROW
         DW EXIT
 
+;Z /DISK  ( drive-id c-addr -- )
+;      TUCK !   ( disk-id )
+;      0 SWAP SLICE   ;
+    head_utils(SLASHDISK,/DISK,docolon)
+        DW TUCK,STORE
+        DW lit,0,SWOP,SLICE
+        DW EXIT
 
-SECTION data
+;Z DISK:  ( drive-id   "ccc" -- disk-id )
+    head_utils(DISKCOLON,DISK:,docolon)
+        DW CREATE,HERE
+        DW DISKSIZE,ALLOT
+        DW DUP,TOR,SLASHDISK
+        DW RFROM
+        DW EXIT
 
-DISKCTX_PTR:
-        DEFS DISKCTX_SIZE * DISKCTX_NUM
 
-
-SECTION code_16k
 
 ; DISK/DRIVE helpers ==========================
 
 
 SECTRDVEC:
         call docolon
-        dw DSK,FETCH,SELECT,DISKTODRIVE,FETCH,DRIVETOREAD
+        dw DSK,FETCH,DISKTODRIVE,FETCH,DRIVETOREAD
         dw EXIT
 
 SECTWRVEC:
         call docolon
-        dw DSK,FETCH,SELECT,DISKTODRIVE,FETCH,DRIVETOWRITE
+        dw DSK,FETCH,DISKTODRIVE,FETCH,DRIVETOWRITE
         dw EXIT
 
 BLKLIMIT:
         call docolon
-        dw DSK,FETCH,SELECT,DISKTOLIMIT
+        dw DSK,FETCH,DISKTOLIMIT
         dw EXIT
 
-CURRDISKID:
-        call docolon
-        DW DSK,FETCH,SELECT
-        DW DUP,ZEROEQUAL,qbranch,CURRDISK1
-        DW lit,-256,THROW
-CURRDISK1:
-        DW EXIT
-
-;Z BLK2LBA   ( dsk blk -- LBA-L LBA-H )
-;  S>D D2*   ( dsk LBA-L LBA-H )
-;  ROT SELECT   ( LBA-L LBA-H  disk-id )
+;Z BLK2LBA   ( disk-id blk -- LBA-L LBA-H )
+;  S>D D2*   ( disk-id LBA-L LBA-H )
+;  ROT       ( LBA-L LBA-H  disk-id )
 ;  DISK>OFFSET 2@ D+ ;  ( LBA-L' LBA-H' )
 BLK2LBA:
         call docolon
         dw STOD,DTWOSTAR
-        dw ROT,SELECT
+        dw ROT
         dw DISKTOOFFSET,TWOFETCH,DPLUS
         dw EXIT
 
@@ -1775,6 +1767,17 @@ EXTERN cflash_write_sector
         dw CF_CAPACITY
 
 
+    head_utils(CF_DISK_ID,CF_DISK-ID,docon)
+        DW CFLASH_DISK_CTX
+
+
+SECTION data
+
+CFLASH_DISK_CTX:
+        DEFS DISKCTX_SIZE
+
+
+SECTION code_16k
 
 
 ;Z BLOCK-READ  ( dsk blk adrs -- )  Compact Flash read BLK and DSK
@@ -3118,11 +3121,7 @@ dnl        DW lit,editor_lastword,EDITOR_WORDLIST,STORE
         DW XSQUOTE
         DB 10," - 16K ROM"
         DW TYPE,CR
-        DW SLASHCFLASH
-        DW lit,0,SELECT
-        DW DUP,TOR,DISKTODRIVE,STORE
-        DW lit,0x2000,RFETCH,DISKTOLIMIT,STORE
-        DW lit,0,lit,0,RFROM,DISKTOOFFSET,TWOSTORE
-        DW lit,0,DSK,STORE
+        DW SLASHCFLASH,CF_DISK_ID,SLASHDISK
+        DW CF_DISK_ID,DSK,STORE
         dw EXIT
 

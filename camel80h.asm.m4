@@ -1382,14 +1382,21 @@ MOVE2:  DW EXIT
         DW TWODROP,lit,0,EXIT
 
 ; UTILITY WORDS AND STARTUP =====================
+HIDDENQ: ;  ( nfa -- nfa f )
+    push bc
+    ld a,(bc)
+    or a
+    jp z, tostrue
+    and 0x80
+    jp nz, tostrue
+    jp tosfalse
+
 
 ;X (WORDS)  wid  --          list all words in wordlist.
 ;   WID>NFA DUP 0= IF DROP EXIT THEN
 ;   BEGIN
 ;       DUP WHILE
-;          DUP COUNT
-;              ( ignore zero-length names, AKA :NONAME )
-;          ?DUP 0= IF DROP ELSE TYPE SPACE THEN
+;          DUP HIDDEN? IF DROP ELSE COUNT TYPE SPACE THEN
 ;          NFA>LFA @
 ;       REPEAT
 ;   DROP ;
@@ -1399,11 +1406,10 @@ XWORDS:
         DW DUP,ZEROEQUAL,qbranch,WDS1
         DW DROP,EXIT
 WDS1:   DW DUP,qbranch,WDS4
-        DW DUP,COUNT
-        DW QDUP,ZEROEQUAL,qbranch,WDS2
+        DW DUP,HIDDENQ,qbranch,WDS2
         DW DROP
         DW branch,WDS3
-WDS2:   DW TYPE,SPACE
+WDS2:   DW COUNT,TYPE,SPACE
 WDS3:   DW NFATOLFA,FETCH
         DW branch,WDS1
 WDS4:
