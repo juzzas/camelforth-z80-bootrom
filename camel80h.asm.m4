@@ -95,7 +95,7 @@ SECTION code
             dw 18
 
     ;  20 USER BLK
-    ;  22 USER DSK
+    ;  22 USER SLICE-ID
     ;  24 USER SCR
 
     ;Z HANDLER      -- xt    if set, use XT as THROW handler
@@ -176,7 +176,7 @@ UINIT:
             DW 0            ; HP init'd elsewhere
             DW 0            ; LP init'd elsewhere
             DW 0            ; BLK                        20
-            DW 1            ; DSK
+            DW 0            ; SLICE-ID
             DW 0            ; SCR
             DW 0            ; HANDLER
             DW NOOP         ; ENTRY

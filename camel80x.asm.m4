@@ -43,9 +43,9 @@ SECTION code_16k
         head(BLK,BLK,douser)
             dw 20
 
-    ;Z DSK      -- a-addr     disk number storage
-    ;  22 USER DSK
-        head(DSK,DSK,douser)
+    ;Z SLICE-ID      -- a-addr   storage of current slice-id
+    ;  22 USER SLICE-ID
+        head(SLICE_ID,SLICE-ID,douser)
             dw 22
 
 
@@ -528,59 +528,6 @@ scanspacedone:
         dw EXIT
 
 
-; : DEFER    ( "name" -- )        create a deferred word
-;    CREATE ['] NOOP ,
-;    DOES>
-;    @ EXECUTE ;
-    head(DEFER,DEFER,docolon)
-        dw CREATE,lit,NOOP,COMMA
-        DW XDOES
-
-        call dodoes
-        dw FETCH,EXECUTE
-        dw EXIT
-
-; : DEFER!   ( xt2 xt1 -- )             store xt2 in xt1
-;    >BODY ! ;
-    head(DEFERSTORE,DEFER!,docolon)
-        dw TOBODY,STORE
-        dw EXIT
-; 
-; : DEFER@   ( xt1 -- xt2 )             fetch xt2 from xt1
-;    >BODY @ ;
-    head(DEFERFETCH,DEFER@,docolon)
-        dw TOBODY,FETCH
-        dw EXIT
-
-; : IS       ( xt "name" -- )     define a deferred word
-;    STATE @ IF
-;       POSTPONE ['] POSTPONE DEFER!
-;    ELSE
-;       ' DEFER!
-;    THEN ; IMMEDIATE
-    immed(IS,IS,docolon)
-        dw STATE,FETCH,qbranch,IS1
-        dw BRACTICK,lit,DEFERSTORE,COMMAXT
-        dw branch,IS2
-IS1:
-        dw TICK,DEFERSTORE
-IS2:
-        dw EXIT
-
-; : ACTION-OF  ( "name -- xt" )     get the action of a deferred word
-;    STATE @ IF
-;       POSTPONE ['] POSTPONE DEFER@
-;    ELSE
-;       ' DEFER@
-;    THEN ; IMMEDIATE
-    immed(ACTION_OF,ACTION-OF,docolon)
-        dw STATE,FETCH,qbranch,ACTIONOF1
-        dw BRACTICK,lit,DEFERFETCH,COMMAXT
-        dw branch,ACTIONOF2
-ACTIONOF1:
-        dw TICK,DEFERFETCH
-ACTIONOF2:
-        dw EXIT
 
 
 ; : HOLDS ( addr u -- )
@@ -1367,7 +1314,7 @@ ENDCASE2:
 
 ; BLOCKCTX structure
 ;   Each context struct is indexed to a 1024byte block buffer
-;    DISK number (1 cell)
+;    SLICE ID (1 cell)
 ;    BLOCK number (1 cell)
 ;    BUFFER address (1 cell)
 ;    BLOCK update flag (1 cell)
@@ -1379,29 +1326,30 @@ DEFC BLOCK_FIRST = 0xE000
 ;Z /BLKCTX   ( -- ) initialise the block contexts
 ;    BLKCTX_PTR BLKCTX# 0 DO   ( ctx[i] )
 ;       0xffff OVER BLKCTX>BLOCK !  ( ctx[i] )
-;       0xffff OVER BLKCTX>DISK !  ( ctx[i] )
+;       0xffff OVER BLKCTX>SLICE !  ( ctx[i] )
 ;       0x0000 OVER BLKCTX>BUFFER !  ( ctx[i] )
 ;       0x0000 OVER BLKCTX>FLAGS !  ( ctx[i] )
 ;       BLOCKCTX_SIZE +             ( ctx[i+1 ]
 ;    LOOP
-;    DROP  0 BLKCTX_IDX !  ;
+;    DROP  0 BLKCTX_IDX !   0 BLKCTX_CURR ! ;
 SLASHBLKCTX:
         call docolon
         dw lit,BLKCTX_PTR,BLKCTXNUM,lit,0,xdo
 SLASHBLKCTX1:
         dw lit,0xffff,OVER,BLKCTXTOBLOCK,STORE
-        dw lit,0xffff,OVER,BLKCTXTODISK,STORE
+        dw lit,0xffff,OVER,BLKCTXTOSLICE,STORE
         dw lit,0x0000,OVER,BLKCTXTOBUFFER,STORE
         dw lit,0x0000,OVER,BLKCTXTOFLAGS,STORE
         dw BLKCTXSIZE,PLUS
         dw xloop,SLASHBLKCTX1
         dw DROP
         dw lit,0,lit,BLKCTX_IDX,STORE
+        dw lit,0,lit,BLKCTX_CURR,STORE
         dw EXIT
 
-;Z BLKCTX>DISK  ( ctx -- a-addr' )  get address of DISK number
+;Z BLKCTX>SLICE  ( ctx -- a-addr' )  get address of slice-id 
 ;    ;
-BLKCTXTODISK:
+BLKCTXTOSLICE:
         jp blkctx_next
 
 ;Z BLKCTX>BLOCK  ( ctx -- a-addr' )  get address of BLOCK number
@@ -1465,16 +1413,16 @@ BLKCTX_NEXT:
         dw lit,BLKCTX_IDX,FETCH,ONEPLUS,BLKCTXNUM,MOD,lit,BLKCTX_IDX,STORE
         dw EXIT
 
-;Z BLKCTX-FIND   blk disk -- ctx    address of matching buffer, if exists, else 0
-;    BLKCTX_PTR BLKCTX# 0 DO   ( blk dsk ctx[i] )
-;       >R                ( blk dsk ; r: ctx[i] )
-;       2DUP              ( blk dsk blk dsk ; r: ctx[i] )
-;       R@ BLKCTX>BLOCK @  ( blk dsk blk dsk blk[i] ; r: ctx[i] )
-;       R@ BLKCTX>DISK  @  ( blk dsk blk dsk blk[i] dsk[i] ; r: ctx[i] )
-;       D=  IF            ( blk dsk ; r: ctx[i] )
+;Z BLKCTX-FIND   blk slice-id -- ctx    address of matching buffer, if exists, else 0
+;    BLKCTX_PTR BLKCTX# 0 DO   ( blk slice-id ctx[i] )
+;       >R                ( blk slice-id ; r: ctx[i] )
+;       2DUP              ( blk slice-id blk slice-id ; r: ctx[i] )
+;       R@ BLKCTX>BLOCK @  ( blk slice-id blk slice-id blk[i] ; r: ctx[i] )
+;       R@ BLKCTX>SLICE  @  ( blk slice-id blk slice-id blk[i] slice-id[i] ; r: ctx[i] )
+;       D=  IF            ( blk slice-id ; r: ctx[i] )
 ;           2DROP R> UNLOOP EXIT
 ;       THEN
-;       R> BLKCTX% + ( blk dsk ctx[i+1] )
+;       R> BLKCTX% + ( blk slice-id ctx[i+1] )
 ;    LOOP
 ;    2DROP DROP 0   ;
 BLKCTX_FIND:
@@ -1484,7 +1432,7 @@ BLKCTXF1:
         dw TOR
         dw TWODUP
         dw RFETCH,BLKCTXTOBLOCK,FETCH
-        dw RFETCH,BLKCTXTODISK,FETCH
+        dw RFETCH,BLKCTXTOSLICE,FETCH
         dw DEQUAL,qbranch,BLKCTXF2
         dw TWODROP,RFROM,UNLOOP
         dw EXIT
@@ -1494,13 +1442,13 @@ BLKCTXF2:
         dw TWODROP,DROP,FALSE
         dw EXIT
 
-;Z BLKCTX-GET  ( blk dsk -- ctx )  increment buffer structure
-;     2DUP BLKCTX-FIND ?DUP IF   ( blk dsk ctx )
+;Z BLKCTX-GET  ( blk slice-id -- ctx )  increment buffer structure
+;     2DUP BLKCTX-FIND ?DUP IF   ( blk slice-id ctx )
 ;         NIP NIP
-;     ELSE                       ( blk dsk )
-;         BLKCTX-NEXT    ( blk dsk ctx )
+;     ELSE                       ( blk slice-id )
+;         BLKCTX-NEXT    ( blk slice-id ctx )
 ;         >R
-;         R@ BLKCTX>DISK !
+;         R@ BLKCTX>SLICE !
 ;         R@ BLKCTX>BLOCK !
 ;         R@ BLKCTX>FLAGS 1 SWAP !
 ;         R>  ;
@@ -1512,7 +1460,7 @@ BLKCTX_GET:
 BLKCTXG1:
         dw BLKCTX_NEXT
         dw TOR
-        dw RFETCH,BLKCTXTODISK,STORE
+        dw RFETCH,BLKCTXTOSLICE,STORE
         dw RFETCH,BLKCTXTOBLOCK,STORE
         dw RFETCH,BLKCTXTOFLAGS,lit,1,SWOP,STORE
         dw RFROM
@@ -1543,6 +1491,9 @@ BLKCTX_PTR:
         DEFS 32  ;  4 * 4 words
 
 BLKCTX_IDX:
+        DEFS 2
+
+BLKCTX_CURR:
         DEFS 2
 
 SECTION code_16k
@@ -1587,29 +1538,28 @@ drvctx_next:
         DW ROT,COMMA,SWOP,COMMA,COMMA
         DW RFROM,EXIT
 
-; DISK implementation ==========================
+; SLICE implementation ==========================
 
-; DISKCTX structure
+; SLICECTX structure
 ;   Each context struct is drive device "driver"
 ;    DRIVE-ID sector (1 cell)
 ;    LBA OFFSET  (2 cells)
 ;    LIMIT number of blocks (1 cell)
 
-DEFC DISKCTX_SIZE = 8
-DEFC DISKCTX_NUM = 8
+DEFC SLICECTX_SIZE = 8
+DEFC SLICECTX_NUM = 8
 
 
-;Z DISK>DRIVE  ( disk-id -- a-addr' )  get address of drive ID for disk
-    head_utils(DISKTODRIVE,DISK>DRIVE,docode)
+;Z SLICE>DRIVE  ( slice-id -- a-addr' )  get address of drive ID for disk
+    head_utils(SLICETODRIVE,SLICE>DRIVE,docode)
         jp diskctx_next
-        next
 
-;Z DISK>OFFSET  ( disk-id -- a-addr' )  get address of LBA OFFSET for disk
-    head_utils(DISKTOOFFSET,DISK>OFFSET,docode)
+;Z SLICE>OFFSET  ( slice-id -- a-addr' )  get address of LBA OFFSET for disk
+    head_utils(SLICETOOFFSET,SLICE>OFFSET,docode)
         jp diskctx_plus_2
 
-;Z DISK>LIMIT  ( disk-id -- a-addr' )  get address of LIMIT for disk
-    head_utils(DISKTOLIMIT,DISK>LIMIT,docode)
+;Z SLICE>LIMIT  ( slice-id -- a-addr' )  get address of LIMIT for disk
+    head_utils(SLICETOLIMIT,SLICE>LIMIT,docode)
         inc bc
         inc bc
 diskctx_plus_4:
@@ -1621,84 +1571,88 @@ diskctx_plus_2:
 diskctx_next:
         next
 
-;Z DISKSIZE  (  -- u )  size of disk context stucture
-    head_utils(DISKSIZE,DISK%,docon)
-        dw DISKCTX_SIZE
+;Z SLICESIZE  (  -- u )  size of disk context stucture
+    head_utils(SLICESIZE,SLICE%,docon)
+        dw SLICECTX_SIZE
 
 
 
         DEFC SLICE_SECTORS = 8192*2
-;Z SLICE  ( n disk-id -- )     set LBA offset to current DSK (n * 8MB)
-;  >R SLICE_SECTORS UM*                ( lba-offset ; disk-id )
-;  2DUP R@ DISK>DRIVE @ DRIVE>CAPACITY @ EXECUTE  ( lba-offset lba-offset capacity )
+;Z RESLICE  ( n slice-id -- )     set LBA offset to slice-id  (n * 8MB)
+;  >R SLICE_SECTORS UM*                ( lba-offset ; slice-id )
+;  2DUP R@ SLICE>DRIVE @ DRIVE>CAPACITY @ EXECUTE  ( lba-offset lba-offset capacity )
 ;  2OVER 2OVER  D<  IF                            ( lba-offset lba-offset capacity )
 ;  2SWAP SLICE_SECTORS M+  DMIN                   ( lba-offset lba-end )
 ;  2OVER  D-  D2/  D>S                            ( lba-offset limit )
-;  R@ DISK>LIMIT !
-;  R> DISK>OFFSET 2!
+;  R@ SLICE>LIMIT !
+;  R> SLICE>OFFSET 2!
 ;  ELSE  -257 THROW THEN   ;
-    head_utils(SLICE,SLICE,docolon)
+    head_utils(RESLICE,RESLICE,docolon)
         DW FLUSH
         DW TOR,lit,SLICE_SECTORS,UMSTAR
-        DW TWODUP,RFETCH,DISKTODRIVE,FETCH,DRIVETOCAPACITY,FETCH,EXECUTE
+        DW TWODUP,RFETCH,SLICETODRIVE,FETCH,DRIVETOCAPACITY,FETCH,EXECUTE
         DW TWOOVER,TWOOVER,DLESS,qbranch,SLICE1
         DW TWOSWAP,lit,SLICE_SECTORS,MPLUS
         DW DMIN
         DW TWOOVER,DMINUS,DTWOSLASH,DROP
-        DW RFETCH,DISKTOLIMIT,STORE
-        DW RFROM,DISKTOOFFSET,TWOSTORE,EXIT
+        DW RFETCH,SLICETOLIMIT,STORE
+        DW RFROM,SLICETOOFFSET,TWOSTORE,EXIT
 SLICE1:
         DW lit,-257,THROW
         DW EXIT
 
-;Z /DISK  ( drive-id c-addr -- )
-;      TUCK !   ( disk-id )
-;      0 SWAP SLICE   ;
-    head_utils(SLASHDISK,/DISK,docolon)
-        DW TUCK,STORE
-        DW lit,0,SWOP,SLICE
+;Z /SLICE  ( drive-id n c-addr -- )
+;      TUCK TWOSWAP !   ( n slice-id )
+;      SET-SLICE   ;
+    head_utils(SLASHSLICE,/SLICE,docolon)
+        DW TUCK,TWOSWAP,STORE
+        DW RESLICE
         DW EXIT
 
-;Z DISK:  ( drive-id   "ccc" -- disk-id )
-    head_utils(DISKCOLON,DISK:,docolon)
+;Z SLICE:  ( drive-id n "ccc" -- slice-id )
+    head_utils(SLICECOLON,SLICE:,docolon)
         DW CREATE,HERE
-        DW DISKSIZE,ALLOT
-        DW DUP,TOR,SLASHDISK
+        DW SLICESIZE,ALLOT
+        DW DUP,TOR,SLASHSLICE
         DW RFROM
         DW EXIT
 
-;Z SELECT  ( disk-id -- )
+;Z SLICE  ( -- slice-id )
+    head_utils(SLICE,SLICE,docolon)
+        DW SLICE_ID,FETCH,EXIT
+
+;Z SELECT  ( slice-id -- )
     head_utils(SELECT,SELECT,docolon)
-        DW DSK,STORE,EXIT
+        DW SLICE_ID,STORE,EXIT
 
 
-; DISK/DRIVE helpers ==========================
+; SLICE/DRIVE helpers ==========================
 
 
 SECTRDVEC:
         call docolon
-        dw DSK,FETCH,DISKTODRIVE,FETCH,DRIVETOREAD
+        dw SLICE,SLICETODRIVE,FETCH,DRIVETOREAD
         dw EXIT
 
 SECTWRVEC:
         call docolon
-        dw DSK,FETCH,DISKTODRIVE,FETCH,DRIVETOWRITE
+        dw SLICE,SLICETODRIVE,FETCH,DRIVETOWRITE
         dw EXIT
 
 BLKLIMIT:
         call docolon
-        dw DSK,FETCH,DISKTOLIMIT
+        dw SLICE,SLICETOLIMIT
         dw EXIT
 
-;Z BLK2LBA   ( disk-id blk -- LBA-L LBA-H )
-;  S>D D2*   ( disk-id LBA-L LBA-H )
-;  ROT       ( LBA-L LBA-H  disk-id )
-;  DISK>OFFSET 2@ D+ ;  ( LBA-L' LBA-H' )
+;Z BLK2LBA   ( slice-id blk -- LBA-L LBA-H )
+;  S>D D2*   ( slice-id LBA-L LBA-H )
+;  ROT       ( LBA-L LBA-H  slice-id )
+;  SLICE>OFFSET 2@ D+ ;  ( LBA-L' LBA-H' )
 BLK2LBA:
         call docolon
         dw STOD,DTWOSTAR
         dw ROT
-        dw DISKTOOFFSET,TWOFETCH,DPLUS
+        dw SLICETOOFFSET,TWOFETCH,DPLUS
         dw EXIT
 
 
@@ -1708,7 +1662,7 @@ EXTERN cflash_identify
 ;   clash_init CALL    ( ior )
 ;   IF
 ;       ." CFLASH OK"
-;       CF_DRIVE-ID
+;       CF-DRIVE-ID
 ;   ELSE ." NO CFLASH" 0 THEN ;
     head_utils(SLASHCFLASH,/CFLASH,docolon)
         dw lit,cflash_init,CALL
@@ -1731,7 +1685,7 @@ SLASHCFLASH1:
 
 
 ;Z CF-CAPACITY  ( d -- )   Fetch Compact Flash capacity (sectors)
-    head_utils(CF_CAPACITY,CF_CAPACITY,docolon)
+    head_utils(CF_CAPACITY,CF-CAPACITY,docolon)
         dw lit,512,TEMPBUFF_ALLOC,DUP,TOR,lit,cflash_identify,CALL
 ;        dw RFETCH,lit,256,MEMDUMP
         dw RFETCH,lit,120,PLUS,FETCH      ; low word of max LBA
@@ -1749,49 +1703,49 @@ SECTION code_16k
 EXTERN cflash_read_sector
 ;Z CF-SECTOR-READ  ( lba-l lba-h adrs -- ior )   Compact Flash read sector at LBA
 ; Reads the sector from the Compact Flash card into memory
-; address found at 'adrs'. 'dsk' and 'blk' are the disk
+; address found at 'adrs'. 'slice-id' and 'blk' are the disk
 ; and block numbers respectively
 ;   clash_read_sector CALL ;
-    head_utils(CF_SECTOR_READ,CF_SECTOR_READ,docolon)
+    head_utils(CF_SECTOR_READ,CF-SECTOR-READ,docolon)
         dw lit,cflash_read_sector,CALL
         dw EXIT
 
 EXTERN cflash_write_sector
 ;Z CF-SECTOR-WRITE  ( lba-l lba-h adrs -- ior )   Compact Flash write sector at LBA
 ;   clash_write_sector CALL ;
-    head_utils(CF_SECTOR_WRITE,CF_SECTOR_WRITE,docolon)
+    head_utils(CF_SECTOR_WRITE,CF-SECTOR-WRITE,docolon)
         dw lit,cflash_write_sector,CALL
         dw EXIT
 
 
-    head_utils(CF_DRIVE_ID,CF_DRIVE-ID,docreate)
+    head_utils(CF_DRIVE_ID,CF-DRIVE-ID,docreate)
         dw CF_SECTOR_READ
         dw CF_SECTOR_WRITE
         dw CF_CAPACITY
 
 
-    head_utils(CF_DISK_ID,CF_DISK-ID,docon)
-        DW CFLASH_DISK_CTX
+    head_utils(CF_SLICE_ID,CF-SLICE-ID,docon)
+        DW CFLASH_SLICE_CTX
 
 
 SECTION data
 
-CFLASH_DISK_CTX:
-        DEFS DISKCTX_SIZE
+CFLASH_SLICE_CTX:
+        DEFS SLICECTX_SIZE
 
 
 SECTION code_16k
 
 
-;Z BLOCK-READ  ( dsk blk adrs -- )  Compact Flash read BLK and DSK
+;Z BLOCK-READ  ( slice-id blk adrs -- )  Compact Flash read BLK and SLICE-ID
 ; Reads the block from the Compact Flash card into memory
-; address found at 'adrs'. 'dsk' and 'blk' are the disk
+; address found at 'adrs'. 'slice-id' and 'blk' are the disk
 ; and block numbers respectively
 ;     >R BLK2LBA 2DUP R@   ( LBA-L LBA-H LBA-L LBA-H adrs ;  R: adrs )
-;     CF_SECTOR_READ       ( LBA-L LBA-H ;  R: adrs )
+;     CF-SECTOR-READ       ( LBA-L LBA-H ;  R: adrs )
 ;     1 M+                 ( LBA-L' LBA-H' ;  R: adrs )
 ;     R>  512 +            ( LBA-L' LBA-H' adrs' )
-;     CF_SECTOR_READ  THROW     ( )
+;     CF-SECTOR-READ  THROW     ( )
 ;     EXIT
 BLOCK_READ:
         call docolon
@@ -1802,9 +1756,9 @@ BLOCK_READ:
         dw SECTRDVEC,FETCH,EXECUTE,THROW
         dw EXIT
 
-;Z BLOCK-WRITE  ( dsk blk adrs -- )  Compact Flash write BLK and DSK
+;Z BLOCK-WRITE  ( slice-id blk adrs -- )  Compact Flash write BLK and SLICE-ID
 ; Writes the block to the Compact Flash card from memory
-; address found at 'adrs'. 'dsk' and 'blk' are the disk
+; address found at 'adrs'. 'slice-id' and 'blk' are the disk
 ; and block numbers respectively
 BLOCK_WRITE:
         call docolon
@@ -1818,16 +1772,16 @@ BLOCK_WRITE:
 ;Z BLOCK-READWRITE    ( ctx f -- )  read or write block
 ;                              f = 0 read, f = -1 write
 ;     >R >R
-;     R@ BLKCTX>DISK @
+;     R@ BLKCTX>SLICE @
 ;     R@ BLKCTX>BLOCK @
 ;     R@ BLKCTX>BUFFER @
 ;     0 R@ BLKCTX>FLAGS !
-;     R> DROP  R>      ( dsk blk adrs f )
+;     R> DROP  R>      ( slice-id blk adrs f )
 ;     IF BLOCK-WRITE ELSE BLOCK-READ ;
 BLOCK_READWRITE:
         call docolon
         dw TOR,TOR
-        dw RFETCH,BLKCTXTODISK,FETCH
+        dw RFETCH,BLKCTXTOSLICE,FETCH
         dw RFETCH,BLKCTXTOBLOCK,FETCH
         dw RFETCH,BLKCTXTOBUFFER,FETCH
         dw lit,0,RFETCH,BLKCTXTOFLAGS,STORE
@@ -1841,16 +1795,16 @@ BLOCK_READWRITE2:
 
 ;Z (BUFFER)      n -- ctx    get buffer context
 ;     DUP BLKLIMIT @ U< IF
-;     DUP BLK !
-;     DSK @
+;     SLICE
 ;     BLKCTX-GET
+;     DUP BLKCTX_CURR !
 ;     ELSE  -35 THROW THEN ;
 XBUFFER:
         call docolon
         dw DUP,BLKLIMIT,FETCH,ULESS,qbranch,XBUFFER1
-        dw DUP,BLK,STORE
-        dw DSK,FETCH
+        dw SLICE
         dw BLKCTX_GET
+        dw DUP,lit,BLKCTX_CURR,STORE
         dw EXIT
 XBUFFER1:
         dw lit,-35,THROW
@@ -1858,7 +1812,7 @@ XBUFFER1:
 
 
 ;C BUFFER        n -- addr         push buffer address
-;     (BUFFER)
+;     (BUFFER)       ( ctx )
 ;     BLKCTX>BUFFER @  ;
     head(BUFFER,BUFFER,docolon)
         dw XBUFFER
@@ -1882,22 +1836,22 @@ BLOCK1:
         dw EXIT
 
 ;C UPDATE                    --    mark block to update
-;     BLK @ DSK @ BLKCTX-FIND ?DUP IF
+;     BLKCTX_CURR @ ?DUP IF
 ;        BLKCTX>FLAGS -1 SWAP !
 ;     THEN ;
     head(UPDATE,UPDATE,docolon)
-        dw BLK,FETCH,DSK,FETCH,BLKCTX_FIND,QDUP,qbranch,UPDATE1
+        dw lit,BLKCTX_CURR,FETCH,QDUP,qbranch,UPDATE1
         dw BLKCTXTOFLAGS,lit,0xffff,SWOP,STORE
 UPDATE1:
         dw EXIT
 
 ;C UPDATED?                 blk -- f   is block updated?
-;     DSK @ BLKCTX-FIND DUP IF
-;         BLKCTX>FLAGS @
+;     SLICE BLKCTX-FIND DUP IF
+;         BLKCTX>FLAGS @ -1 =
 ;     THEN ;
     head(UPDATEDQ,UPDATED?,docolon)
-        dw DSK,FETCH,BLKCTX_FIND,DUP,qbranch,UPDATEDQ1
-        dw BLKCTXTOFLAGS,FETCH
+        dw SLICE,BLKCTX_FIND,DUP,qbranch,UPDATEDQ1
+        dw BLKCTXTOFLAGS,FETCH,lit,-1,EQUAL
 UPDATEDQ1:
         dw EXIT
 
@@ -2143,28 +2097,27 @@ INCOFFSET1:
 ;: (write-char) ( c -- )
 ;   blk-ptr @  ( c blk-ptr )
 ;   blk-offset @ + c!   ( )
+;   set-dirty
 ;   inc-offset ;
 XWRITE_CHAR:
     call docolon
     DW lit,blk_ptr,FETCH
     DW lit,blk_offset,FETCH,PLUS,CSTORE
+    DW SET_DIRTY
     DW INC_OFFSET
     DW EXIT
 
 ;: PUTCH ( c )
 ;   current-block
-;   set-dirty
 ;   (write-char) ;
     head_utils(PUTCH,PUTCH,docolon)
         DW CURRENT_BLOCK
-        DW SET_DIRTY
         DW XWRITE_CHAR
         DW EXIT
 
 ;: PUTCHARS ( c-addr u -- )
 ;   ?DUP IF
 ;     current-block  ( c-addr u )
-;     set-dirty
 ;     0 DO   ( c-addr )
 ;       DUP I + C@  ( c-addr c )
 ;       (write-char) ( c-addr )
@@ -2173,7 +2126,7 @@ XWRITE_CHAR:
     head_utils(PUTCHARS,PUTCHARS,docolon)
         DW QDUP,qbranch,PUTCHARS2
 
-        DW CURRENT_BLOCK,SET_DIRTY
+        DW CURRENT_BLOCK
         DW lit,0,xdo
 PUTCHARS1:
         DW DUP,II,PLUS,CFETCH
@@ -2284,15 +2237,11 @@ TYPS5:  DW EXIT
 
 
 ;Z  (LIST)            --    runtime for list screen
-;     BLK @
-;     L/B 0 DO I 2 .R SPACE I LL LOOP
-;     BLK !  ;
+;       L/B 0 DO I 2 .R SPACE I LL LOOP    ;
     head_utils(XLIST,(LIST),docolon)
-        dw BLK,FETCH
         dw L_B,lit,0,xdo
 XLIST1:
         dw II,lit,2,DOTR,SPACE,II,LL,xloop,XLIST1
-        dw BLK,STORE
         dw EXIT
 
 ;C LIST ( n -- )            list screen number
@@ -2309,23 +2258,19 @@ XLIST1:
 ;     CR 1+ SWAP DO I 2 .R SPACE I DUP SCR ! BLOCK DROP 0 LL LOOP
 ;     R> BLK !   ;
     head(INDEX,INDEX,docolon)
-        dw BLK,FETCH,TOR
         dw CR,ONEPLUS,SWOP,xdo
 INDEX1:
         dw II,lit,5,DOTR,SPACE
         dw II,DUP,SCR,STORE,BLOCK,DROP
         dw lit,0,LL,xloop,INDEX1
-        dw RFROM,BLK,STORE
         dw EXIT
 
 ;Z WIPE     ( n -- erase block n )
 ;    BUFFER 1024 BLANKS
 ;    UPDATE ;
     head(WIPE,WIPE,docolon)
-        dw BLK,FETCH,TOR
         dw BUFFER,lit,1024,BLANKS
         dw UPDATE
-        dw RFROM,BLK,STORE
         dw EXIT
 
 ; snapshots
@@ -2425,32 +2370,24 @@ defc SNAPSHOT_RST_LEN = 128-24
         dw EXIT
 
 ;: BSAVE   ( c-addr u blk -- )
-;     BLK @ >R
 ;     0 (OPEN-BLKFILE)
 ;     WRITE-BLKFILE
-;     (CLOSE-BLKFILE)   
-;     R> BLK !   ;
+;     (CLOSE-BLKFILE)    ;
     head(BSAVE,BSAVE,docolon)
-        dw BLK,FETCH,TOR
         dw lit,0,BEGIN_BLKFILE
         dw PUTCHARS
         dw END_BLKFILE,TWODROP
-        dw RFROM,BLK,STORE
         dw EXIT
 
 
 ;: BLOAD   ( c-addr u blk -- )
-;     BLK @ >R
 ;     0 (OPEN-BLKFILE)
 ;     READ-BLKFILE,DROP
-;     (CLOSE-BLKFILE)  
-;     R> BLK !   ;
+;     (CLOSE-BLKFILE)  ;
     head(BLOAD,BLOAD,docolon)
-        dw BLK,FETCH,TOR
         dw lit,0,BEGIN_BLKFILE
         dw GETCHARS,DROP
         dw END_BLKFILE,TWODROP
-        dw RFROM,BLK,STORE
         dw EXIT
 
 
@@ -2465,7 +2402,7 @@ defc BLK_DATA_SIZE   = 1024-BLK_HEADER_SIZE
 ;    snapshot
 ; --------------------------------------------------------------
 ;    Setup header
-;    BUFFER     ( c-addr u buffer -- ; blk in BLK)
+;    BUFFER     ( c-addr u buffer -- )
 ;      DUP BLK_HEADER_SIZE ERASE ( c-addr u buffer ; erase header at buffer )
 ;      BLK_HEADER_SIZE OVER !    ( c-addr u buffer ; store header size at buffer+0 )
 ;      CELL+ 2DUP !              ( c-addr u buffer+2 ; store data size at buffer+2 )
@@ -2481,51 +2418,47 @@ XSAVEHDR:
         dw EXIT
 
 ;: SAVE   ( blk -- )
-;     BLK @ >R
 ;    DUP WIPE
-;    enddict   DP @ enddict -    ( blk c-addr u )
-;    ROT BUFFER                  ( c-addr u buffer -- ; blk in BLK)
-;    (SAVEHDR)                   ( c-addr u )
+;    DUP >R                      ( blk ; blk )
+;    enddict   DP @ enddict -    ( blk c-addr u ; blk )
+;    ROT BUFFER                  ( c-addr u buffer -- ; blk )
+;    (SAVEHDR)                   ( c-addr u ; blk )
 ;
-;    BLK @  BLK_HEADER_SIZE
+;    R> BLK_HEADER_SIZE
 ;    BEGIN-BLKFILE
 ;    PUTCHARS
 ;    END-BLKFILE  2DROP
-;     R> BLK !   
 ;    FLUSH  ;
     head(SAVE,SAVE,docolon)
-        dw BLK,FETCH,TOR
         dw DUP,WIPE
+        dw DUP,TOR
         dw lit,enddict,DP,FETCH,lit,enddict,MINUS  ;  ( block c-addr u )
         dw ROT,BUFFER                              ;  ( c-addr u buffer )
         dw XSAVEHDR
 
-        dw BLK,FETCH,lit,BLK_HEADER_SIZE
+        dw RFROM,lit,BLK_HEADER_SIZE
         dw BEGIN_BLKFILE
         dw PUTCHARS
         dw END_BLKFILE,TWODROP
-        dw RFROM,BLK,STORE
         dw FLUSH
         dw EXIT
 
 ;: RESTORE   ( blk -- )
-;     BLK @ >R
-;    BLOCK                       ( buffer -- ; blk in BLK)
-;    DUP @                       ( buffer hdr_size )
-;    OVER +                      ( buffer buffer' )
-;    SWAP CELL+ DUP @            ( buffer' buffer data_size )
-;    SWAP CELL+ SNAPSHOT>    ( buffer' data_size )
+;    DUP >R BLOCK                   ( blk buffer -- ; blk )
+;    DUP @                       ( buffer hdr_size ; blk )
+;    OVER +                      ( buffer buffer' ; blk )
+;    SWAP CELL+ DUP @            ( buffer' buffer data_size ; blk )
+;    SWAP CELL+ SNAPSHOT>    ( buffer' data_size ; blk )
 ;
-;    SWAP enddict ROT       ( buffer' enddict u)
+;    SWAP enddict ROT       ( buffer' enddict u ; blk )
 ;
-;    BLK @  BLK_HEADER_SIZE
+;    R>  BLK_HEADER_SIZE
 ;    BEGIN-BLKFILE
 ;    GETCHARS,DROP
-;    END-BLKFILE 2DROP  
-;     R> BLK !   ;
+;    END-BLKFILE 2DROP   
+;    ENTRY @ EXECUTE  ;
     head(RESTORE,RESTORE,docolon)
-        dw BLK,FETCH,TOR
-        dw BLOCK
+        dw DUP,TOR,BLOCK
         dw DUP,FETCH               ; header size
         dw OVER,PLUS
         dw SWOP,CELLPLUS,DUP,FETCH
@@ -2534,11 +2467,10 @@ XSAVEHDR:
 
         dw SWOP,lit,enddict,ROT
 
-        dw BLK,FETCH,lit,BLK_HEADER_SIZE
+        dw RFROM,lit,BLK_HEADER_SIZE
         dw BEGIN_BLKFILE
         dw GETCHARS,DROP
         dw END_BLKFILE,TWODROP
-        dw RFROM,BLK,STORE
         dw ENTRY,FETCH,EXECUTE
         dw EXIT
 
@@ -2996,7 +2928,7 @@ REC_IHEX2:
         DW REFILLVEC,FETCH
         DW SOURCE_ID
         DW BLK,FETCH
-        DW DSK,FETCH
+        DW SLICE_ID,FETCH
         DW TICKSOURCE,TWOFETCH
         DW TOIN,FETCH
         DW lit,7
@@ -3008,7 +2940,7 @@ REC_IHEX2:
         DW lit,7,EQUAL,qbranch,RESTORE_INPUT1
         DW TOIN,STORE
         DW TICKSOURCE,TWOSTORE
-        DW DSK,STORE
+        DW SLICE_ID,STORE
         DW BLK,STORE
         DW TICKSOURCE_ID,STORE
         DW REFILLVEC,STORE
@@ -3124,7 +3056,8 @@ dnl        DW lit,editor_lastword,EDITOR_WORDLIST,STORE
         DW XSQUOTE
         DB 10," - 16K ROM"
         DW TYPE,CR
-        DW SLASHCFLASH,CF_DISK_ID,SLASHDISK
-        DW CF_DISK_ID,DSK,STORE
+        DW SLASHCFLASH
+        DW CF_DRIVE_ID,lit,0,CF_SLICE_ID,SLASHSLICE
+        DW CF_SLICE_ID,SELECT
         dw EXIT
 
