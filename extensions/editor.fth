@@ -1,20 +1,52 @@
 \  RC2014 simple editor
+ONLY FORTH ALSO UTILS 
+VOCABULARY EDITOR    
+ALSO EDITOR DEFINITIONS
 
-ONLY FORTH ALSO UTILS ALSO EDITOR    DEFINITIONS
+1 13 +THRU
 
-1 8 +THRU
+ONLY FORTH DEFINITIONS
+ALSO EDITOR
 
-
-
-
-
-
-
-
+.( Editor loaded )
 
 
 
-\  RC2014 simple editor   ( 1 / n)
+
+
+\  RC2014 simple editor
+: S    ( n -- )   \  select screen n
+     DUP SCR ! BLOCK DROP ;
+: IA   ( column row -- )  \ insert at column,row
+     (LINE) + >R 13 WORD COUNT R> SWAP MOVE UPDATE ;
+: Y   ( n -- )      \  yank line into PAD
+    (LINE) PAD 1+ C/L MOVE
+    C/L PAD !  ;
+: P   ( n -- )      \  paste contents of PAD at line n
+   PAD COUNT (LINE) SWAP MOVE UPDATE  ;
+: I   ( n -- )       \     put text at line n
+     0 SWAP IA ;
+: E   ( n -- )     \  erase line n
+    (LINE) C/L BL FILL UPDATE ;
+
+
+\  RC2014 simple editor
+: B   ( -- )   \ back one screen
+     -1 SCR +!
+     SCR @ 0 SLICE SLICE>LIMIT @
+     WITHIN INVERT IF
+        0 SCR !
+     THEN ;
+: N   ( -- )   \ next screen
+     1 SCR +! ;
+     SCR @ 0 SLICE SLICE>LIMIT @
+     WITHIN INVERT IF
+        SLICE SLICE>LIMIT @ 1- SCR !
+     THEN ;
+: L   ( -- )
+     SCR @ LIST ;
+
+\  RC2014 full screen editor   ( 1 / n)
 : .BLOCK  ( -- )  \ block status
     ." Screen: " SCR @ DUP . UPDATED? 43 + EMIT SPACE ;
 : .RULER  ( -- ) \ print ruler
