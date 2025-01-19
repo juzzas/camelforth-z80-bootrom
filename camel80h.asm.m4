@@ -501,43 +501,48 @@ TYP5:   DW EXIT
         DW RFROM,COUNT,TWODUP,PLUS,ALIGNED,TOR
         DW EXIT
 
-; allocate buffer for S"
-;Z (SBUFFER)      -- c-addr
+; allocate a system PAD buffer for S"
+;     supports 4 x 128byte strings at SQUOTE_TOP
+;Z SPAD        -- c-addr
 ;   sbuffer_index_ptr @ 3 AND    ( index )
 ;   1+ 7 LSHIFT
 ;   SQUOTE_TOP -         ( addr )
 ;   1 sbuffer_index_ptr +!  ;
-XSBUFFER:
-        call docolon
+    head(SPAD,SPAD,docolon)
         DW lit,sbuffer_index_ptr,FETCH,lit,0x3,AND
         DW ONEPLUS,lit,7,LSHIFT
         DW lit,SQUOTE_TOP,SWOP,MINUS
         DW lit,1,lit,sbuffer_index_ptr,PLUSSTORE
         DW EXIT
 
+;Z >SPAD    addr u -- addr' u'
+;  allocate an SPAD and copy string to it
+;   SPAD               ( addr u addr' )
+;   SWAP 2DUP >R >R    ( addr addr' u   r: u addr' )
+;   MOVE R> R>         ( addr' u )
+    head(TOSPAD,>SPAD,docolon)
+       DW SPAD,SWOP,TWODUP,TOR,TOR,MOVE,RFROM,RFROM
+       DW EXIT
+
 ;C S"       --         compile in-line string
 ;C S"       -- addr u  interpret in-line string
-;     supports 4 x 128byte strings at SQUOTE_TOP
+;   22 PARSE       ( addr u )
 ;  STATE @ IF
 ;   COMPILE (S")  [ HEX ]
-;   22 PARSE HERE >counted HERE C@ 1+ ALIGNED ALLOT EXIT
+;   HERE >counted HERE C@ 1+ ALIGNED ALLOT EXIT
 ;  ELSE
-;   22 PARSE       ( addr u )
-;   (XSBUFFER)          ( addr u addr' )
-;   SWAP 2DUP >R >R    ( addr addr' u   r: u addr )
-;   MOVE R> R>         ( addr u )
-;  THEN  ; IMMEDIATE
+;   >SPAD              ( addr' u' )
+;  THEN ; IMMEDIATE
     immed(SQUOTE,S",docolon)
+        DW lit,22H,PARSE
         DW STATE,FETCH,qbranch,SQUOTE1
+
         DW lit,XSQUOTE,COMMAXT
-        DW lit,22H,PARSE,HERE,TOCOUNTED,HERE,CFETCH,ONEPLUS
+        DW HERE,TOCOUNTED,HERE,CFETCH,ONEPLUS
         DW ALIGNED,ALLOT,EXIT
 
 SQUOTE1:
-        DW lit,22H,PARSE
-        DW XSBUFFER
-        DW SWOP,TWODUP,TOR,TOR
-        DW MOVE,RFROM,RFROM
+        DW TOSPAD
         DW EXIT
 
 SECTION data
@@ -1061,7 +1066,7 @@ QUIT3:  DW DUP,lit,65534,EQUAL,qbranch,QUIT4
         ; default
 QUIT4:
         DW XSQUOTE
-        DB 11," EXCEPTION "
+        DB 7," ERROR "
         DW TYPE,DOT,CR
         DW branch,QUIT1
 
@@ -1512,6 +1517,11 @@ tdiv1:
         DW sequal,ZEROEQUAL
         DW EXIT
 
+SIGNON:
+        call docolon
+        DW lit,camel_signon
+        DW lit,camel_signon_len
+        DW TYPE,EXIT
 
 ;Z COLD     --      cold start Forth system
 ;   UINIT U0 #INIT CMOVE      init user area
@@ -1520,14 +1530,12 @@ tdiv1:
 ;   ABORT ;
     head(COLD,COLD,docolon)
         DW UINIT,U0,NINIT,CMOVE
-       ; DW lit,NOOP,PAUSEVEC,STORE
+        DW lit,NOOP,PAUSEVEC,STORE
+        DW SIGNON,CR
        ; DW lit,enddict,DP,STORE
        ; DW lit,lastword,LATEST,STORE
-        DW lit,camel_signon
-        DW lit,camel_signon_len
-        DW TYPE,CR
         DW lit,65535,RAMTOP,STORE
-        ;DW lit,0,INTVEC,STORE
+        DW lit,0,INTVEC,STORE
         DW ROM16KQ,qbranch,COLD1
         DW lit,65535,lit,flag_rom16k,STORE
         DW SLASH16KROM
@@ -1546,9 +1554,7 @@ COLD1:  DW lit,lastword8k,LATEST,STORE
 ;   ." Z80 CamelForth etc."
 ;   ABORT ;
     head(WARM,WARM,docolon)
-        DW lit,camel_signon
-        DW lit,camel_signon_len
-        DW TYPE
+        DW SIGNON
         DW XSQUOTE
         DB 7," (warm)"
         DW TYPE,CR
@@ -1591,8 +1597,8 @@ CONTEXT1:
             dw EXIT
 
 camel_signon:
-        DB "Z80 CamelForth v1.02+extras"
-	defc camel_signon_len = 27
+        DB "Z80 CamelForth v1.02+"
+	defc camel_signon_len = 21
 
 SECTION data
 

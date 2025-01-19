@@ -60,7 +60,7 @@ SECTION rodata
 signon_msg:
     DEFM 13, 10
     DEFM "RC2014 - CamelForth BootROM - STAGING", 13, 10
-    DEFM "Ported to RC2014 ROM by Justin Skists", 13, 10, 0
+    DEFM "Ported to RC2014 ROM by J. Skists", 13, 10, 0
 
 
 SECTION rc2014
