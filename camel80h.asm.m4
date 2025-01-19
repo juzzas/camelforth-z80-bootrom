@@ -95,6 +95,10 @@ SECTION code
             dw 18
 
     ;  20 USER BLK
+    BLK:
+            call douser
+            dw 20
+
     ;  22 USER SLICE-ID
     ;  24 USER SCR
 
@@ -861,9 +865,10 @@ TONUM3: DW EXIT
     head(QNUMBER,?NUMBER,docolon)
         DW DUP,lit,0,DUP,ROT,COUNT
         DW QSIGN,TOR,TONUMBER,qbranch,QNUM1
-        DW RFROM,TWODROP,TWODROP,FALSE
+        DW RFROM,TWODROP,TWODROP,lit,0
         DW branch,QNUM3
-QNUM1:  DW TWODROP,NIP,RFROM,qbranch,QNUM2,NEGATE
+QNUM1:  DW TWODROP,NIP,RFROM,qbranch,QNUM2
+        DW NEGATE
 QNUM2:  DW lit,-1
 QNUM3:  DW EXIT
 
@@ -897,8 +902,8 @@ INTERPIHEX2:
 ;           1+ STATE @ 0= OR    `immed' or interp?
 ;           IF EXECUTE ELSE ,XT THEN
 ;       ELSE                    -- textadr
-;           DUP COUNT IHEX?
-;           ?DUP  IF        -- textadr src dest len f
+;           DUP COUNT IHEX?   -- textadr  f
+;           ?DUP  IF        -- textadr 
 ;               INTERPRET_IHEX  -- textadr
 ;               DROP
 ;           ELSE
@@ -1530,12 +1535,12 @@ SIGNON:
 ;   ABORT ;
     head(COLD,COLD,docolon)
         DW UINIT,U0,NINIT,CMOVE
-        DW lit,NOOP,PAUSEVEC,STORE
+       ; DW lit,NOOP,PAUSEVEC,STORE
         DW SIGNON,CR
        ; DW lit,enddict,DP,STORE
        ; DW lit,lastword,LATEST,STORE
         DW lit,65535,RAMTOP,STORE
-        DW lit,0,INTVEC,STORE
+       ; DW lit,0,INTVEC,STORE
         DW ROM16KQ,qbranch,COLD1
         DW lit,65535,lit,flag_rom16k,STORE
         DW SLASH16KROM
@@ -1598,7 +1603,7 @@ CONTEXT1:
 
 camel_signon:
         DB "Z80 CamelForth v1.02+"
-	defc camel_signon_len = 21
+        defc camel_signon_len = 21
 
 SECTION data
 

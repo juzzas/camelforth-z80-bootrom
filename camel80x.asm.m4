@@ -40,8 +40,8 @@ SECTION code_16k
 
     ;Z BLK      -- a-addr     block number storage
     ;  20 USER BLK
-        head(BLK,BLK,douser)
-            dw 20
+        head(USERBLK,BLK,docode)
+            jp BLK
 
     ;Z SLICE-ID      -- a-addr   storage of current slice-id
     ;  22 USER SLICE-ID
