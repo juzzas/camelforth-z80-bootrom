@@ -3054,7 +3054,7 @@ dnl        DW lit,editor_lastword,EDITOR_WORDLIST,STORE
         DW SLASHBLKCTX
         DW SLASHTEMPBUFF
         DW XSQUOTE
-        DB 10," - 16K ROM"
+        DB 7,"16K ROM"
         DW TYPE,CR
         DW SLASHCFLASH
         DW CF_DRIVE_ID,lit,0,CF_SLICE_ID,SLASHSLICE

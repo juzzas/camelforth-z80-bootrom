@@ -41,26 +41,7 @@ DEFC CHAR_LF = 10
 
 ;; _main arrives with interrupts disabled
 _main:
-    ld hl, signon_msg
-
-loop_signon:
-    ld a, (hl)
-    or a
-    jr z, loop_exit
-    rst 8
-    inc hl
-    jr loop_signon
-
-loop_exit:
     jp main_code_start
-
-
-SECTION rodata
-
-signon_msg:
-    DEFM 13, 10
-    DEFM "RC2014 - CamelForth BootROM - STAGING", 13, 10
-    DEFM "Ported to RC2014 ROM by J. Skists", 13, 10, 0
 
 
 SECTION rc2014

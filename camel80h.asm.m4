@@ -1522,10 +1522,10 @@ tdiv1:
         DW sequal,ZEROEQUAL
         DW EXIT
 
-SIGNON:
+DOTSIGNON:
         call docolon
-        DW lit,camel_signon
-        DW lit,camel_signon_len
+        DW lit,signon_msg
+        DW lit,signon_msg_len
         DW TYPE,EXIT
 
 ;Z COLD     --      cold start Forth system
@@ -1535,12 +1535,8 @@ SIGNON:
 ;   ABORT ;
     head(COLD,COLD,docolon)
         DW UINIT,U0,NINIT,CMOVE
-       ; DW lit,NOOP,PAUSEVEC,STORE
-        DW SIGNON,CR
-       ; DW lit,enddict,DP,STORE
-       ; DW lit,lastword,LATEST,STORE
+        DW DOTSIGNON,CR
         DW lit,65535,RAMTOP,STORE
-       ; DW lit,0,INTVEC,STORE
         DW ROM16KQ,qbranch,COLD1
         DW lit,65535,lit,flag_rom16k,STORE
         DW SLASH16KROM
@@ -1559,9 +1555,9 @@ COLD1:  DW lit,lastword8k,LATEST,STORE
 ;   ." Z80 CamelForth etc."
 ;   ABORT ;
     head(WARM,WARM,docolon)
-        DW SIGNON
+        DW DOTSIGNON,CR
         DW XSQUOTE
-        DB 7," (warm)"
+        DB 6,"(warm)"
         DW TYPE,CR
         DW ROM16KQ,qbranch,WARM1
         DW SLASH16KROM
@@ -1601,9 +1597,15 @@ CONTEXT1:
             dw LATEST
             dw EXIT
 
-camel_signon:
-        DB "Z80 CamelForth v1.02+"
-        defc camel_signon_len = 21
+
+signon_msg:
+    DEFM "RC2014 - Z80 CamelForth BootROM - STAGING", 13, 10
+    DEFM "Ported to RC2014 ROM by J. Skists"
+signon_msg_end:
+
+defc signon_msg_len = signon_msg_end - signon_msg
+
+
 
 SECTION data
 
