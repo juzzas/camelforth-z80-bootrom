@@ -145,9 +145,6 @@ forth_state_stack_save:
 
 SECTION code
 
-; RC2014 EXTENSION multitask ======================
-
-
 
 ; RC2014 EXTENSION misc ======================
 ;Z \   (  --     comment to end of line )
@@ -211,22 +208,23 @@ DUMP1:
     head(BOUNDS,BOUNDS,docolon)
         DW OVER,PLUS,SWOP,EXIT
 
-; HEXLOAD implementation ==========================
+;Z C+!    ( byte c-addr -- )
+    head(CPLUSSTORE,C+!,docode)
+        ld a,(bc)
+        pop hl
+        add a,l
+        ld (bc),a
+        pop bc
+        next
 
-;Z IHXCRC+  ( c -- )
-;    IHXCRC +! ;
-IHXCRCPLUS:
-        call docolon
-        DW IHXCRC,PLUSSTORE
-        DW EXIT
+; HEXLOAD implementation ==========================
 
 ;Z ?IHXCRC  ( c -- flag )    ( does the crc match? )
 ;    IHXCRC @ NEGATE FF AND = ;
 QIHXCRC:
         call docolon
-        DW IHXCRC,FETCH,NEGATE,lit,255,AND,EQUAL
+        DW IHXCRC,CFETCH,NEGATE,lit,255,AND,EQUAL
         DW EXIT
-
 
 
 ;Z (IHXBYTE)  ( tib-ptr -- c tib-ptr' )
@@ -256,11 +254,11 @@ XIHXBYTE:
 
 ;Z IHXBYTE  ( tib-ptr -- u tib-ptr )
 ;    (IHXBYTE)
-;    OVER IHXCRC+  ;
+;    OVER IHXCRC C+!  ;
 IHXBYTE:
         call docolon
         DW XIHXBYTE
-        DW OVER,IHXCRCPLUS
+        DW OVER,IHXCRC,CPLUSSTORE
         DW EXIT
 
 
@@ -306,7 +304,7 @@ IHXCRC:
 
 ;: IHEX? ( addr len -- src dest n -1   if ok, 0 if not recognised, 1 if end )
 ;    DROP
-;    0 IHXCRC !
+;    0 IHXCRC C!
 ;    DUP C@ [CHAR] : <> IF DROP 0  ( no colon ) EXIT  THEN
 ;
 ;    CHAR+
@@ -340,7 +338,7 @@ IHXCRC:
 XIHEXQ:
         call docolon
         DW DROP
-        DW lit,0,IHXCRC,STORE
+        DW lit,0,IHXCRC,CSTORE
         DW DUP,CFETCH,lit,58,NOTEQUAL,qbranch,XIHEXQ1
         DW DROP,lit,0,EXIT
 
@@ -415,14 +413,14 @@ IHEXCOMMA:
     head(HEXLOAD,HEXLOAD,docolon)
         DW lit,0,lit,ihex_start,STORE
         DW lit,0,lit,ihex_length,STORE
-	DW TRUE,lit,ihex_flag,STORE
+    DW TRUE,lit,ihex_flag,STORE
         DW EXIT
 
 ;: ;HEXLOAD     ( -- ihex_start ihex_length )
 ;    IHEX_START @
 ;    IHEX_LENGTH @   ;
     head(SEMIHEXLOAD,;HEXLOAD,docolon)
-	DW FALSE,lit,ihex_flag,STORE
+    DW FALSE,lit,ihex_flag,STORE
         DW lit,ihex_start,FETCH
         DW lit,ihex_length,FETCH
         DW EXIT
@@ -430,10 +428,10 @@ IHEXCOMMA:
 SECTION data
 
 ihex_flag:
-	DEFS 2
+    DEFS 2
 
 ihxcrc_ptr:
-        DEFS 2
+        DEFS 1
 
 ihex_start:
         DEFS 2

@@ -116,10 +116,6 @@ EXTERN pausevec_ptr
         head(FORTH_WORDLIST,FORTH-WORDLIST,docode)
             jp LATEST
 
-dnl ;: EDITOR-WORDLIST ( -- wid )
-dnl        head(EDITOR_WORDLIST,EDITOR-WORDLIST,docon)
-dnl            dw editor_wordlist_head
-
 ;: VOCAB-WORDLIST ( -- wid )
         head(VOCAB_WORDLIST,VOCAB-WORDLIST,docon)
             dw vocab_wordlist_head
@@ -934,8 +930,8 @@ STACK_WORDLISTS:
 vocab_wordlist_head:
         ds 2
 
-; editor_wordlist_head:
-;        ds 2
+environment_wordlist_head:
+       ds 2
 
 utils_wordlist_head:
         ds 2
@@ -1127,12 +1123,6 @@ FINDNG1:
         dw FORTH_WORDLIST
         dw WORDLISTS,STACKSTORE
         dw EXIT
-
-dnl ;CREATE EDITOR  EDITOR-WORDLIST , DO-VOCABULARY
-dnl     head_vocab(EDITOR,EDITOR,docolon)
-dnl         dw EDITOR_WORDLIST
-dnl         dw WORDLISTS,STACKSTORE
-dnl         dw EXIT
 
 ;CREATE UTILS  UTILS-WORDLIST , DO-VOCABULARY
     head_vocab(UTILS,UTILS,docolon)
@@ -2281,7 +2271,7 @@ INDEX1:
 ;              LFAs point to ROM. They need to be patched in
 ;              the likely case that the ROM is updated.
 ;              Currently, the ROM'd wordlists are
-;              FORTH, EDITOR, VOCS, UTILS.
+;              FORTH, VOCS, UTILS.
 ;              If zero, then the matching wordlist hasn't been
 ;              extended by the user.
 ;    0090   | copy of Wordlist order (34 bytes)
@@ -3043,7 +3033,6 @@ SLASH16KROM:
         DW lit,INTERPRET_16K,lit,xt_interpret,STORE
         DW lit,WORDS_16K,lit,xt_words,STORE
         DW lit,XREFILL_16K,lit,xt_refill,STORE
-dnl        DW lit,editor_lastword,EDITOR_WORDLIST,STORE
         DW lit,utils_lastword,UTILS_WORDLIST,STORE
         DW lit,vocab_lastword,VOCAB_WORDLIST,STORE
         DW WORDLISTS,lit,STACK_WORDLISTS_SIZE,SLASHSTACK
