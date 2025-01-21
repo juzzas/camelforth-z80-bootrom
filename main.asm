@@ -36,9 +36,6 @@ PUBLIC _main
 
 SECTION code
 
-DEFC CHAR_CR = 13
-DEFC CHAR_LF = 10
-
 ;; _main arrives with interrupts disabled
 _main:
     jp main_code_start
