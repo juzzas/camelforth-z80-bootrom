@@ -1536,7 +1536,7 @@ DOTSIGNON:
     head(COLD,COLD,docolon)
         DW UINIT,U0,NINIT,CMOVE
         DW DOTSIGNON,CR
-        DW lit,65535,RAMTOP,STORE
+        DW lit,65535,RAMTOPSTORE
         DW ROM16KQ,qbranch,COLD1
         DW lit,65535,lit,flag_rom16k,STORE
         DW SLASH16KROM

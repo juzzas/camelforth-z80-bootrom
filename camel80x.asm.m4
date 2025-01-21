@@ -227,6 +227,19 @@ SECTION code_16k
         dw TEMPBUFF_BASE,HERE,MINUS
         dw EXIT
 
+;C BOUNDS ( c-addr n -- n-end n-start )
+;    OVER + SWAP ;
+    head(BOUNDS,BOUNDS,docolon)
+        DW OVER,PLUS,SWOP,EXIT
+
+;Z C+!    ( byte c-addr -- )
+    head(CPLUSSTORE,C+!,docode)
+        ld a,(bc)
+        pop hl
+        add a,l
+        ld (bc),a
+        pop bc
+        next
 
 
 ; RC2014 EXTENSION output ====================
@@ -1380,10 +1393,10 @@ BLKCTXNUM:
 
 
 ;Z BLKFIRST      -- a-adrs      address of first block buffer
-;   RAMTOP @ 0xFC00 AND 0x1000 - ;
+;   RAMTOP 0xFC00 AND 0x1000 - ;
 BLKFIRST:
         call docolon
-        dw RAMTOP,FETCH,lit,0xFC00,AND,lit,0x1000,MINUS
+        dw RAMTOP,lit,0xFC00,AND,lit,0x1000,MINUS
         dw EXIT
 
 ;Z BLKCTX-NEXT  ( -- ctx )  increment buffer structure
@@ -3050,3 +3063,9 @@ SLASH16KROM:
         DW CF_SLICE_ID,SELECT
         dw EXIT
 
+
+RAMPTOPSTORE_16K:
+        call docolon
+        DW SLASHBLKCTX
+        DW SLASHTEMPBUFF
+        dw EXIT

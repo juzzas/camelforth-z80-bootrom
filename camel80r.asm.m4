@@ -35,10 +35,19 @@
 
 SECTION code
 
-;Z RAMTOP      -- a-addr   address of first USER reserved byte
+;Z RAMTOP      -- u    return RAMPTOP as u
 ;  ramtop_ptr CONSTANT RAMTOP
-    head_utils(RAMTOP,RAMTOP,docon)
-        dw ramtop_ptr
+    head_utils(RAMTOP,RAMTOP,docolon)
+        dw lit,ramtop_ptr,FETCH,EXIT
+
+;Z RAMTOP!    u --   set RAMTOP to be address specified by u
+;  ramtop_ptr CONSTANT RAMTOP
+    head_utils(RAMTOPSTORE,RAMTOP!,docolon)
+        dw lit,ramtop_ptr,STORE
+        dw ROM16KQ,qbranch,RAMPTOPSTORE1
+        dw RAMPTOPSTORE_16K
+RAMPTOPSTORE1:
+        dw EXIT
 
 SECTION data
 
@@ -203,19 +212,6 @@ DUMP1:
         dw lit,0,lit,0,AT_XY
         dw EXIT
 
-;C BOUNDS ( c-addr n -- n-end n-start )
-;    OVER + SWAP ;
-    head(BOUNDS,BOUNDS,docolon)
-        DW OVER,PLUS,SWOP,EXIT
-
-;Z C+!    ( byte c-addr -- )
-    head(CPLUSSTORE,C+!,docode)
-        ld a,(bc)
-        pop hl
-        add a,l
-        ld (bc),a
-        pop bc
-        next
 
 ; HEXLOAD implementation ==========================
 
