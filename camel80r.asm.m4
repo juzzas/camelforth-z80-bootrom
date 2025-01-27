@@ -175,7 +175,7 @@ BACKSLASH1:
     DW EXIT
 
 ;X SLITERAL    c-addr u --    compile string literal
-;    ['] (S") ,XT
+;    ['] (S")
 ;    DUP C,     ( store size )
 ;    HERE   OVER ALIGNED ALLOT
 ;    SWAP MOVE

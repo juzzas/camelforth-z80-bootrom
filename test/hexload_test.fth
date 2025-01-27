@@ -1,9 +1,18 @@
 ( This is a test C file compiled to 0xA000                   )
-( HEX 9000 CALL                                              )
+.( starting HEXLOAD test #1 )
 
-: TEST ." Hi!" CR ;
+ONLY FORTH ALSO UTILS
+40960 RAMTOP
+PREVIOUS
 
-TEST
+1 10 +THRU
+RUN
+.( PASS if greeting was shown )
+
+
+
+
+
 
 HEXLOAD
     :10A00000ED7373A83100FC216FA80104001E00CD80

@@ -241,6 +241,85 @@ SECTION code_16k
         pop bc
         next
 
+;Z >SPADC    addr u -- c-addr'
+;  allocate an SPAD and copy counted string to it
+;   SPAD               ( addr u addr' )
+;   DUP >R         ( addr u addr'   r: addr' )
+;   >COUNTED R>         ( c-addr' )
+    head(TOSPADC,>SPADC,docolon)
+       DW SPAD,DUP,TOR,TOCOUNTED,RFROM
+       DW EXIT
+
+;Z (C")     -- c-addr u   run-time code for C"
+;   R> DUP COUNT + ALIGNED >R  ;
+    head(XCQUOTE,(C"),docolon)
+        DW RFROM,DUP,COUNT,PLUS,ALIGNED,TOR
+        DW EXIT
+
+;C C"       --         compile in-line counted string
+;C C"       -- addr    interpret in-line counted string
+;   22 PARSE       ( addr u )
+;  STATE @ IF
+;   COMPILE (C")  [ HEX ]
+;   HERE >counted HERE C@ 1+ ALIGNED ALLOT EXIT
+;  ELSE
+;   SPAD DUP >R  >SPAD              ( addr' u' )
+;  THEN ; IMMEDIATE
+    immed(CQUOTE,C",docolon)
+        DW lit,22H,PARSE
+        DW STATE,FETCH,qbranch,CQUOTE1
+
+        DW lit,XCQUOTE,COMMAXT
+        DW HERE,TOCOUNTED,HERE,CFETCH,ONEPLUS
+        DW ALIGNED,ALLOT,EXIT
+
+CQUOTE1:
+        DW TOSPADC
+        DW EXIT
+
+
+
+; : $,             \ caddr len --
+; \ Lay the string into the dictionary at HERE, reserve
+; \ space for it and ALIGN the dictionary.
+;   HERE >counted HERE C@ 1+ ALIGNED ALLOT ;
+    head(STRINGCOMMA,``$,'',docolon)
+        DW HERE,TOCOUNTED
+        DW HERE,CFETCH,ONEPLUS,ALIGNED,ALLOT
+        DW EXIT
+
+; : ",            \ "ccc<quote>"  --
+; \ Parse text up to the closing quote and compile into
+; \ the dictionary at HERE as a counted string.
+; \ The end of the string is aligned.
+;   [char] " parse $,   ;
+    immed(QUOTECOMMA,``",'',docolon)
+        DW lit,'"',PARSE,STRINGCOMMA,EXIT
+
+
+;: ADDCHAR       ( c c-addr -- )
+;\ Add the character to the end of the counted string.
+;  TUCK COUNT + C!
+;  1 SWAP C+!    ;
+    head(ADDCHAR,ADDCHAR,docolon)
+        DW TUCK,COUNT,PLUS,CSTORE
+        DW lit,1,SWOP,CPLUSSTORE
+        DW EXIT
+
+;: APPEND          ( c-addr u c-dest  -- )
+;\ Add the string described by c-addr/u to the counted
+;\ string at c-dest.
+;  2DUP C@ TUCK +    \ -- caddr u $dest lend lens+lend ; new len
+;  2 PICK C!         \ -- caddr u $dest lend ; update length
+;  CHAR+ +           \ -- caddr u $d+1+lend ; dest buffer addr
+;  SWAP MOVE   ;      \ -- ; copy string
+    head(APPEND,APPEND,docolon)
+        DW TWODUP,CFETCH,TUCK,PLUS
+        DW lit,2,PICK,CSTORE
+        DW CHARPLUS,PLUS
+        DW SWOP,MOVE
+        DW EXIT
+
 
 ; RC2014 EXTENSION output ====================
 
@@ -1906,8 +1985,7 @@ LOAD_REFILL:
         call docolon
         dw BLK,FETCH,BLKLIMIT,ULESS,qbranch,LOAD_REFILL1
         dw lit,1,BLK,PLUSSTORE
-        dw BLK,FETCH,BLOCK,B_BLK
-        dw TICKSOURCE,TWOSTORE
+        dw BLK,FETCH,BLOCK,B_BLK,TICKSOURCE,TWOSTORE
         dw lit,0,TOIN,STORE
         dw TRUE,EXIT
 
@@ -1920,7 +1998,8 @@ LOAD_REFILL1:
 ;    DUP BLK !
 ;    BLOCK B/BLK 'SOURCE 2!  0 >IN !
 ;    INTERPRET
-;    NR> RESTORE-INPUT DROP ;
+;    NR> RESTORE-INPUT DROP 
+;    BLK @ BLOCK B/BLK 'SOURCE 2!   ;
     head(LOAD,LOAD,docolon)
         dw SAVE_INPUT,NTOR
         dw DUP,BLK,STORE
@@ -1983,7 +2062,6 @@ LOADNEXT1:
     head(SEMICOLONS,``;S'',docolon)
         DW SOURCE,NIP,TOIN,STORE
         DW EXIT
-
 
 ; BLKFILE implementation =====================================
 
@@ -2911,6 +2989,9 @@ REC_IHEX2:
         DW BLK,STORE
         DW TICKSOURCE_ID,STORE
         DW REFILLVEC,STORE
+        dw BLK,FETCH,QDUP,qbranch,RI1
+        DW BLOCK,B_BLK,TICKSOURCE,TWOSTORE
+RI1:
         DW FALSE
         DW EXIT
 
