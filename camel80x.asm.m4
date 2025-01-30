@@ -182,49 +182,9 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
         push bc
         jp tosfalse
 
-; TEMPBUFF reserves chucks of memory in a stack-like algorithm
-;Z   /TBUFFER  ( -- )
-SLASHTEMPBUFF:
-        call docolon
-        DW lit,STACK_TEMPBUFF,lit,STACK_TEMPBUFF_SIZE,SLASHSTACK
-        DW EXIT
-
-;Z   TBUFFER-BASE  ( -- addr )  addr of base of tempbuffers
-TEMPBUFF_BASE:
-        call docolon
-        DW BLKFIRST
-        DW lit,STACK_TEMPBUFF,STACKEMPTYQ,INVERT,qbranch,TEMPBUFF_BASE1
-        DW lit,STACK_TEMPBUFF,STACKFETCH,MINUS
-TEMPBUFF_BASE1:
-        DW EXIT
-
-;Z   TBUFFER-ALLOC  ( u -- addr ) allocates u byte buffer
-    head(TEMPBUFF_ALLOC,TB-ALLOC,docolon)
-        DW lit,STACK_TEMPBUFF,STACKEMPTYQ,INVERT,qbranch,TEMPBUFF_ALLOC1
-        DW lit,STACK_TEMPBUFF,STACKFETCH,PLUS
-TEMPBUFF_ALLOC1:
-        DW lit,STACK_TEMPBUFF,TOSTACK
-        DW TEMPBUFF_BASE
-        dw EXIT
-
-;Z   TBUFFER-FREE  ( --  ) frees last 256byte buffer
-    head(TEMPBUFF_FREE,TB-FREE,docolon)
-        DW lit,STACK_TEMPBUFF,STACKEMPTYQ,INVERT,qbranch,TEMPBUFF_FREE1
-        DW lit,STACK_TEMPBUFF,STACKDROP
-TEMPBUFF_FREE1:
-        dw EXIT
-
-SECTION data
-defc STACK_TEMPBUFF_SIZE = 36
-STACK_TEMPBUFF:
-        ds STACK_TEMPBUFF_SIZE    ; 16 cells + stack top pointer
-
-SECTION code_16k
-
-
 ;C   UNUSED  ( -- u )  return unused space in data area
     head(UNUSED,UNUSED,docolon)
-        dw TEMPBUFF_BASE,HERE,MINUS
+        dw BLKFIRST,HERE,MINUS
         dw EXIT
 
 ;C BOUNDS ( c-addr n -- n-end n-start )
@@ -1768,11 +1728,10 @@ SLASHCFLASH1:
 
 ;Z CF-CAPACITY  ( d -- )   Fetch Compact Flash capacity (sectors)
     head_utils(CF_CAPACITY,CF-CAPACITY,docolon)
-        dw lit,512,TEMPBUFF_ALLOC,DUP,TOR,lit,cflash_identify,CALL
+        dw lit,512,HERE,PLUS,DUP,TOR,lit,cflash_identify,CALL
 ;        dw RFETCH,lit,256,MEMDUMP
         dw RFETCH,lit,120,PLUS,FETCH      ; low word of max LBA
         dw RFROM,lit,122,PLUS,FETCH       ; high word of max LBA
-        dw TEMPBUFF_FREE
         DW EXIT
 
 
@@ -2078,7 +2037,7 @@ blkfile_dirty: DS 1
 SECTION code_16k
 
 ;: set-dirty  ( -- )
-;   -1 blkfile-dirty !  ;
+;   -1 blkfile-dirty C!  ;
 SET_DIRTY:
     xor a
     dec a
@@ -2088,19 +2047,20 @@ do_set_dirty:
     next
 
 ;: clear-dirty  ( -- )
-;   0 blkfile-dirty !  ;
+;   0 blkfile-dirty C!  ;
 CLEAR_DIRTY:
     xor a
     jp do_set_dirty
 
 ;: is-dirty?  ( -- )
-;   blkfile-dirty @  ;
+;   blkfile-dirty C@ 0<> ;
 IS_DIRTYQ:
     push bc
     ld hl,blkfile_dirty
     ld b,(hl)
     ld c,b
     next
+
 
 ;: current-block ( -- )
 ;   is-dirty? IF UPDATE clear-dirty THEN
@@ -2780,32 +2740,57 @@ XREC_NUMBER:
         DW RFROM,RFROM,BASE,STORE
         DW EXIT
 
+;: rec-dnum ( addr len -- d rectype-dnum | rectype-null )
+;    \ simple syntax check: last character in addr/len is a dot . ?
+;    2dup + 1- c@ [char] . = if
+;      1-              \ strip trailing dot
+;      (rec-number) >r \ do the dirty work
+;      \ a number and only a number?
+;      nip if
+;        2drop r> drop rectype-null
+;      else 
+;        r> if dnegate then rectype-dnum 
+;      then
+;    else 
+;      2drop rectype-null  \ no, it cannot be a double cell number.
+;    then   ;
+    head_utils(REC_DNUM,REC-DNUM,docolon)
+        DW TWODUP,PLUS,ONEMINUS,CFETCH,lit,'.',EQUAL,qbranch,REC_DNUM3
+        DW ONEMINUS
+        DW XREC_NUMBER,TOR
+        DW NIP,qbranch,REC_DNUM1
+        DW TWODROP,RFROM,DROP,RECTYPE_NULL,EXIT
+
+REC_DNUM1:
+        DW RFROM,qbranch,REC_DNUM2
+        DW DNEGATE
+REC_DNUM2:
+        DW RECTYPE_DNUM,EXIT
+
+REC_DNUM3:
+        DW TWODROP,RECTYPE_NULL
+        DW EXIT
+
+
 dnl ;: rec-snum ( addr len -- n rectype-num | rectype-null )
 dnl ;    (rec-number) >r
 dnl ;    nip if 
 dnl ;      2drop r> drop rectype-null
 dnl ;    else
-dnl ;      \ a "d" with a non-empty upper cell cannot be an "n"
-dnl ;      if    r> drop rectype-null
-dnl ;      else  r> if negate then rectype-num 
-dnl ;      then
+dnl ;      \ drop the significant portion of the 'd' value
+dnl ;      drop  r> if negate then rectype-num
 dnl ;    then
 dnl ;;
     head_utils(REC_NUM,REC-NUM,docolon)
         DW XREC_NUMBER,TOR
         DW NIP,qbranch,REC_SNUM1
-        DW TWODROP,RFROM,DROP,RECTYPE_NULL
-        DW branch,REC_SNUMX
+        DW TWODROP,RFROM,DROP,RECTYPE_NULL,EXIT
+
 REC_SNUM1:
-        DW qbranch,REC_SNUM2
-        DW RFROM,DROP,RECTYPE_NULL
-        DW branch,REC_SNUMX
-REC_SNUM2:
-        DW RFROM,qbranch,REC_SNUM3
+        DW DROP,RFROM,qbranch,REC_SNUM2
         DW NEGATE
-REC_SNUM3:
+REC_SNUM2:
         DW RECTYPE_NUM
-REC_SNUMX:
         DW EXIT
 
 dnl ;: rec-char ( addr len -- n rectype-num | rectype-null )
@@ -2833,6 +2818,12 @@ REC_CHARX:
         DW NOOP
         DW LITERAL
         DW LITERAL
+
+;    RECTYPE: RECTYPE-DNUM
+    head_utils(RECTYPE_DNUM,RECTYPE-DNUM,docreate)
+        DW NOOP
+        DW TWOLITERAL
+        DW TWOLITERAL
 
 ; : POSTPONE ( "name" -- )  \ COMPILE
 ; This is the 16K ROM Next Generation version
@@ -3096,10 +3087,9 @@ SLASH16KROM:
         DW WORDLISTS,lit,STACK_WORDLISTS_SIZE,SLASHSTACK
         DW VOCAB_WORDLIST,FORTH_WORDLIST,lit,2,WORDLISTS,STACKSET
         DW RECOGNIZERS,lit,STACK_RECOGNIZERS_SIZE,SLASHSTACK
-        DW lit,REC_IHEX,lit,REC_CHAR,lit,REC_NUM,lit,REC_FIND,lit,4,RECOGNIZERS,STACKSET
+        DW lit,REC_IHEX,lit,REC_CHAR,lit,REC_DNUM,lit,REC_NUM,lit,REC_FIND,lit,5,RECOGNIZERS,STACKSET
         DW FORTH_WORDLIST,CURRENT,STORE
         DW SLASHBLKCTX
-        DW SLASHTEMPBUFF
         DW XSQUOTE
         DB 7,"16K ROM"
         DW TYPE,CR
@@ -3112,5 +3102,4 @@ SLASH16KROM:
 RAMPTOPSTORE_16K:
         call docolon
         DW SLASHBLKCTX
-        DW SLASHTEMPBUFF
         dw EXIT
