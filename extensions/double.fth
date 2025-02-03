@@ -1,6 +1,6 @@
 \ Additional double number definitions
 .( Loading additional double number definitions... ) CR
-1 +LOAD
+1 2 +THRU
 
 
 
@@ -34,20 +34,3 @@
 : 2CONSTANT  ( x1 x2  -      define a Forth constant )
 ;   CREATE , , DOES> 2@  ;
 
-' noop :NONAME POSTPONE 2LITERAL ; DUP RECTYPE: RECTYPE-DNUM
-
-: REC-DNUM ( addr len -- d rectype-dnum | rectype-null )
-    \ simple syntax check: last character in addr/len is a dot . ?
-    2DUP + 1- C@ [CHAR] . = IF
-      1-              \ strip trailing dot
-      (REC-NUMBER) >R \ do the dirty work
-      \ a number and only a number?
-      NIP IF
-        2DROP R> DROP RECTYPE-NULL
-      ELSE 
-        R> IF DNEGATE THEN RECTYPE-DNUM 
-      THEN
-    ELSE 
-      2DROP RECTYPE-NULL  \ no, it cannot be a double cell number.
-    THEN 
-;
