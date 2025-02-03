@@ -1441,6 +1441,7 @@ BLKFIRST:
 ;Z BLKCTX-NEXT  ( -- ctx )  increment buffer structure
 ;   BLKCTX_PTR   BLKCTX_IDX @
 ;   BLKCTX% * +  ( new-ctx )
+;   DUP (FLUSH)
 ;   BLKCTX_IDX @  B/BLK *  BLKFIRST PLUS  ( new-ctx buffer )
 ;   OVER BLKCTX>BUFFER !  ( new-ctx )
 ;   BLKCTX_IDX @ 1+ BLKCTXNUM MOD  BLKCTX_IDX !
@@ -1449,7 +1450,8 @@ BLKCTX_NEXT:
         call docolon
         dw lit,BLKCTX_PTR
         dw lit,BLKCTX_IDX,FETCH
-        dw BLKCTXSIZE,STAR,PLUS  ; TODO: (FLUSH) this ctx
+        dw BLKCTXSIZE,STAR,PLUS
+        dw DUP,XFLUSH
         dw lit,BLKCTX_IDX,FETCH,B_BLK,STAR,BLKFIRST,PLUS
         dw OVER,BLKCTXTOBUFFER,STORE
         dw lit,BLKCTX_IDX,FETCH,ONEPLUS,BLKCTXNUM,MOD,lit,BLKCTX_IDX,STORE
