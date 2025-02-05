@@ -531,20 +531,6 @@ poptos: pop bc
         ld c,l
         next
 
-;X M+       d n -- d         add single to double
-    head(MPLUS,M+,docode)
-        ex de,hl
-        pop de          ; hi cell
-        ex (sp),hl      ; lo cell, save IP
-        add hl,bc
-        ld b,d          ; hi result in BC (TOS)
-        ld c,e
-        jr nc,mplus1
-        inc bc
-mplus1: pop de          ; restore saved IP
-        push hl         ; push lo result
-        next
-
 ;C -      n1/u1 n2/u2 -- n3/u3    subtract n1-n2
     head(MINUS,-,docode)
         pop hl

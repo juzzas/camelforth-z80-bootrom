@@ -291,7 +291,7 @@ UINIT:
     ;C /MOD   n1 n2 -- n3 n4    signed divide/rem'dr
     ;   >R S>D R> FM/MOD ;
         head(SLASHMOD,/MOD,docolon)
-            dw TOR,STOD,RFROM,FMSLASHMOD,EXIT
+            dw TOR,STOD,RFROM,SMSLASHREM,EXIT
 
     ;C /      n1 n2 -- n3       signed divide
     ;   /MOD nip ;
@@ -306,7 +306,7 @@ UINIT:
     ;C */MOD  n1 n2 n3 -- n4 n5    n1*n2/n3, rem&quot
     ;   >R M* R> FM/MOD ;
         head(SSMOD,*/MOD,docolon)
-            dw TOR,MSTAR,RFROM,FMSLASHMOD,EXIT
+            dw TOR,MSTAR,RFROM,SMSLASHREM,EXIT
 
     ;C */     n1 n2 n3 -- n4        n1*n2/n3
     ;   */MOD nip ;
@@ -1473,45 +1473,25 @@ DOTS2:  DW EXIT
         ld c,l
         next
 
+;X M+       d n -- d         add single to double
+    head(MPLUS,M+,docolon)
+        DW STOD,DPLUS,EXIT
 
-TNEGATE:
-        call docolon
-        DW TOR,TWODUP,OR,DUP,qbranch,TNEG1,DROP,DNEGATE,lit,1
-TNEG1:
-        DW RFROM,PLUS,NEGATE,EXIT
 
-qtneg:
-        call docolon
-        DW ZEROLESS,qbranch,qtneg1,TNEGATE
-qtneg1:
-        DW EXIT
-
-TSTAR:
-        call docolon
-        DW TWODUP,XOR,TOR
-        DW TOR,DABS,RFROM,ABS
-        DW TOR,TOR
-        DW RFETCH,UMSTAR,lit,0
-        DW RFROM,RFROM,UMSTAR
-        DW DPLUS
-        DW RFROM
-        DW qtneg
-        DW EXIT
-
-TDIV:
-        call docolon
-        DW OVER,TOR,TOR
-        DW DUP,qtneg
-        DW RFETCH,UMSLASHMOD
-        DW ROT,ROT
-        DW RFROM,UMSLASHMOD
-        DW NIP,SWOP
-        DW RFROM,ZEROLESS,qbranch,tdiv1,DNEGATE
-tdiv1:
-        DW EXIT
-
+;C M*/  ( d1 n1 +n2 -- d2 )
+;       ABS >R 2DUP XOR SWAP ABS >R -ROT
+;       DABS SWAP R@ UM* ROT R> UM* ROT 0 D+
+;       R@ UM/MOD -ROT R> UM/MOD NIP SWAP
+;       ROT 0< IF DNEGATE THEN
     head(MSTARSLASH,M*/,docolon)
-        DW TOR,TSTAR,RFROM,TDIV,EXIT
+        DW ABS,TOR,TWODUP,XOR,SWOP,ABS,TOR,ROT,ROT
+        DW DABS,SWOP,RFETCH,UMSTAR,ROT,RFROM,UMSTAR,ROT,lit,0,DPLUS
+        DW RFETCH,UMSLASHMOD,ROT,ROT,RFROM,UMSLASHMOD,NIP,SWOP
+        DW ROT,ZEROLESS,qbranch,MSTARSLASH1
+        DW DNEGATE
+MSTARSLASH1:
+        DW EXIT
+
 
 ;Z ?ROM16K    -- f      is it a 16K ROM?
 ;
