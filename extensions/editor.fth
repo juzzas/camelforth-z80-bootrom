@@ -3,12 +3,12 @@ ONLY FORTH ALSO UTILS
 VOCABULARY EDITOR    
 ALSO EDITOR DEFINITIONS
 
+CR .( Loading Editor... )
 1 13 +THRU
+.( loaded )
 
 ONLY FORTH DEFINITIONS
 ALSO EDITOR
-
-.( Editor loaded )
 
 
 
@@ -38,7 +38,7 @@ ALSO EDITOR
         0 SCR !
      THEN ;
 : N   ( -- )   \ next screen
-     1 SCR +! ;
+     1 SCR +!
      SCR @ 0 SLICE SLICE>LIMIT @
      WITHIN INVERT IF
         SLICE SLICE>LIMIT @ 1- SCR !
@@ -144,23 +144,25 @@ ALSO EDITOR
 
 \  RC2014 Full screen editor =========================
 : ?CH ( c i -- c i' )
-    OVER BL - 95 U< IF !CH 1+ EXIT THEN           \ text
-    OVER 8 = IF 1- THEN                           \ left ^h
-    OVER 19 = IF 1- THEN                          \ left ^s
-    OVER 4 = IF 1+ THEN                           \ right ^d
-    OVER 5 = IF C/L - THEN                        \ up ^e
-    OVER 24 = IF C/L + THEN                       \ down ^x
-    OVER 13 = IF C/L 2DUP MOD - + THEN            \ crlf return
-    OVER 127 = IF 1- THEN                         \ left delete
-    OVER 18 = IF B  >R >R  V  R> R>  THEN         \ back ^r
-    OVER 3 = IF N  >R >R  V  R> R>  THEN          \ nextscr ^c
-    OVER 22 = IF INSERT_CHAR THEN           \ insert space ^v
-    OVER 7 = IF DELETE_CHAR THEN            \ delete char ^g
-\    OVER 25 = IF CUT_LINE THEN        \ cut line, shift up ^y
-    OVER 15 = IF INSERT_LINE THEN \ shift down, empty line ^o
-\    OVER 16 = IF PASTE_LINE THEN  \ shift down, paste line ^p
-\    OVER 11 = IF UPDATE_SCREEN THEN            \ do UPDATE ^k
-    ;
+    OVER CASE
+            8  OF  1- ENDOF                         \ left ^h
+            19 OF  1- ENDOF                         \ left ^s
+            4  OF  1+ ENDOF                         \ right ^d
+            5  OF  C/L - ENDOF                      \ up ^e
+            24 OF  C/L + ENDOF                      \ down ^x
+            13 OF  C/L 2DUP MOD - + ENDOF           \ crlf return
+            127 OF  1- ENDOF                        \ left delete
+            18 OF  B  >R >R  V  R> R>  ENDOF        \ back ^r
+            3  OF  N  >R >R  V  R> R>  ENDOF        \ nextscr ^c
+            22 OF  INSERT_CHAR ENDOF            \ insert space ^v
+            7  OF  DELETE_CHAR ENDOF              \ delete char ^g
+    \       25 OF CUT_LINE ENDOF          \ cut line, shift up ^y
+            15 OF INSERT_LINE ENDOF   \ shift down, empty line ^o
+    \       16 OF PASTE_LINE ENDOF    \ shift down, paste line ^p
+    \       11 OF UPDATE_SCREEN ENDOF              \ do UPDATE ^k
+            BL - 95 U<  ?OF !CH 1+ EXIT ENDOF  \ text
+        ENDCASE 
+    THEN ;
 
 
 : EDIT ( n -- )    S V  0
