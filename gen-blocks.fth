@@ -7,7 +7,7 @@ OPEN:  build/cf-image.blk
 30 AT-BLOCK: extensions/forth2012.fth
 33 AT-BLOCK: extensions/core-ext.fth
 48 AT-BLOCK: extensions/facility-ext.fth
-\  AT-BLOCK: extensions/double.fth
+51 AT-BLOCK: extensions/double.fth
 \ 45 AT-BLOCK: extensions/string.fth
 \ 48 AT-BLOCK: extensions/tools-ext.fth
 \ 57 AT-BLOCK: extensions/memory.fth
@@ -18,8 +18,9 @@ OPEN:  build/cf-image.blk
 99 AT-BLOCK: extensions/random.fth
 102 AT-BLOCK: extensions/ansi.fth
 108 AT-BLOCK: extensions/leds.fth
-
+112 AT-BLOCK: extensions/pagedram.fth
 180 AT-BLOCK: extensions/assembler.fth
+210 AT-BLOCK: extensions/asmz80.fth
 
 300 AT-BLOCK: extensions/testsuite.fth
 303 AT-BLOCK: extensions/ttester.fth

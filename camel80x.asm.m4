@@ -354,6 +354,12 @@ DLITER1: DW EXIT
         ld b,(ix+1)     ;       to TOS
         next
 
+;C 2NIP
+;   2>R 2DROP 2R> ;
+    head(TWONIP,2NIP,docolon)
+        DW TWOTOR,TWODROP,TWORFROM
+        DW EXIT
+
 ;C N>R    ( i * n +n -- ) ( R: -- j * x +n ) n cells to R
     head(NTOR,N>R,docode)
         push bc
@@ -424,36 +430,37 @@ nrfrom_done:
         jp nz, tosfalse
         jp tostrue
 
-;C D-
-;   dnegate d+ ;
-    head(DMINUS,D-,docolon)
-        dw DNEGATE,DPLUS,EXIT
+;X D-               d1 d2 -- d1-d2             Subtract double numbers
+    head(DMINUS,D-,docode)
+        exx
+        pop bc          ; BC'=d2lo
+        exx
+        pop hl          ; HL=d1hi,BC=d2hi
+        exx
+        pop hl          ; HL'=d1lo
+        or a            ; clear cy
+        sbc hl,bc
+        push hl         ; TOS=d1lo-d2lo
+        exx
+        sbc hl,bc       ; HL=d1hi-2hi+cy
+        ld b,h
+        ld c,l
+        next
+
 
 ;: D=
 ;   rot = -rot = and ;
     head(DEQUAL,D=,docolon)
         dw ROT,EQUAL,ROT,ROT,EQUAL,AND,EXIT
 
-;: d< rot 2dup >
-;    if = nip nip if 0 exit then -1 exit then
-;    2drop u< ;
+;: D<  ( d1 d2 -- flag )
+;    rot 2dup = if 2drop u< EXIT THEN 2nip >  ;
     head(DLESS,D<,docolon)
-        DW ROT,TWODUP,GREATER
-        DW qbranch,DLESS2
-
-        DW EQUAL,NIP,NIP
-        DW qbranch,DLESS1
-
-        DW FALSE,EXIT
-
+        DW ROT,TWODUP,EQUAL,qbranch,DLESS1
+        DW TWODROP,ULESS,EXIT
 DLESS1:
-        DW TRUE,EXIT
-
-
-DLESS2:
-        DW TWODROP,ULESS
+        DW TWONIP,GREATER
         DW EXIT
-
 
 ;: D0=   OR 0=  ;
     head(DZEROEQUAL,D0=,docolon)
@@ -480,19 +487,30 @@ DLESS2:
        next
 
 
-;: dmax 2over 2over d< if 2swap then 2drop ; ( d1 d2 -- d )
+;: dmax   ( d1 d2 -- d )
+; 2over 2over D< if 
+;    drop  2swap 2drop  exit
+;  then
+;  drop  2drop   ;
+
     head(DMAX,DMAX,docolon)
         DW TWOOVER,TWOOVER,DLESS
         DW qbranch,DMAX1
-        DW TWOSWAP
+        DW TWONIP,EXIT
 DMAX1:
         DW TWODROP,EXIT
 
-;: dmin 2over 2over d> if 2swap then 2drop ; ( d1 d2 -- d )
+;: dmin  ( d1 d2 -- d )
+;  2over 2over 2swap d< if
+;    drop  2swap 2drop  exit
+;  then
+;  drop  2drop   ;
+;
+
     head(DMIN,DMIN,docolon)
         DW TWOOVER,TWOOVER,TWOSWAP,DLESS
         DW qbranch,DMIN1
-        DW TWOSWAP
+        DW TWONIP,EXIT
 DMIN1:
         DW TWODROP,EXIT
 
