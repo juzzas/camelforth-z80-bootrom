@@ -2555,9 +2555,7 @@ rectype_plus0:
 ; :NONAME  ABORT" ?"  ;
 REC_NULL_XT:
         call docolon
-        DW XSQUOTE
-        DB 1,"?"
-        DW QABORT
+        DW lit,-13,THROW
 
 ; ' NOOP ' NOOP ' NOOP  RECTYPE: RECTYPE-NULL
     head_utils(RECTYPE_NULL,RECTYPE-NULL,docreate)
@@ -2881,7 +2879,7 @@ POSTPONE_16K:
 ;           THEN
 ;           R> DROP
 ;       ELSE
-;           DROP R> COUNT TYPE 3F EMIT CR ABORT  err
+;           DROP R> COUNT TYPE 3F EMIT -13 THROW  err
 ;       THEN
 ;   REPEAT DROP ;
 INTERPRET_16K:
@@ -2895,7 +2893,7 @@ INTRP_NG1: DW BL,WORD,DUP,CFETCH,qbranch,INTRP_NG9
            DW branch,INTRP_NG4
 INTRP_NG3: DW RECTYPETOINT,EXECUTE
 INTRP_NG4: DW RFROM,DROP,branch,INTRP_NG5
-INTRP_NG2: DW DROP,RFROM,COUNT,TYPE,lit,63,EMIT,CR,ABORT
+INTRP_NG2: DW DROP,RFROM,COUNT,lit,exception_msg,TOCOUNTED,lit,-13,THROW
 INTRP_NG5: DW branch,INTRP_NG1
 INTRP_NG9: DW CHECK_SP,DROP
         DW EXIT

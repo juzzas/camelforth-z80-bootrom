@@ -932,7 +932,7 @@ INTER4: DW DUP,COUNT,IHEXQ
         DW INTERPRET_IHEX,DROP,branch,INTER6
 INTER4a: DW QNUMBER,qbranch,INTER5
         DW LITERAL,branch,INTER6
-INTER5: DW COUNT,TYPE,lit,3FH,EMIT,CR,ABORT
+INTER5: DW COUNT,TYPE,lit,3FH,EMIT,CR,QUIT
 INTER6:
 INTER8: DW branch,INTER1
 INTER9: DW DROP,CHECK_SP,EXIT
@@ -1025,8 +1025,8 @@ CHECK_SP1:
 ;       ['] INTERPRET CATCH
 ;       CASE
 ;          0 OF STATE @ 0= IF ."  OK" THEN CR ENDOF
-;         -1 OF ."  ABORT" CR ENDOF
-;         -2 OF ( abort message given ) CR ENDOF
+;         -1 OF ."  ABORT" CR   ENDOF
+;         -2 OF exception_msg COUNT TYPE CR ENDOF
 ;       DUP ." EXCEPTION" . CR
 ;       ENDCASE
 ;     ELSE
@@ -1035,6 +1035,7 @@ CHECK_SP1:
 ;     THEN
 ;   AGAIN ;
     head(QUIT,QUIT,docolon)
+        DW S0,SPSTORE
         DW L0,LP,STORE
         DW R0,RPSTORE,lit,0,STATE,STORE
         DW lit,0,HANDLER,STORE
@@ -1056,39 +1057,45 @@ QUIT1:  DW REFILL
 QUIT1a: DW CR
         DW branch,QUIT1
 
-        ; case -1
+        ; case ABORT
 QUIT2:  DW DUP,lit,65535,EQUAL,qbranch,QUIT3
         DW DROP,XSQUOTE
         DB 6," ABORT"
         DW TYPE,CR
-        DW branch,QUIT1
+        DW QUIT
 
-        ; case -2
-QUIT3:  DW DUP,lit,65534,EQUAL,qbranch,QUIT4
-        DW DROP,CR
-        DW branch,QUIT1
+        ; case ABORT"
+QUIT3:  DW DUP,lit,65534,EQUAL,qbranch,QUIT3a
+        DW lit,exception_msg,COUNT,TYPE,CR
+        DW QUIT
+
+        ; case undefined word
+QUIT3a:  DW DUP,lit,-13,EQUAL,qbranch,QUIT4
+        DW lit,exception_msg,COUNT,TYPE,lit,'?',EMIT,CR
+        DW QUIT
 
         ; default
 QUIT4:
         DW XSQUOTE
         DB 7," ERROR "
         DW TYPE,DOT,CR
-        DW branch,QUIT1
+        DW QUIT
 
 QUITX:
         DW lit,0,TICKSOURCE_ID,STORE
         DW lit,0,BLK,STORE
         DW branch,QUIT1
 
+
 ;C ABORT    i*x --   R: j*x --   clear stk & QUIT
-;   S0 SP!  QUIT ;
     head(ABORT,ABORT,docolon)
-        DW S0,SPSTORE,QUIT   ; QUIT never returns
+        DW lit,-1,THROW
 
 ;Z ?ABORT   f c-addr u --      abort & print msg
-;   ROT IF TYPE ABORT THEN 2DROP ;
+;   ROT IF exception_msg >COUNTED -2 THROW THEN 2DROP ;
     head(QABORT,?ABORT,docolon)
-        DW ROT,qbranch,QABO1,TYPE,ABORT
+        DW ROT,qbranch,QABO1
+        DW lit,exception_msg,TOCOUNTED,lit,-2,THROW
 QABO1:  DW TWODROP,EXIT
 
 ;C ABORT"  i*x 0  -- i*x   R: j*x -- j*x  x1=0
@@ -1101,11 +1108,12 @@ QABO1:  DW TWODROP,EXIT
 
 ;C '    -- xt           find word in dictionary
 ;   BL WORD FIND
-;   0= ABORT" ?" ;
+;   0= IF COUNT exception_msg >COUNTED -13 THROW THEN  ;
      head(TICK,',docolon)
-        DW BL,WORD,FIND,ZEROEQUAL,XSQUOTE
-        DB 1,"?"
-        DW QABORT,EXIT
+        DW BL,WORD,FIND,ZEROEQUAL,qbranch,TICK1
+        DW COUNT,lit,exception_msg,TOCOUNTED,lit,-13,THROW
+TICK1:
+        DW EXIT
 
 ;C CHAR   -- char           parse ASCII character
 ;   BL WORD 1+ C@ ;
@@ -1512,7 +1520,7 @@ DOTSIGNON:
 ;   UINIT U0 #INIT CMOVE      init user area
 ;   80 COUNT INTERPRET       interpret CP/M cmd
 ;   ." Z80 CamelForth etc."
-;   ABORT ;
+;   QUIT ;
     head(COLD,COLD,docolon)
         DW UINIT,U0,NINIT,CMOVE
         DW DOTSIGNON,CR
@@ -1520,7 +1528,7 @@ DOTSIGNON:
         DW ROM16KQ,qbranch,COLD1
         DW lit,65535,lit,flag_rom16k,STORE
         DW SLASH16KROM
-        DW ABORT
+        DW QUIT
 
 COLD1:  DW lit,lastword8k,LATEST,STORE
         DW lit,0,lit,flag_rom16k,STORE
@@ -1529,11 +1537,11 @@ COLD1:  DW lit,lastword8k,LATEST,STORE
         DW lit,INTERPRET_8K,lit,xt_interpret,STORE
         DW lit,WORDS_8K,lit,xt_words,STORE
         DW lit,XREFILL8K,lit,xt_refill,STORE
-        DW ABORT       ; ABORT never returns
+        DW QUIT
 
 ;Z WARM     --      warm start Forth system
 ;   ." Z80 CamelForth etc."
-;   ABORT ;
+;   QUIT ;
     head(WARM,WARM,docolon)
         DW DOTSIGNON,CR
         DW XSQUOTE
@@ -1542,7 +1550,7 @@ COLD1:  DW lit,lastword8k,LATEST,STORE
         DW ROM16KQ,qbranch,WARM1
         DW SLASH16KROM
 WARM1:
-        DW ABORT       ; ABORT never returns
+        DW QUIT
 
 
 ;: WID>NFA ( wid -- nfa )
@@ -1601,4 +1609,6 @@ xt_words:
         DEFS 2
 xt_refill:
         DEFS 2
+exception_msg:
+        DEFS 80
 SECTION code
