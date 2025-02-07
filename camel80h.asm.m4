@@ -541,9 +541,7 @@ TYP5:   DW EXIT
         DW lit,22H,PARSE
         DW STATE,FETCH,qbranch,SQUOTE1
 
-        DW lit,XSQUOTE,COMMAXT
-        DW HERE,TOCOUNTED,HERE,CFETCH,ONEPLUS
-        DW ALIGNED,ALLOT,EXIT
+        DW SLITERAL,EXIT
 
 SQUOTE1:
         DW TOSPAD
@@ -961,7 +959,7 @@ XREFILL0:
 ;   -1 'SOURCE-ID !
 ;   'SOURCE 2@ >R >R  >IN @ >R
 ;   'SOURCE 2! 0 >IN !
-;   INTERPRET
+;       INTERPRET
 ;   R> >IN !  R> R> 'SOURCE 2! R> 'SOURCE-ID ! ;
     head(EVALUATE,EVALUATE,docolon)
         DW SOURCE_ID,TOR
@@ -983,12 +981,19 @@ XREFILL0:
 ;     R> DROP            ( )          \ discard saved stack ptr
 ;     0   ;              ( 0 )        \ normal completion
     head(CATCH,CATCH,docolon)
+        DW SOURCE_ID,TOR
+        DW TICKSOURCE,TWOFETCH,TOR,TOR
+        DW TOIN,FETCH,TOR
         DW SPFETCH,TOR
         DW HANDLER,FETCH,TOR
         DW RPFETCH,HANDLER,STORE
         DW EXECUTE
         DW RFROM,HANDLER,STORE
-        DW RFROM,DROP,lit,0,EXIT
+        DW RFROM,DROP
+        DW RFROM,TOIN,STORE,RFROM,RFROM
+        DW TICKSOURCE,TWOSTORE
+        DW RFROM,TICKSOURCE_ID,STORE
+        DW lit,0,EXIT
 
 
 ;C THROW ( ??? exception# -- ??? exception# )
@@ -1007,6 +1012,9 @@ XREFILL0:
         DW RFROM,HANDLER,STORE
         DW RFROM,SWOP,TOR
         DW SPSTORE,DROP,RFROM
+        DW RFROM,TOIN,STORE,RFROM,RFROM
+        DW TICKSOURCE,TWOSTORE
+        DW RFROM,TICKSOURCE_ID,STORE
 THROW1: DW EXIT
 
 CHECK_SP:
