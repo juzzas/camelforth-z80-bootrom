@@ -192,6 +192,54 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
     head(BOUNDS,BOUNDS,docolon)
         DW OVER,PLUS,SWOP,EXIT
 
+; : MAP  ( xt n-end n-start -- )  ( execute xt for every item in stack )
+; \ XT should not return anything on stack
+;      ?DO     ( xt )
+;          I @ SWAP DUP >R EXECUTE R>
+;      CELL +LOOP
+;      DROP ;
+    head_utils(MAP,MAP,docolon)
+        DW TWODUP,EQUAL,qbranch,MAP0
+        DW TWODROP,DROP,EXIT
+MAP0:
+        DW xdo
+MAP1:
+        DW II,FETCH,SWOP,DUP,TOR,EXECUTE,RFROM
+        DW CELL,xplusloop,MAP1
+        DW DROP
+        DW EXIT
+
+; : MAP-UNTIL  ( x*i xt n-end n-start -- x*j flag )  ( execute xt for every item in stack, until xt returns true )
+; \ XT should return flag on stack
+;    ?DO          ( x*i xt )
+;      I @ SWAP           ( x*i item xt )
+;      DUP >R        ( x*i item xt ; xt )
+;      EXECUTE             ( x*j f ; xt )
+;      R>                    ( x*j f xt )
+;      OVER IF DROP UNLOOP EXIT
+;           ELSE NIP
+;      THEN
+;    CELL +LOOP                  ( xt )
+;    DROP FALSE
+;     ;
+    head_utils(MAP_UNTIL,MAP-UNTIL,docolon)
+        DW TWODUP,EQUAL,qbranch,MAPUNTIL0
+        DW TWODROP,DROP,FALSE,EXIT
+MAPUNTIL0:
+        DW xdo
+MAPUNTIL1:
+        DW II,FETCH,SWOP
+        DW DUP,TOR
+        DW EXECUTE
+        DW RFROM
+        DW OVER,qbranch,MAPUNTIL2
+        DW DROP,UNLOOP,EXIT
+MAPUNTIL2:
+        DW NIP
+        DW CELL,xplusloop,MAPUNTIL1
+MAPUNTIL3:
+        DW DROP,FALSE,EXIT
+
 ;Z C+!    ( byte c-addr -- )
     head(CPLUSSTORE,C+!,docode)
         ld a,(bc)
@@ -825,56 +873,6 @@ STACKGET2:
         DW NIP
         DW EXIT
 
-; : STACK-MAP  ( xt lifo -- )  ( execute xt for every item in stack )
-; \ XT should not return anything on stack
-;      STACK-BOUNDS ?DO     ( xt )
-;          I @ SWAP DUP >R EXECUTE R>
-;      CELL +LOOP
-;      DROP ;
-    head_utils(STACKMAP,STACK-MAP,docolon)
-        DW STACKBOUNDS
-        DW TWODUP,EQUAL,qbranch,STACKMAP0
-        DW TWODROP,DROP,EXIT
-STACKMAP0:
-        DW xdo
-STACKMAP1:
-        DW II,FETCH,SWOP,DUP,TOR,EXECUTE,RFROM
-        DW CELL,xplusloop,STACKMAP1
-STACKMAP2:
-        DW DROP
-        DW EXIT
-
-; : STACK-UNTIL  ( x*i xt lifo -- x*j flag )  ( execute xt for every item in stack, until xt returns true )
-; \ XT should return flag on stack
-;    STACK-BOUNDS ?DO          ( x*i xt )
-;      I @ SWAP           ( x*i item xt )
-;      DUP >R        ( x*i item xt ; xt )
-;      EXECUTE             ( x*j f ; xt )
-;      R>                    ( x*j f xt )
-;      OVER IF DROP UNLOOP EXIT
-;           ELSE NIP
-;      THEN
-;    CELL +LOOP                  ( xt )
-;    DROP FALSE
-;     ;
-    head_utils(STACKUNTIL,STACK-UNTIL,docolon)
-        DW STACKBOUNDS
-        DW TWODUP,EQUAL,qbranch,STACKUNTIL0
-        DW TWODROP,DROP,FALSE,EXIT
-STACKUNTIL0:
-        DW xdo
-STACKUNTIL1:
-        DW II,FETCH,SWOP
-        DW DUP,TOR
-        DW EXECUTE
-        DW RFROM
-        DW OVER,qbranch,STACKUNTIL2
-        DW DROP,UNLOOP,EXIT
-STACKUNTIL2:
-        DW NIP
-        DW CELL,xplusloop,STACKUNTIL1
-STACKUNTIL3:
-        DW DROP,FALSE,EXIT
 
 
 ; RC2014 EXTENSION CONSTANTS ====================
@@ -1162,7 +1160,7 @@ FINDIN3:
 ;                         ( c-addr len nfa     if found )
 ;    NIP NIP ;
     head(FIND_NAME,FIND-NAME,docolon)
-        DW lit,FIND_NAME_IN,WORDLISTS,STACKUNTIL
+        DW lit,FIND_NAME_IN,WORDLISTS,STACKBOUNDS,MAP_UNTIL
         DW NIP,NIP
         DW EXIT
 
@@ -1254,10 +1252,10 @@ XVOCDOES:
         DW VOCAB_WORDLIST,XWORDS,EXIT
 
 ;Z WORDS_16K ( -- )      list all words in search order
-;   ['] (WORDS) WORDLISTS STACK.MAP ;
+;   ['] (WORDS) WORDLISTS STACK-BOUNDS MAP ;
 WORDS_16K:
         call docolon
-        DW lit,XWORDS,WORDLISTS,STACKMAP
+        DW lit,XWORDS,WORDLISTS,STACKBOUNDS,MAP
         DW EXIT
 
 ;Z VLIST  ( -- )      list all words in current context
@@ -2053,6 +2051,7 @@ blk_ptr: DS 2
 blk_curr: DS 2
 blk_offset: DS 2
 blkfile_dirty: DS 1
+chars_count: DS 2
 
 SECTION code_16k
 
@@ -2162,14 +2161,24 @@ PUTCHARS2:
         DW DROP
         DW EXIT
 
+;: (read-char) ( c -- )
+;   blk-ptr @  ( blk-ptr )
+;   blk-offset @ + c@   ( c )
+;   inc-offset ;
+XREAD_CHAR:
+        call docolon
+        DW lit,blk_ptr,FETCH
+        DW lit,blk_offset,FETCH,PLUS,CFETCH
+        DW INC_OFFSET
+        DW EXIT
+
 ;: GETCH ( -- c )
 ;   blk-ptr @  ( blk-ptr )
 ;   blk-offset @ + c@   ( c )
 ;   inc-offset ;
     head_utils(GETCH,GETCH,docolon)
-        DW lit,blk_ptr,FETCH
-        DW lit,blk_offset,FETCH,PLUS,CFETCH
-        DW INC_OFFSET
+        DW CURRENT_BLOCK
+        DW XREAD_CHAR
         DW EXIT
 
 ;: GETCHARS ( c-addr u -- u )
@@ -2186,13 +2195,45 @@ PUTCHARS2:
         DW CURRENT_BLOCK
         DW lit,0,xdo
 GETCHARS1:
-        DW GETCH
+        DW XREAD_CHAR
         DW OVER,II,PLUS,CSTORE
         DW xloop,GETCHARS1
 
 GETCHARS2:
         DW DROP,RFROM
         DW EXIT
+
+;: GETLINE ( c-addr u -- u f ) 
+;   SWAP  0 chars-count !   ( u c-addr )
+;   BEGIN
+;     OVER chars-count @ <> WHILE
+;     GETCH
+;       DUP 13 = IF DROP 2DROP chars-count @ TRUE EXIT  THEN
+;       DUP 26 = IF DROP 2DROP chars-count @ FALSE  EXIT  THEN
+;       OVER C! 1+   ( u c-addr' )
+;       1 chars-count +!
+;   REPEAT
+;   DROP 0 FALSE ( u f )  ;
+    head_utils(GETLINE,GETLINE,docolon)
+        DW SWOP,lit,0,lit,chars_count,STORE
+GETLINE1:
+        DW OVER,lit,chars_count,FETCH,NOTEQUAL,qbranch,GETLINE2
+        DW GETCH
+        DW DUP,lit,13,EQUAL,qbranch,GETLINE3
+        DW DROP,TWODROP,lit,chars_count,FETCH,TRUE,EXIT
+
+GETLINE3:
+        DW DUP,lit,26,EQUAL,qbranch,GETLINE4
+        DW DROP,TWODROP,lit,chars_count,FETCH,FALSE,EXIT
+
+GETLINE4:
+        DW OVER,CSTORE,ONEPLUS
+        DW lit,1,lit,chars_count,PLUSSTORE
+        DW branch,GETLINE1
+
+GETLINE2:
+        DW DROP,FALSE,EXIT
+
 
 ;: BEGIN-BLKFILE ( blk offset -- )
 ;   blk-offset !
@@ -2503,35 +2544,24 @@ XSAVEHDR:
 
 
 ; an alternative implementation of recognizers. It
-; uses a separate stack module, that can be used
+; uses a static list, that can be used
 ; to implement the search order words independently
 ;
 ; Based on the RECOGNIZER by Author: Matthias Trute
 ; License: Public Domain
 
-; 4 STACK VALUE FORTH-RECOGNIZER
-
-        head_utils(RECOGNIZERS,RECOGNIZERS,docon)
-            DW STACK_RECOGNIZERS
-
-SECTION data
-
-defc STACK_RECOGNIZERS_SIZE = 36 ; 16 cells + stack top pointer
-STACK_RECOGNIZERS:
-        ds STACK_RECOGNIZERS_SIZE
-
-SECTION code_16k
 
 ; define a recognizer with three actions. Suggesting RECTYPE-* names
 ;: RECTYPE: ( XT-INTERPRET XT-COMPILE XT-POSTPONE "<spaces>name" -- )
 ;  CREATE SWAP ROT , , ,
 ;    ;
-    head_utils(RECTYPECOLON,RECTYPE:,docolon)
-        DW CREATE,SWOP,ROT,COMMA,COMMA,COMMA
-        DW EXIT
+dnl ;    head_utils(RECTYPECOLON,RECTYPE:,docolon)
+dnl ;        DW CREATE,SWOP,ROT,COMMA,COMMA,COMMA
+dnl ;        DW EXIT
 
 ;: RECTYPE>POST ( RECTYPE-TOKEN -- XT-POSTPONE ) CELL+ CELL+ @ ;
-    head_utils(RECTYPETOPOST,RECTYPE>POST,docode)
+dnl ;    head_utils(RECTYPETOPOST,RECTYPE>POST,docode)
+RECTYPETOPOST:
         inc bc
         inc bc
 rectype_plus2:
@@ -2545,12 +2575,14 @@ rectype_plus0:
         next
 
 ;: RECTYPE>COMP ( RECTYPE-TOKEN -- XT-COMPILE  )       CELL+ @ ;
-    head_utils(RECTYPETOCOMP,RECTYPE>COMP,docode)
-	jp rectype_plus2
+dnl ;    head_utils(RECTYPETOCOMP,RECTYPE>COMP,docode)
+RECTYPETOCOMP:
+        jp rectype_plus2
 
 ;: RECTYPE>INT  ( RECTYPE-TOKEN -- XT-INTERPRET)             @ ;
-    head_utils(RECTYPETOINT,RECTYPE>INT,docode)
-	jp rectype_plus0
+dnl ;    head_utils(RECTYPETOINT,RECTYPE>INT,docode)
+RECTYPETOINT:
+        jp rectype_plus0
 
 ; :NONAME  ABORT" ?"  ;
 REC_NULL_XT:
@@ -2558,13 +2590,17 @@ REC_NULL_XT:
         DW lit,-13,THROW
 
 ; ' NOOP ' NOOP ' NOOP  RECTYPE: RECTYPE-NULL
-    head_utils(RECTYPE_NULL,RECTYPE-NULL,docreate)
+dnl ;   head_utils(RECTYPE_NULL,RECTYPE-NULL,docreate)
+RECTYPE_NULL:
+        call docreate
         dw REC_NULL_XT
         dw REC_NULL_XT
         dw REC_NULL_XT
 
 ; ' NOOP ' NOOP ' NOOP  RECTYPE: RECTYPE-NOOP
-    head_utils(RECTYPE_NOOP,RECTYPE-NOOP,docreate)
+dnl ;    head_utils(RECTYPE_NOOP,RECTYPE-NOOP,docreate)
+RECTYPE_NOOP:
+        call docreate
         dw NOOP
         dw NOOP
         dw NOOP
@@ -2584,36 +2620,29 @@ XRECOGNIZE1:
 XRECOGNIZE2:
         dw EXIT
 
-; Example:
-; ' NOOP :NONAME POSTPONE LITERAL ; DUP   RECTYPE: RECTYPE-NUM
-;
-; : REC-CHAR ( addr len -- n RECTYPE-NUM | RECTYPE-NULL )
-;    3 = IF
-;       DUP C@ [CHAR] ' = IF
-;          DUP 2 + C@ [CHAR] ' = IF
-;             1+ C@ RECTYPE-NUM EXIT
-;          THEN
-;       THEN
-;    THEN
-;    DROP RECTYPE-NULL   ;
-;
-; 4 STACK recognizor
-;
-; ' REC-CHAR recognizor >STACK
-;
-; : test S" ' '" recognizor RECOGNIZE  ;
 
-;: RECOGNIZE ( addr len stack-id -- i*x rectype-token | rectype-null )
-;    ['] (recognize) SWAP STACK-UNTIL ( -- i*x rectype-token -1 | addr len 0 )
+;: RECOGNIZE ( addr len -- i*x rectype-token | rectype-null )
+;    ['] (recognize) recognizers_end recogizers MAP_UNTIL ( -- i*x rectype-token -1 | addr len 0 )
 ;    0= IF                           \ no recognizer did the job, remove addr/len
 ;     2DROP RECTYPE-NULL
 ;    THEN    ;
-    head_utils(RECOGNIZE,RECOGNIZE,docolon)
-        DW lit,XRECOGNIZE,SWOP,STACKUNTIL
+dnl ; head_utils(RECOGNIZE,RECOGNIZE,docolon)
+RECOGNIZE:
+        call docolon
+        DW lit,XRECOGNIZE,lit,RECOGNIZERS_END,lit,RECOGNIZERS,MAP_UNTIL
         DW ZEROEQUAL,qbranch,RECOGNIZE1
         DW TWODROP,RECTYPE_NULL
 RECOGNIZE1:
         DW EXIT
+
+; static list of recognizers in order of priority
+RECOGNIZERS:
+        DW REC_FIND
+        DW REC_NUM
+        DW REC_DNUM
+        DW REC_CHAR
+        DW REC_IHEX
+RECOGNIZERS_END:
 
 
 ;: REC-FIND ( addr len -- XT flags RECTYPE_XT  |  RECTYPE_NULL )
@@ -2627,7 +2656,9 @@ RECOGNIZE1:
 ;    ELSE
 ;       RECTYPE-NULL
 ;    THEN   ;
-    head_utils(REC_FIND,REC-FIND,docolon)
+dnl ;    head_utils(REC_FIND,REC-FIND,docolon)
+REC_FIND:
+        call docolon
         DW FIND_NAME
         DW QDUP,qbranch,REC_FIND1
         DW DUP,NFATOCFA
@@ -2666,7 +2697,9 @@ REC_FIND_POST:
         DW EXIT
 
 ;    RECTYPE: RECTYPE-XT
-    head(RECTYPE_XT,RECTYPE-XT,docreate)
+dnl ;    head(RECTYPE_XT,RECTYPE-XT,docreate)
+RECTYPE_XT:
+        call docreate
         DW REC_FIND_XT
         DW REC_FIND_COMP
         DW REC_FIND_POST
@@ -2772,7 +2805,9 @@ XREC_NUMBER:
 ;    else 
 ;      2drop rectype-null  \ no, it cannot be a double cell number.
 ;    then   ;
-    head_utils(REC_DNUM,REC-DNUM,docolon)
+dnl ;    head_utils(REC_DNUM,REC-DNUM,docolon)
+REC_DNUM:
+        call docolon
         DW TWODUP,PLUS,ONEMINUS,CFETCH,lit,'.',EQUAL,qbranch,REC_DNUM3
         DW ONEMINUS
         DW XREC_NUMBER,TOR
@@ -2799,7 +2834,9 @@ dnl ;      \ drop the significant portion of the 'd' value
 dnl ;      drop  r> if negate then rectype-num
 dnl ;    then
 dnl ;;
-    head_utils(REC_NUM,REC-NUM,docolon)
+dnl ;    head_utils(REC_NUM,REC-NUM,docolon)
+REC_NUM:
+        call docolon
         DW XREC_NUMBER,TOR
         DW NIP,qbranch,REC_SNUM1
         DW TWODROP,RFROM,DROP,RECTYPE_NULL,EXIT
@@ -2821,7 +2858,9 @@ dnl ;    then
 dnl ;  then
 dnl ;  drop rectype-null
 dnl ;;
-    head_utils(REC_CHAR,REC-CHAR,docolon)
+dnl ;    head_utils(REC_CHAR,REC-CHAR,docolon)
+REC_CHAR:
+        call docolon
         DW lit,3,EQUAL,qbranch,REC_CHARX
         DW DUP,CFETCH,lit,39,EQUAL,qbranch,REC_CHARX
         DW DUP,ONEPLUS,ONEPLUS,CFETCH,lit,39,EQUAL,qbranch,REC_CHARX
@@ -2832,13 +2871,17 @@ REC_CHARX:
 
 
 ;    RECTYPE: RECTYPE-NUM
-    head_utils(RECTYPE_NUM,RECTYPE-NUM,docreate)
+dnl ;    head_utils(RECTYPE_NUM,RECTYPE-NUM,docreate)
+RECTYPE_NUM:
+        call docreate
         DW NOOP
         DW LITERAL
         DW LITERAL
 
 ;    RECTYPE: RECTYPE-DNUM
-    head_utils(RECTYPE_DNUM,RECTYPE-DNUM,docreate)
+dnl ;    head_utils(RECTYPE_DNUM,RECTYPE-DNUM,docreate)
+RECTYPE_DNUM:
+        call docreate
         DW NOOP
         DW TWOLITERAL
         DW TWOLITERAL
@@ -2846,7 +2889,7 @@ REC_CHARX:
 ; : POSTPONE ( "name" -- )  \ COMPILE
 ; This is the 16K ROM Next Generation version
 ;   BL WORD  COUNT
-;     RECOGNIZERS RECOGNIZE   ( xt flags RECTYPE_XT | RECTYPE_NULL )
+;     RECOGNIZE   ( xt flags RECTYPE_XT | RECTYPE_NULL )
 ;     DUP
 ;     >R                 ( call POST action )
 ;     RECTYPE>POST EXECUTE
@@ -2855,7 +2898,7 @@ REC_CHARX:
 POSTPONE_16K:
         call docolon
         DW BL,WORD,COUNT
-        DW RECOGNIZERS,RECOGNIZE
+        DW RECOGNIZE
         DW DUP,TOR
         DW RECTYPETOPOST,EXECUTE
         DW RFROM,RECTYPETOCOMP,COMMA
@@ -2870,7 +2913,7 @@ POSTPONE_16K:
 ;   BEGIN
 ;   BL WORD DUP C@ WHILE        -- textadr
 ;       DUP >R COUNT            -- c-addr n  ; textadr
-;       RECOGNIZERS RECOGNIZE   ( i*x RECTYPE_XXX | RECTYPE_NULL )
+;       RECOGNIZE   ( i*x RECTYPE_XXX | RECTYPE_NULL )
 ;       DUP RECTYPE_NULL <> IF  -- i*x RECTYPE_XXX
 ;           STATE @ IF
 ;             RECTYPE>COMP EXECUTE
@@ -2886,7 +2929,7 @@ INTERPRET_16K:
         call docolon
 INTRP_NG1: DW BL,WORD,DUP,CFETCH,qbranch,INTRP_NG9
            DW DUP,TOR,COUNT
-           DW RECOGNIZERS,RECOGNIZE
+           DW RECOGNIZE
            DW DUP,RECTYPE_NULL,NOTEQUAL,qbranch,INTRP_NG2
            DW STATE,FETCH,qbranch,INTRP_NG3
            DW RECTYPETOCOMP,EXECUTE
@@ -2948,7 +2991,9 @@ REC_IHEX_COMP:
         DW EXIT
 
 ; RECTYPE: RECTYPE-IHEX ;
-    head_utils(RECTYPE_IHEX,RECTYPE-IHEX,docreate)
+dnl ;    head_utils(RECTYPE_IHEX,RECTYPE-IHEX,docreate)
+RECTYPE_IHEX:
+        call docreate
         DW REC_IHEX_XT
         DW REC_IHEX_COMP
         DW NOOP
@@ -2964,7 +3009,9 @@ REC_IHEX_COMP:
 ;       RECTYPE_NULL EXIT
 ;    THEN
 ;    DROP RECTYPE_IHEX  ;
-    head_utils(REC_IHEX,REC-IHEX,docolon)
+dnl ;    head_utils(REC_IHEX,REC-IHEX,docolon)
+REC_IHEX:
+        call docolon
         DW IHEXQ,DUP,lit,1,EQUAL,qbranch,REC_IHEX1
         DW DROP
         DW RECTYPE_NOOP,EXIT
@@ -3104,8 +3151,6 @@ SLASH16KROM:
         DW lit,vocab_lastword,VOCAB_WORDLIST,STORE
         DW WORDLISTS,lit,STACK_WORDLISTS_SIZE,SLASHSTACK
         DW VOCAB_WORDLIST,FORTH_WORDLIST,lit,2,WORDLISTS,STACKSET
-        DW RECOGNIZERS,lit,STACK_RECOGNIZERS_SIZE,SLASHSTACK
-        DW lit,REC_IHEX,lit,REC_CHAR,lit,REC_DNUM,lit,REC_NUM,lit,REC_FIND,lit,5,RECOGNIZERS,STACKSET
         DW FORTH_WORDLIST,CURRENT,STORE
         DW SLASHBLKCTX
         DW XSQUOTE

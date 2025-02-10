@@ -65,7 +65,6 @@ VARIABLE 'blkfile   0 'blkfile !
 \ READ-BLKFILE 
 : READ-BLKFILE ( c-addr u blkfileid -- u ior )
    ?BLKFILE  GETCHARS  0 ;
-VARIABLE chars-count
 VARIABLE blkfile-eof
 
 
@@ -78,18 +77,18 @@ VARIABLE blkfile-eof
 
 
 
+
 : READLINE-BLKFILE ( c-addr u blkfileid -- u f ior ) 
-   ?BLKFILE
-   SWAP  0 chars-count !   ( u c-addr )
-   BEGIN
-     OVER chars-count @ <> WHILE
-     GETCH
-       DUP 13 = IF DROP 2DROP chars-count @ -1 0 EXIT  THEN
-       DUP 26 = IF DROP 2DROP chars-count @ 0  0 EXIT  THEN
-       OVER C! 1+   ( u c-addr' )
-       1 chars-count +!
-   REPEAT
-   DROP 0 0 ( u f ior )  ;
+   ?BLKFILE GETLINE 0 ;
+
+
+
+
+
+
+
+
+
 
 
 
