@@ -35,27 +35,6 @@
 
 SECTION code
 
-;Z RAMTOP      -- u    return RAMPTOP as u
-;  ramtop_ptr CONSTANT RAMTOP
-    head_utils(RAMTOP,RAMTOP,docolon)
-        dw lit,ramtop_ptr,FETCH,EXIT
-
-;Z RAMTOP!    u --   set RAMTOP to be address specified by u
-;  ramtop_ptr CONSTANT RAMTOP
-    head_utils(RAMTOPSTORE,RAMTOP!,docolon)
-        dw lit,ramtop_ptr,STORE
-        dw ROM16KQ,qbranch,RAMPTOPSTORE1
-        dw RAMPTOPSTORE_16K
-RAMPTOPSTORE1:
-        dw EXIT
-
-SECTION data
-
-ramtop_ptr:
-        DEFS 2
-
-
-SECTION code
 EXTERN jp_hl
 
 ;Z CALL       a-addr --    call machine code at address
@@ -174,13 +153,12 @@ BACKSLASH1:
     DW SOURCE,TOIN,STORE,DROP
     DW EXIT
 
-;X SLITERAL    c-addr u --    compile string literal
+;X (SLITERAL)    c-addr u --    compile string literal
 ;    ['] (S")
-;    DUP C,     ( store size )
-;    HERE   OVER ALIGNED ALLOT
-;    SWAP MOVE
-;   ; IMMEDIATE
-    immed(SLITERAL,SLITERAL,docolon)
+;    HERE   >COUNTED HERE C@ 1+
+;    ALIGNED ALLOT
+XSLITERAL:
+        call docolon
         DW lit,XSQUOTE,COMMAXT
         DW HERE,TOCOUNTED,HERE,CFETCH,ONEPLUS
         DW ALIGNED,ALLOT,EXIT
@@ -370,9 +348,9 @@ XIHEXQ4:
 ;Z IHEX?
 ;    ['] (IHEXQ?) CATCH
 ;       0<> IF  FALSE  THEN   ;
-
-    head_utils(IHEXQ,IHEX?,docolon)
-        DW lit,ihex_flag,FETCH,qbranch,IHEXQ0
+IHEXQ:
+        caLL docolon
+        DW IHEX_FLAG,FETCH,qbranch,IHEXQ0
         DW lit,XIHEXQ,CATCH
         DW qbranch,IHEXQ1
 IHEXQ0:
@@ -389,39 +367,65 @@ IHEXQ1:
 ;     MOVE    ;
 XIHEX:
         call docolon
-        DW lit,ihex_start,FETCH,ZEROEQUAL,qbranch,XIHEX1
-        DW OVER,lit,ihex_start,STORE
+        DW IHEX_START,FETCH,ZEROEQUAL,qbranch,XIHEX1
+        DW OVER,IHEX_START,STORE
 XIHEX1:
-        DW TWODUP,PLUS,lit,ihex_start,FETCH,MINUS,lit,ihex_length,STORE
+        DW TWODUP,PLUS,IHEX_START,FETCH,MINUS,IHEX_LENGTH,STORE
         DW MOVE
         DW EXIT
 
 ;  NONAME:    ( src dest len --     compile action for ihex )
 IHEXCOMMA:
         call docolon
-        DW SWOP,LITERAL,SLITERAL
+        DW SWOP,LITERAL,XSLITERAL
         DW lit,ROT,COMMA
         DW lit,SWOP,COMMA
         DW lit,XIHEX,COMMA
         DW EXIT
 
+XHEXLOAD:
+        call docolon
+        DW lit,0,IHEX_START,STORE
+        DW lit,0,IHEX_LENGTH,STORE
+        DW EXIT
+
+XSEMIHEXLOAD:
+        call docolon
+        DW IHEX_START,FETCH
+        DW IHEX_LENGTH,FETCH
+        DW EXIT
+
 ;: HEXLOAD
 ;    0 IHEX_START !
 ;    0 IHEX_LENGTH !   ;
-    head(HEXLOAD,HEXLOAD,docolon)
-        DW lit,0,lit,ihex_start,STORE
-        DW lit,0,lit,ihex_length,STORE
-    DW TRUE,lit,ihex_flag,STORE
-        DW EXIT
+    immed(HEXLOAD,HEXLOAD,docolon)
+        DW lit,-1,IHEX_FLAG,STORE
+        DW STATE,FETCH,qbranch,HEXLOAD1
+        DW lit,XHEXLOAD,COMMAXT,EXIT
+HEXLOAD1:
+        DW XHEXLOAD,EXIT
 
 ;: ;HEXLOAD     ( -- ihex_start ihex_length )
 ;    IHEX_START @
 ;    IHEX_LENGTH @   ;
     head(SEMIHEXLOAD,;HEXLOAD,docolon)
-    DW FALSE,lit,ihex_flag,STORE
-        DW lit,ihex_start,FETCH
-        DW lit,ihex_length,FETCH
-        DW EXIT
+        DW lit,0,IHEX_FLAG,STORE
+        DW STATE,FETCH,qbranch,SEMIHEXLOAD1
+        DW lit,XSEMIHEXLOAD,COMMAXT,EXIT
+SEMIHEXLOAD1:
+        DW XSEMIHEXLOAD,EXIT
+
+IHEX_START:
+        call docon
+        DW ihex_start
+
+IHEX_LENGTH:
+        call docon
+        DW ihex_length
+
+IHEX_FLAG:
+        call docon
+        DW ihex_flag
 
 SECTION data
 

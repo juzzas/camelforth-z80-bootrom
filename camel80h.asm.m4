@@ -100,6 +100,10 @@ SECTION code
             dw 20
 
     ;  22 USER SLICE-ID
+    SLICE_ID:
+            call douser
+            dw 22
+
     ;  24 USER SCR
 
     ;Z HANDLER      -- xt    if set, use XT as THROW handler
@@ -541,7 +545,7 @@ TYP5:   DW EXIT
         DW lit,22H,PARSE
         DW STATE,FETCH,qbranch,SQUOTE1
 
-        DW SLITERAL,EXIT
+        DW XSLITERAL,EXIT
 
 SQUOTE1:
         DW TOSPAD
@@ -967,7 +971,11 @@ XREFILL0:
         DW TICKSOURCE,TWOFETCH,TOR,TOR
         DW TOIN,FETCH,TOR
         DW TICKSOURCE,TWOSTORE,lit,0,TOIN,STORE
+        DW BLK,FETCH,TOR
+        DW SLICE_ID,FETCH,TOR
         DW INTERPRET
+        DW RFROM,SLICE_ID,STORE
+        DW RFROM,BLK,STORE
         DW RFROM,TOIN,STORE,RFROM,RFROM
         DW TICKSOURCE,TWOSTORE
         DW RFROM,TICKSOURCE_ID,STORE,EXIT
@@ -1532,7 +1540,6 @@ DOTSIGNON:
     head(COLD,COLD,docolon)
         DW UINIT,U0,NINIT,CMOVE
         DW DOTSIGNON,CR
-        DW lit,65535,RAMTOPSTORE
         DW ROM16KQ,qbranch,COLD1
         DW lit,65535,lit,flag_rom16k,STORE
         DW SLASH16KROM

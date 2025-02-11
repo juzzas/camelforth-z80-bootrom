@@ -45,9 +45,8 @@ SECTION code_16k
 
     ;Z SLICE-ID      -- a-addr   storage of current slice-id
     ;  22 USER SLICE-ID
-        head(SLICE_ID,SLICE-ID,douser)
-            dw 22
-
+        head(USERSLICE_ID,SLICE-ID,douser)
+            JP SLICE_ID
 
     ;Z SCR          -- a-addr  last edited screen number
     ;  24 USER SCR
@@ -107,6 +106,27 @@ EXTERN pausevec_ptr
 ;  pausevec_ptr CONSTANT 'INTVEC
     head(TICKPAUSE,'PAUSE,docode)
         jp PAUSEVEC
+
+
+;Z RAMTOP      -- u    return RAMPTOP as u
+;  ramtop_ptr CONSTANT RAMTOP
+    head_utils(RAMTOP,RAMTOP,docolon)
+        dw lit,ramtop_ptr,FETCH,EXIT
+
+;Z RAMTOP!    u --   set RAMTOP to be address specified by u
+;  ramtop_ptr CONSTANT RAMTOP
+    head_utils(RAMTOPSTORE,RAMTOP!,docolon)
+        dw lit,ramtop_ptr,STORE
+        DW SLASHBLKCTX
+        dw EXIT
+
+SECTION data
+
+ramtop_ptr:
+        DEFS 2
+
+
+SECTION code_16k
 
 
 ;: FORTH-WORDLIST ( -- wid )
@@ -351,6 +371,12 @@ dnl     head(VT_ESC,VT-ESC,docolon)
 dnl         dw lit,0x1b,EMIT
 dnl         dw lit,'[',EMIT
 dnl         dw EXIT
+
+;C SLITERAL    c-addr u --    compile string literal
+;    (SLITERAL)   ; IMMEDIATE
+    immed(SLITERAL,SLITERAL,docode)
+        jp XSLITERAL
+
 
 ;C 2LITERAL  x1 x2 --    append double numeric literal
 ;   STATE @ IF ['] DLIT ,XT , , THEN ; IMMEDIATE
@@ -2983,8 +3009,7 @@ REC_IHEX_XT:
         DW EXIT
 
 ;  NONAME:    ( src dest len --     compile action for rectype-ihex )
-;     SWAP LITERAL SLITERAL
-;     ['] (IHEX) ,  ;
+;     IHEX,  ;
 REC_IHEX_COMP:
         call docolon
         DW IHEXCOMMA
@@ -2997,7 +3022,6 @@ RECTYPE_IHEX:
         DW REC_IHEX_XT
         DW REC_IHEX_COMP
         DW NOOP
-
 
 ;: REC-IHEX ( addr len -- src dest n RECTYPE_IHEX   if ok, RECTYPE_NULL if not recognised )
 ;    IHEX? DUP 1 = IF
@@ -3142,6 +3166,7 @@ SLASH16KROM:
         call docolon
         DW U0,LINK,STORE
         DW lit,XWAKE,U0,STORE
+        DW lit,65535,RAMTOPSTORE
         DW lit,FIND_16K,lit,xt_find,STORE
         DW lit,POSTPONE_16K,lit,xt_postpone,STORE
         DW lit,INTERPRET_16K,lit,xt_interpret,STORE
@@ -3162,7 +3187,3 @@ SLASH16KROM:
         dw EXIT
 
 
-RAMPTOPSTORE_16K:
-        call docolon
-        DW SLASHBLKCTX
-        dw EXIT
