@@ -5,7 +5,7 @@
 
 \ Uses TDL extended INTEL mnemonics
 
-FORTH DEFINITIONS  HEX
+FORTH DEFINITIONS
 
 VOCABULARY ASSEMBLER  ALSO ASSEMBLER DEFINITIONS
 CR .( loading Z80 Assembler )
@@ -15,6 +15,7 @@ PREVIOUS DEFINITIONS  DECIMAL
 
 
 \ modes
+HEX
 VARIABLE <xy>  ( ix/iy mode )
 VARIABLE dsp   ( ix/iy displacement )
 
@@ -23,9 +24,6 @@ VARIABLE dsp   ( ix/iy displacement )
 
 : rel8 ( a1 a2 -- offs )
   1+ - DUP 80 -80 WITHIN ABORT" BRANCH OUT OF RANGE" ;
-
-
-
 
 
 
