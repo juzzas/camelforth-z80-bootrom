@@ -144,6 +144,16 @@ SECTION code_16k
         head(UTILS_WORDLIST,UTILS-WORDLIST,docon)
             dw utils_wordlist_head
 
+;C (CREATE-WID)  c-addr u wid --  )    create an empty definition to WID
+;   DUP WID>NFA , 0 C,         link & `immed' field
+;   HERE SWAP WID>NFA!               new "latest" link on wid
+;   2DUP HERE >COUNTED 1+ ALLOT DROP        name field
+;   docreate ,CF                code field
+    head(XCREATE_WID,(CREATE-WID),docolon)
+        DW DUP,WIDTONFA,COMMA,lit,0,CCOMMA
+        DW HERE,SWOP,WIDTONFASTORE
+        DW TWODUP,HERE,TOCOUNTED,ONEPLUS,ALLOT,DROP
+        DW lit,docreate,COMMACF,EXIT
 
 ;C .(    --                     emit input until )
 ;   [ HEX ] 29 WORD COUNT TYPE ; IMMEDIATE
@@ -697,13 +707,11 @@ HOLDS2:
         next
 
 ;C CODE:   --      create an empty code definition
-;   CURRENT @ WID>NFA , 0 C,         link & `immed' field
-;   HERE CURRENT @ WID>NFA!           new "latest" link
-;   BL WORD C@ 1+ ALLOT         name field
+;   PARSE-NAME CURRENT @ (CREATE-WID) 
+;   -3 ALLOT  ;
     head(CODECOLON,CODE:,docolon)
-        DW CURRENT,FETCH,WIDTONFA,COMMA,lit,0,CCOMMA
-        DW HERE,CURRENT,FETCH,WIDTONFASTORE
-        DW BL,WORD,CFETCH,ONEPLUS,ALLOT
+        DW PARSE_NAME,CURRENT,FETCH,XCREATE_WID
+        DW lit,-3,ALLOT
         DW EXIT
 
 
