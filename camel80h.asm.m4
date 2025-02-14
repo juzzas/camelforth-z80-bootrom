@@ -761,7 +761,7 @@ PARSE1: DW RFROM,RFROM,ROT,MINUS,TOIN,PLUSSTORE
 ;C                  xt -1      if "normal"
 ;   LATEST @ BEGIN             -- a nfa
 ;       2DUP OVER C@ CHAR+     -- a nfa a nfa n+1
-;       S=                     -- a nfa f
+;       COMPARE                     -- a nfa f
 ;       DUP IF
 ;           DROP
 ;           NFA>LFA @ DUP      -- a link link
@@ -780,7 +780,7 @@ FIND_8K:
         call docolon
         DW LATEST,FETCH
 FIND1:  DW TWODUP,OVER,CFETCH,CHARPLUS
-        DW sequal,DUP,qbranch,FIND2
+        DW COMPARE,DUP,qbranch,FIND2
         DW DROP,NFATOLFA,FETCH,DUP
 FIND2:  DW ZEROEQUAL,qbranch,FIND1
         DW DUP,qbranch,FIND3
@@ -1523,7 +1523,7 @@ MSTARSLASH1:
         DW lit,rom_16k_signature
         DW XSQUOTE
         DB 6,"RC2014"
-        DW sequal,ZEROEQUAL
+        DW COMPARE,ZEROEQUAL
         DW EXIT
 
 DOTSIGNON:
