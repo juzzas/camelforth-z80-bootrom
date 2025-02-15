@@ -155,12 +155,12 @@ BACKSLASH1:
 
 ;X (SLITERAL)    c-addr u --    compile string literal
 ;    ['] (S")
-;    HERE   >COUNTED HERE C@ 1+
+;    HERE PLACE  HERE C@ 1+
 ;    ALIGNED ALLOT
 XSLITERAL:
         call docolon
         DW lit,XSQUOTE,COMMAXT
-        DW HERE,TOCOUNTED,HERE,CFETCH,ONEPLUS
+        DW HERE,PLACE,HERE,CFETCH,ONEPLUS
         DW ALIGNED,ALLOT,EXIT
 
 

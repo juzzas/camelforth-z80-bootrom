@@ -697,9 +697,9 @@ SIGN1:  DW EXIT
     head(SLASHSTRING,/STRING,docolon)
         DW ROT,OVER,PLUS,ROT,ROT,MINUS,EXIT
 
-;Z >counted  src n dst --     copy to counted str
+;C PLACE src n dst --     copy to counted str
 ;   2DUP C! CHAR+ SWAP CMOVE ;
-    head(TOCOUNTED,>COUNTED,docolon)
+    head(PLACE,PLACE,docolon)
         DW TWODUP,CSTORE,CHARPLUS,SWOP,CMOVE,EXIT
 
 ;C WORD   char -- c-addr    word delim'd by char
@@ -719,7 +719,7 @@ SIGN1:  DW EXIT
         DW DUP,qbranch,WORD1,ONEMINUS  ; char-
 WORD1:  DW RFROM,RFROM,ROT,MINUS,TOIN,PLUSSTORE
         DW TUCK,MINUS
-        DW HERE,TOCOUNTED,HERE
+        DW HERE,PLACE,HERE
         DW BL,OVER,COUNT,PLUS,CSTORE,EXIT
 
 ;X PARSE   char -- c-addr u
@@ -1111,7 +1111,7 @@ QUITX:
 ;   ROT IF exception_msg >COUNTED -2 THROW THEN 2DROP ;
     head(QABORT,?ABORT,docolon)
         DW ROT,qbranch,QABO1
-        DW lit,exception_msg,TOCOUNTED,lit,-2,THROW
+        DW lit,exception_msg,PLACE,lit,-2,THROW
 QABO1:  DW TWODROP,EXIT
 
 ;C ABORT"  i*x 0  -- i*x   R: j*x -- j*x  x1=0
@@ -1127,7 +1127,7 @@ QABO1:  DW TWODROP,EXIT
 ;   0= IF COUNT exception_msg >COUNTED -13 THROW THEN  ;
      head(TICK,',docolon)
         DW BL,WORD,FIND,ZEROEQUAL,qbranch,TICK1
-        DW COUNT,lit,exception_msg,TOCOUNTED,lit,-13,THROW
+        DW COUNT,lit,exception_msg,PLACE,lit,-13,THROW
 TICK1:
         DW EXIT
 

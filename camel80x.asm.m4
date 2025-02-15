@@ -147,12 +147,12 @@ SECTION code_16k
 ;C (CREATE-WID)  c-addr u wid --  )    create an empty definition to WID
 ;   DUP WID>NFA , 0 C,         link & `immed' field
 ;   HERE SWAP WID>NFA!               new "latest" link on wid
-;   2DUP HERE >COUNTED 1+ ALLOT DROP        name field
+;   2DUP HERE PLACE 1+ ALLOT DROP        name field
 ;   docreate ,CF                code field
     head(XCREATE_WID,(CREATE-WID),docolon)
         DW DUP,WIDTONFA,COMMA,lit,0,CCOMMA
         DW HERE,SWOP,WIDTONFASTORE
-        DW TWODUP,HERE,TOCOUNTED,ONEPLUS,ALLOT,DROP
+        DW TWODUP,HERE,PLACE,ONEPLUS,ALLOT,DROP
         DW lit,docreate,COMMACF,EXIT
 
 ;C .(    --                     emit input until )
@@ -279,13 +279,27 @@ MAPUNTIL3:
         pop bc
         next
 
+;Z  -ROT     ( x1 x2 x3  -- x3 x1 x2 )
+    head(MINUSROT,-ROT,docode)
+        push bc         ; x3 is in bc
+        exx
+        pop de          ; x3
+        pop bc          ; x2
+        pop hl          ; x1
+        push de
+        push hl
+        push bc
+        exx
+        pop bc
+        next
+
 ;Z >SPADC    addr u -- c-addr'
 ;  allocate an SPAD and copy counted string to it
 ;   SPAD               ( addr u addr' )
 ;   DUP >R         ( addr u addr'   r: addr' )
-;   >COUNTED R>         ( c-addr' )
+;   PLACE R>         ( c-addr' )
     head(TOSPADC,>SPADC,docolon)
-       DW SPAD,DUP,TOR,TOCOUNTED,RFROM
+       DW SPAD,DUP,TOR,PLACE,RFROM
        DW EXIT
 
 ;Z (C")     -- c-addr u   run-time code for C"
@@ -308,7 +322,7 @@ MAPUNTIL3:
         DW STATE,FETCH,qbranch,CQUOTE1
 
         DW lit,XCQUOTE,COMMAXT
-        DW HERE,TOCOUNTED,HERE,CFETCH,ONEPLUS
+        DW HERE,PLACE,HERE,CFETCH,ONEPLUS
         DW ALIGNED,ALLOT,EXIT
 
 CQUOTE1:
@@ -322,7 +336,7 @@ CQUOTE1:
 ; \ space for it and ALIGN the dictionary.
 ;   HERE >counted HERE C@ 1+ ALIGNED ALLOT ;
     head(STRINGCOMMA,``$,'',docolon)
-        DW HERE,TOCOUNTED
+        DW HERE,PLACE
         DW HERE,CFETCH,ONEPLUS,ALIGNED,ALLOT
         DW EXIT
 
@@ -396,6 +410,14 @@ dnl         dw EXIT
         DW STATE,FETCH,qbranch,DLITER1
         DW lit,dlit,COMMAXT,COMMA,COMMA
 DLITER1: DW EXIT
+
+;: 2VARIABLE  ( --      define a Forth double variable )
+;   CREATE 2 CELLS ALLOT ;
+    head(TWOVARIABLE,2VARIABLE,docolon)
+        DW CREATE,lit,4,ALLOT,EXIT
+
+;: 2CONSTANT  ( x1 x2  -      define a Forth constant )
+;   CREATE , , DOES> 2@  ;
 
 ;C 2>R   d d --           2 cells to R
     head(TWOTOR,2>R,docode)
@@ -706,10 +728,10 @@ HOLDS2:
         dec bc
         next
 
-;C CODE:   --      create an empty code definition
+;C CODE   --      create an empty code definition
 ;   PARSE-NAME CURRENT @ (CREATE-WID) 
 ;   -3 ALLOT  ;
-    head(CODECOLON,CODE:,docolon)
+    head(CODE,CODE,docolon)
         DW PARSE_NAME,CURRENT,FETCH,XCREATE_WID
         DW lit,-3,ALLOT
         DW EXIT
@@ -2970,7 +2992,7 @@ INTRP_NG1: DW BL,WORD,DUP,CFETCH,qbranch,INTRP_NG9
            DW branch,INTRP_NG4
 INTRP_NG3: DW RECTYPETOINT,EXECUTE
 INTRP_NG4: DW RFROM,DROP,branch,INTRP_NG5
-INTRP_NG2: DW DROP,RFROM,COUNT,lit,exception_msg,TOCOUNTED,lit,-13,THROW
+INTRP_NG2: DW DROP,RFROM,COUNT,lit,exception_msg,PLACE,lit,-13,THROW
 INTRP_NG5: DW branch,INTRP_NG1
 INTRP_NG9: DW CHECK_SP,DROP
         DW EXIT
