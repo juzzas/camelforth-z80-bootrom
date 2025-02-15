@@ -2,48 +2,52 @@ INCLUDE tools/blocks.fth
 
 1000 GENERATE: build/cf-image.blk
 OPEN:  build/cf-image.blk
-0 AT-BLOCK: extensions/00system.fth
-3 AT-BLOCK: extensions/editor.fth
-30 AT-BLOCK: extensions/forth2012.fth
-33 AT-BLOCK: extensions/core-ext.fth
-48 AT-BLOCK: extensions/facility-ext.fth
-51 AT-BLOCK: extensions/double.fth
-\ 45 AT-BLOCK: extensions/string.fth
-\ 48 AT-BLOCK: extensions/tools-ext.fth
-\ 57 AT-BLOCK: extensions/memory.fth
+0 BLOCKS: extensions/00system.fth
+30 BLOCKS: extensions/tools.fth
+60 BLOCKS: extensions/editor.fth
+90 BLOCKS: extensions/assembler.fth
+120 BLOCKS: extensions/asmz80.fth
 
-78 AT-BLOCK: extensions/multi.fth
-81 AT-BLOCK: extensions/blkfile.fth
-90 AT-BLOCK: extensions/fixed.fth
-99 AT-BLOCK: extensions/random.fth
-102 AT-BLOCK: extensions/ansi.fth
-108 AT-BLOCK: extensions/leds.fth
-112 AT-BLOCK: extensions/pagedram.fth
-180 AT-BLOCK: extensions/assembler.fth
-210 AT-BLOCK: extensions/asmz80.fth
+300 BLOCKS: extensions/forth2012.fth
++BLOCKS: extensions/core-ext.fth
++BLOCKS: extensions/double.fth
++BLOCKS: extensions/string.fth
++BLOCKS: extensions/tools-ext.fth
++BLOCKS: extensions/facility-ext.fth
++BLOCKS: extensions/string-ext.fth
++BLOCKS: extensions/memory.fth
 
-300 AT-BLOCK: extensions/testsuite.fth
-303 AT-BLOCK: extensions/ttester.fth
-330 AT-TEXT: test/forth2012-test-suite/src/prelimtest.fth
-342 AT-TEXT: test/forth2012-test-suite/src/core.fr
-372 AT-TEXT: test/forth2012-test-suite/src/coreplustest.fth
-384 AT-TEXT: test/forth2012-test-suite/src/utilities.fth
-390 AT-TEXT: test/forth2012-test-suite/src/errorreport.fth
-396 AT-TEXT: test/forth2012-test-suite/src/coreexttest.fth
-423 AT-TEXT: test/forth2012-test-suite/src/blocktest.fth
-450 AT-TEXT: test/forth2012-test-suite/src/doubletest.fth
-465 AT-TEXT: test/forth2012-test-suite/src/exceptiontest.fth
-471 AT-TEXT: test/forth2012-test-suite/src/facilitytest.fth
-477 AT-TEXT: test/forth2012-test-suite/src/filetest.fth
-489 AT-TEXT: test/forth2012-test-suite/src/localstest.fth
-498 AT-TEXT: test/forth2012-test-suite/src/memorytest.fth
-504 AT-TEXT: test/forth2012-test-suite/src/toolstest.fth
-519 AT-TEXT: test/forth2012-test-suite/src/searchordertest.fth
-528 AT-TEXT: test/forth2012-test-suite/src/stringtest.fth
 
-600 AT-BLOCK: test/hexload_test.fth
-612 AT-BLOCK: test/hexload_test2.fth
-621 AT-BLOCK: test/blkfile_test1.fth
-630 AT-BLOCK: test/stack_test.fth
+600 BLOCKS: extensions/blkfile.fth
++BLOCKS: extensions/multi.fth
++BLOCKS: extensions/fixed.fth
++BLOCKS: extensions/random.fth
++BLOCKS: extensions/leds.fth
++BLOCKS: extensions/pagedram.fth
+
+
+3000 BLOCKS: test/testsuite.fth
++BLOCKS: test/ttester.fth
++BLKFILE: test/forth2012-test-suite/src/prelimtest.fth
++BLKFILE: test/forth2012-test-suite/src/core.fr
++BLKFILE: test/forth2012-test-suite/src/coreplustest.fth
++BLKFILE: test/forth2012-test-suite/src/utilities.fth
++BLKFILE: test/forth2012-test-suite/src/errorreport.fth
++BLKFILE: test/forth2012-test-suite/src/coreexttest.fth
++BLKFILE: test/forth2012-test-suite/src/blocktest.fth
++BLKFILE: test/forth2012-test-suite/src/doubletest.fth
++BLKFILE: test/forth2012-test-suite/src/exceptiontest.fth
++BLKFILE: test/forth2012-test-suite/src/facilitytest.fth
++BLKFILE: test/forth2012-test-suite/src/filetest.fth
++BLKFILE: test/forth2012-test-suite/src/localstest.fth
++BLKFILE: test/forth2012-test-suite/src/memorytest.fth
++BLKFILE: test/forth2012-test-suite/src/toolstest.fth
++BLKFILE: test/forth2012-test-suite/src/searchordertest.fth
++BLKFILE: test/forth2012-test-suite/src/stringtest.fth
+
+3600 BLOCKS: test/hexload_test.fth
++BLOCKS: test/hexload_test2.fth
++BLOCKS: test/blkfile_test1.fth
++BLOCKS: test/stack_test.fth
 FLUSH
 BYE

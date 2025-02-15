@@ -100,6 +100,7 @@ CREATE blkfile BLKFILE-CONTEXT ALLOT
 \ end of BLKFILE extension
 
 VARIABLE verbose     0 verbose !
+VARIABLE blkpos
 
 
 : open-input ( addr u -- )  R/O OPEN-FILE THROW TO fd-in ;
@@ -113,47 +114,73 @@ VARIABLE verbose     0 verbose !
    LOOP ;
 : ?type ( c-addr u -- )  verbose @ IF TYPE CR ELSE 2DROP THEN ;
 
+: blkpos+!  blkpos @ +   blkpos !   ;
+
+\ increment to next divisible by 3
+: blkpos+3!  blkpos @ 3 +  DUP 3 MOD -  blkpos !   ;
+
 : GENERATE: ( #blks -- )
    BL PARSE open-output
    ?DUP IF  0 DO
       generate-block
    LOOP THEN
-   close-output  ;  IMMEDIATE
-: OPEN: BL PARSE USE  ; IMMEDIATE
+   close-output  
+   0 blkpos ! ;  IMMEDIATE
+
+\ : OPEN: BL PARSE USE  ; IMMEDIATE
+: OPEN: USE  ; IMMEDIATE
+
+: .blkfile-info  ( blkfile-id  -- )
+    DUP blk-origin @ . ." ["
+    DUP blkfile-size . ." blocks]" CR ;
 
 
-: AT-BLOCK:  ( blk "filename" -- )
-   DUP . ." <-- " 
-   BL PARSE
-   2DUP TYPE ."  ["
+: (+blocks)    ( addr u  -- )
+   2DUP TYPE ."  --> "
    open-input
-   R/W BIN open-blkfile TO blk-out
+   blkpos @ R/W BIN open-blkfile TO blk-out
    begin
       block-line max-block-line 32 FILL
       block-line max-block-line fd-in read-line throw
    while
       DROP block-line C/L 2DUP ?type blk-out write-chars
    REPEAT  DROP
-   blk-out blkfile-size . ." blocks]" CR
+   blk-out .blkfile-info
    blk-out close-blkfile
-   close-input ; IMMEDIATE
+   blkfile-size  blkpos+!
+   close-input 
+;
 
-: AT-TEXT:  ( blk "filename" -- )
-   DUP . ." <-- "
-   BL PARSE
-   2DUP TYPE ."  ["
+: BLOCKS:   ( blk "filename" -- )
+    blkpos !  BL PARSE (+blocks)   ; IMMEDIATE
+
+: +BLOCKS:  (  "filename" -- )
+    blkpos+3! BL PARSE (+blocks)   ; IMMEDIATE
+
+: (+blkfile)  ( addr u -- )
+   2DUP TYPE ."  --> "
    open-input
-   R/W open-blkfile TO blk-out
+   blkpos @ R/W open-blkfile TO blk-out
+   blk-out
    begin
       block-line max-block-line 32 FILL
       block-line max-block-line fd-in read-line throw
    while
       block-line SWAP 2DUP ?type blk-out write-chars
       13 blk-out write-char
-   REPEAT  2DROP
+   REPEAT  DROP
    26 blk-out pad-chars
-   blk-out blkfile-size . ." blocks]" CR
+   blk-out .blkfile-info
    blk-out close-blkfile
 
-   close-input ; IMMEDIATE
+   blkfile-size  blkpos+!
+
+   close-input 
+ ; 
+
+: BLKFILE:  ( blk "filename" -- )
+    blkpos !    BL PARSE (+blkfile)  ; IMMEDIATE
+
+: +BLKFILE:  ( "filename" -- )
+    blkpos+3!   BL PARSE (+blkfile)  ; IMMEDIATE
 

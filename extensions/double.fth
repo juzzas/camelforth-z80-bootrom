@@ -1,6 +1,6 @@
 \ Additional double number definitions
 .( Loading additional double number definitions... ) CR
-1 2 +THRU
+1 3 +THRU
 
 
 
@@ -11,6 +11,22 @@
 
 
 
+
+
+
+\ Additional double number definitions
+
+: 2VARIABLE  ( --      define a Forth double variable )
+   CREATE 2 CELLS ALLOT ;
+: 2CONSTANT  ( x1 x2  -      define a Forth constant )
+   CREATE , , DOES> 2@  ;
+: 2VALUE CREATE , ,
+   DOES> TO-STATE @ IF 2!  FALSE TO-STATE ! ELSE 2@ THEN  ;
+
+GET-CURRENT   ENVIRONMENT-WORDLIST SET-CURRENT
+  4294967295. 2CONSTANT MAX-UD    \ largest usable unsigned 
+  2147483647. 2CONSTANT MAX-D     \ largest usable signed
+SET-CURRENT
 
 
 
@@ -33,13 +49,4 @@
 : DAND ROT AND >R AND R> ; ( d d -- d )
 : DOR ROT OR >R OR R> ; ( d d -- d )
 : DXOR ROT XOR >R XOR R> ; ( d d -- d )
-
-: 2VARIABLE  ( --      define a Forth double variable )
-   CREATE 2 CELLS ALLOT ;
-
-: 2CONSTANT  ( x1 x2  -      define a Forth constant )
-   CREATE , , DOES> 2@  ;
-
-: 2VALUE CREATE , ,
-   DOES> TO-STATE @ IF 2!  FALSE TO-STATE ! ELSE 2@ THEN  ;
 

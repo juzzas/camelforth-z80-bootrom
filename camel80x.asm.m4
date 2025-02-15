@@ -1134,7 +1134,8 @@ RESTOREORDER1:
             dw EXIT
 
 
-;: >ORDER  ( wid1 .. widn n -- )
+;: >ORDER  ( wid -- )
+; \ adds wordlist to the search order
         head(TOORDER,>ORDER,docolon)
             dw WORDLISTS,TOSTACK
             dw EXIT
