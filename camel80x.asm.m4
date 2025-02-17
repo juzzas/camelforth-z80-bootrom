@@ -418,6 +418,12 @@ DLITER1: DW EXIT
 
 ;: 2CONSTANT  ( x1 x2  -      define a Forth constant )
 ;   CREATE , , DOES> 2@  ;
+    head(TWOCONSTANT,2CONSTANT,docolon)
+        DW CREATE,COMMA,COMMA
+        DW XDOES
+        call dodoes
+        DW TWOFETCH
+        DW EXIT
 
 ;C 2>R   d d --           2 cells to R
     head(TWOTOR,2>R,docode)
@@ -763,7 +769,9 @@ dnl ;       SP decremented before storing.
 ;      OVER +         ( addr S0 )
 ;      SWAP 2DUP CELL+     ( SP sp-addr S0 s0-addr )
 ;      !  !   ;
-    head_utils(SLASHSTACK,``/STACK'',docolon)
+dnl ;    head_utils(SLASHSTACK,``/STACK'',docolon)
+SLASHSTACK:
+        call docolon
         DW TWODUP,lit,0,FILL
         DW OVER,PLUS
         DW SWOP,TWODUP,CELLPLUS
@@ -778,21 +786,23 @@ dnl ;      CELLS CELL+ CELL+   ( bytes )
 dnl ;      HERE OVER ALLOT      ( bytes addr )
 dnl ;      SWAP /STACK
 dnl ;   DOES>  ;
-    head_utils(STACK,STACK:,docolon)
-        DW CREATE
-        DW CELLS,CELLPLUS,CELLPLUS
-        DW HERE,OVER,ALLOT
-        DW SWOP,SLASHSTACK
-        DW XDOES
-        call dodoes
-        dw EXIT
+dnl     head_utils(STACK,STACK:,docolon)
+dnl         DW CREATE
+dnl         DW CELLS,CELLPLUS,CELLPLUS
+dnl         DW HERE,OVER,ALLOT
+dnl         DW SWOP,SLASHSTACK
+dnl         DW XDOES
+dnl         call dodoes
+dnl         dw EXIT
 
 ; Push number onto STACK
 ; : >S ( n lifo -- )
 ;      SWAP OVER @ ( lifo n tos )
 ;      CELL- !     ( lifo )
 ;      CELL NEGATE SWAP +! ;
-    head_utils(TOSTACK,>S,docolon)
+dnl     head_utils(TOSTACK,>S,docolon)
+TOSTACK:
+        call docolon
         DW SWOP,OVER,FETCH
         DW CELLMINUS,STORE
         DW CELL,NEGATE,SWOP,PLUSSTORE
@@ -803,7 +813,9 @@ dnl ;   DOES>  ;
 ;      DUP @ @        ( lifo x )
 ;      SWAP           ( x lifo  )
 ;      CELL SWAP +!  ;  ( x )
-    head_utils(STACKFROM,S>,docolon)
+dnl    head_utils(STACKFROM,S>,docolon)
+STACKFROM:
+        call docolon
         DW DUP,FETCH,FETCH
         DW SWOP
         DW CELL,SWOP,PLUSSTORE
@@ -812,56 +824,68 @@ dnl ;   DOES>  ;
 ; Fetch the value at the top of the STACK
 ; : S@ ( lifo -- x )
 ;      @  @ ;
-    head_utils(STACKFETCH,S@,docolon)
+dnl    head_utils(STACKFETCH,S@,docolon)
+STACKFETCH:
+        call docolon
         DW FETCH,FETCH
         DW EXIT
 
 ; Replace the value at the top of the STACK
 ; : S! ( x lifo -- )
 ;      @ ! ;
-    head_utils(STACKSTORE,S!,docolon)
+dnl    head_utils(STACKSTORE,S!,docolon)
+STACKSTORE:
+        call docolon
         DW FETCH,STORE
         DW EXIT
 
 ; Drop the value at the top of the STACK
 ; : SDROP ( lifo -- )
 ;      S> DROP ;
-    head_utils(STACKDROP,SDROP,docolon)
+dnl    head_utils(STACKDROP,SDROP,docolon)
+STACKDROP:
+        call docolon
         DW STACKFROM,DROP
         DW EXIT
 
 ; Duplicate the value at the top of the STACK
 ; : SDUP ( lifo -- )
 ;      DUP S@ SWAP >S ;
-    head_utils(STACKDUP,SDUP,docolon)
+dnl    head_utils(STACKDUP,SDUP,docolon)
+STACKDUP:
+        call docolon
         DW DUP,STACKFETCH,SWOP,TOSTACK
         DW EXIT
 
-; PICK for stack
-; : SPICK ( n lifo -- x )
-;     @ SWAP CELLS + @ ;
-    head_utils(SPICK,SPICK,docolon)
-        DW FETCH,SWOP,CELLS,PLUS,FETCH
-        DW EXIT
+dnl ; PICK for stack
+dnl ; : SPICK ( n lifo -- x )
+dnl ;     @ SWAP CELLS + @ ;
+dnl     head_utils(SPICK,SPICK,docolon)
+dnl         DW FETCH,SWOP,CELLS,PLUS,FETCH
+dnl         DW EXIT
 
 ; : STACK-DEPTH ( lifo -- n )
 ;      STACK.BOUNDS - CELL /  ;
-    head_utils(STACKDEPTH,SDEPTH,docolon)
+dnl    head_utils(STACKDEPTH,SDEPTH,docolon)
+STACKDEPTH:
+        call docolon
         DW STACKBOUNDS,MINUS
         DW TWOSLASH      ;  optimize "DW CELL,SLASH" for 16bit
         DW EXIT
 
-; : STACK-EMPTY? ( lifo -- flag )
-;      STACK.BOUNDS = ;
-    head_utils(STACKEMPTYQ,SEMPTY?,docolon)
-        DW STACKBOUNDS,EQUAL
-        DW EXIT
+dnl ; : STACK-EMPTY? ( lifo -- flag )
+dnl ;      STACK.BOUNDS = ;
+dnl     head_utils(STACKEMPTYQ,SEMPTY?,docolon)
+dnl         DW STACKBOUNDS,EQUAL
+dnl         DW EXIT
 
 ; Create parameters for a ?DO loop that will scan every item currently in STACK. The intended use is:
 ;      ( lifo )   STACK-BOUNDS ?DO -- CELL +LOOP
 ; : STACK-BOUNDS ( lifo -- addr1 addr2 )
 ;     DUP CELL+ @ SWAP @ ;
-    head_utils(STACKBOUNDS,STACK-BOUNDS,docolon)
+dnl    head_utils(STACKBOUNDS,STACK-BOUNDS,docolon)
+STACKBOUNDS:
+        call docolon
         DW DUP,CELLPLUS,FETCH,SWOP,FETCH
         DW EXIT
 
@@ -879,7 +903,9 @@ dnl ;   DOES>  ;
 ;    ELSE
 ;      NIP DUP CELL+ @ SWAP !   \ clear stack
 ;    THEN    ;
-    head_utils(STACKSET,STACK-SET,docolon)
+dnl    head_utils(STACKSET,STACK-SET,docolon)
+STACKSET:
+        call docolon
         DW OVER,ZEROLESS,qbranch,STACKSET0
         DW lit,-4,THROW
 STACKSET0:
@@ -913,7 +939,9 @@ STACKSET2:
 ;         NIP            ( n )
 ;     THEN               ( )
 ;     ;
-    head_utils(STACKGET,STACK-GET,docolon)
+dnl    head_utils(STACKGET,STACK-GET,docolon)
+STACKGET:
+        call docolon
         DW DUP,STACKDEPTH
         DW DUP,qbranch,STACKGET2
         DW TOR,CELLPLUS,FETCH,CELLMINUS,RFETCH
@@ -1424,6 +1452,39 @@ ENDCASE1:
 ENDCASE2:
         DW EXIT
 
+
+;: BEGIN-STRUCTURE                       ( -- addr 0 ; -- size )
+;   CREATE   HERE 0 0 ,                ( mark stack, lay dummy )
+;   DOES> @  ;                              ( -- record length )
+    head(BEGIN_STRUCTURE,BEGIN-STRUCTURE,docolon)
+        DW CREATE,HERE,lit,0,lit,0,COMMA
+        DW XDOES
+        call dodoes
+        DW FETCH,EXIT
+
+;: +FIELD ( # n ++ #'  define a field with offset # and size n )
+;   CREATE OVER , +
+;   DOES> @ + ;  ( addr1 -- addr2 ; calculate address of field )
+    head(PLUSFIELD,+FIELD,docolon)
+        DW CREATE,OVER,COMMA,PLUS
+        DW XDOES
+        call dodoes
+        DW FETCH,PLUS,EXIT
+
+;: FIELD: ALIGNED 1 CELLS +FIELD ;
+    head(FIELDCOLON,FIELD:,docolon)
+        DW lit,2,PLUSFIELD
+        DW EXIT
+
+;: CFIELD: 1 CHARS +FIELD ;
+    head(CFIELDCOLON,CFIELD:,docolon)
+        DW lit,1,PLUSFIELD
+        DW EXIT
+
+;: END-STRUCTURE SWAP ! ;
+    head(END_STRUCTURE,END-STRUCTURE,docolon)
+        DW SWOP,STORE
+        DW EXIT
 
 ; BLOCK implementation ==========================
 
