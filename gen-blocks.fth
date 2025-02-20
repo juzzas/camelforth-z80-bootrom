@@ -7,20 +7,21 @@ OPEN:  build/cf-image.blk
 60 BLOCKS: extensions/editor.fth
 90 BLOCKS: extensions/assembler.fth
 120 BLOCKS: extensions/asmz80.fth
+150 BLOCKS: extensions/blkfile.fth
+180 BLOCKS: extensions/multi.fth
 
 300 BLOCKS: extensions/forth2012.fth
-+BLOCKS: extensions/core-ext.fth
-+BLOCKS: extensions/double.fth
 +BLOCKS: extensions/string.fth
++BLOCKS: extensions/core-ext.fth
++BLOCKS: extensions/double-ext.fth
 +BLOCKS: extensions/tools-ext.fth
 +BLOCKS: extensions/facility-ext.fth
 +BLOCKS: extensions/string-ext.fth
 +BLOCKS: extensions/memory.fth
++BLOCKS: extensions/search.fth
 
 
-600 BLOCKS: extensions/blkfile.fth
-+BLOCKS: extensions/multi.fth
-+BLOCKS: extensions/fixed.fth
+600 BLOCKS: extensions/fixed.fth
 +BLOCKS: extensions/random.fth
 +BLOCKS: extensions/leds.fth
 +BLOCKS: extensions/pagedram.fth

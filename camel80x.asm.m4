@@ -1101,21 +1101,20 @@ SECTION code_16k
             dw HERE,lit,0,COMMA
             dw EXIT
 
-;: SEARCH-WORDLIST ( c-addr u wid -- 0 | xt 1 | xt -1 )
-; Find the definition identified by the string c-addr u in the word list
-; identified by wid. If the definition is not found, return zero. If the
-; definition is found, return its execution token xt and one (1) if the
-; definition is immediate, minus-one (-1) otherwise.
-
 ;: GET-ORDER  ( -- wid1 .. widn n )
         head(GET_ORDER,GET-ORDER,docolon)
             dw WORDLISTS,STACKGET
             dw EXIT
 
 ;: SET-ORDER  ( wid1 .. widn n -- )
-        head(SET_ORDER,SET-ORDER,docolon)
-            dw WORDLISTS,STACKSET
-            dw EXIT
+    head(SET_ORDER,SET-ORDER,docolon)
+        DW lit,-1,OVER,EQUAL,qbranch,SETORDER1
+        DW DROP,VOCAB_WORDLIST,FORTH_WORDLIST,lit,2
+        DW WORDLISTS,STACKSET,EXIT
+
+SETORDER1:
+        DW WORDLISTS,STACKSET
+        DW EXIT
 
 ;: SAVE-ORDER       (addr -- )
 ;     >R GET-ORDER R>
@@ -1224,7 +1223,8 @@ CMPNAME_NOT_EQ:
 ;       THEN
 ;   0= UNTIL                   -- a len nfa  OR  a len 0
 ;    ;
-    head(FIND_NAME_IN,FIND-NAME-IN,docolon)
+FIND_NAME_IN:
+        call docolon
         DW WIDTONFA
         DW DUP,ZEROEQUAL,qbranch,FINDIN1
         DW DROP,FALSE,EXIT
@@ -1244,10 +1244,33 @@ FINDIN3:
 ;                         ( c-addr len 0       if not found )
 ;                         ( c-addr len nfa     if found )
 ;    NIP NIP ;
-    head(FIND_NAME,FIND-NAME,docolon)
+FIND_NAME:
+        call docolon
         DW lit,FIND_NAME_IN,WORDLISTS,STACKBOUNDS,MAP_UNTIL
         DW NIP,NIP
         DW EXIT
+
+;: SEARCH-WORDLIST ( c-addr u wid -- 0 | xt 1 | xt -1 )
+;    FIND-NAME-IN   ( c-addr len nfa|0 )
+;    NIP NIP
+;    DUP IF
+;       NIP DUP NFA>CFA        -- nfa xt
+;       SWAP IMMED?            -- xt iflag
+;       0= 1 OR                -- xt 1/-1
+;    THEN ;
+; Find the definition identified by the string c-addr u in the word list
+; identified by wid. If the definition is not found, return zero. If the
+; definition is found, return its execution token xt and one (1) if the
+; definition is immediate, minus-one (-1) otherwise.
+    head(SEARCH_WORDLIST,SEARCH-WORDLIST,docolon)
+        DW FIND_NAME_IN,NIP,NIP
+        DW DUP,qbranch,SEARCHWID1
+        DW NIP,DUP,NFATOCFA
+        DW SWOP,IMMEDQ
+        DW ZEROEQUAL,lit,1,OR
+SEARCHWID1:
+        DW EXIT
+
 
 ;C FIND   c-addr -- c-addr 0   if not found
 ;C                  xt  1      if immediate
@@ -1326,9 +1349,9 @@ XVOCDOES:
         dw WORDLISTS,STACKFETCH,SET_CURRENT
         dw EXIT
 
-;: ONLY ( -- )  FORTH-WORDLIST 1 SET-ORDER ;
+;: ONLY ( -- )  -1 SET-ORDER ;
     head(ONLY,ONLY,docolon)
-        dw VOCAB_WORDLIST,FORTH_WORDLIST,lit,2,SET_ORDER
+        dw lit,-1,SET_ORDER
         dw EXIT
 
 ;: VOCS  ( -- )      list all vocabularies in dict
@@ -1526,43 +1549,44 @@ SLASHBLKCTX1:
 ;Z BLKCTX>SLICE  ( ctx -- a-addr' )  get address of slice-id 
 ;    ;
 BLKCTXTOSLICE:
-        jp blkctx_next
+        jp ctx_next
 
 ;Z BLKCTX>BLOCK  ( ctx -- a-addr' )  get address of BLOCK number
 ;    ;
 BLKCTXTOBLOCK:
-        jp blkctx_plus_2
+        jp ctx_plus_2
 
 ;Z BLKCTX>BUFFER  ( ctx -- a-addr' )  get address of BUFFER
 ;    ;
 BLKCTXTOBUFFER:
-        jp blkctx_plus_4
+        jp ctx_plus_4
 
 ;Z BLKCTX>FLAGS  ( ctx -- a-addr' )  get address of FLAGS
 ;    ;
 BLKCTXTOFLAGS:
+ctx_plus_6:
         inc bc
         inc bc
-blkctx_plus_4:
+ctx_plus_4:
         inc bc
         inc bc
-blkctx_plus_2:
+ctx_plus_2:
         inc bc
         inc bc
-blkctx_next:
+ctx_next:
         next
 
 ;Z BLKCTX%  (  -- u )  size of stucture
 BLKCTXSIZE:
         push bc
         ld bc,BLOCKCTX_SIZE
-        jp blkctx_next
+        jp ctx_next
 
 ;Z BLKCTX#  ( -- u )  number of buffer structures
 BLKCTXNUM:
         push bc
         ld bc,BLOCKCTX_NUM
-        jp blkctx_next
+        jp ctx_next
 
 
 ;Z BLKFIRST      -- a-adrs      address of first block buffer
@@ -1690,21 +1714,15 @@ DEFC DRIVECTX_SIZE = 8
 
 ;Z DRIVE>READ  ( drive-id -- a-addr' )  get address of  READ xt
     head_utils(DRIVETOREAD,DRIVE>READ,docode)
-        jp drvctx_next
+        jp ctx_next
 
 ;Z DRIVE>WRITE  ( drive-id -- a-addr' )  get address of WRITE xt
     head_utils(DRIVETOWRITE,DRIVE>WRITE,docode)
-        jp drvctx_plus_2
+        jp ctx_plus_2
 
 ;Z DRIVE>CAPACITY  ( drive-id -- a-addr' )  get address of CAPACITY xt
     head_utils(DRIVETOCAPACITY,DRIVE>CAPACITY,docode)
-        inc bc
-        inc bc
-drvctx_plus_2:
-        inc bc
-        inc bc
-drvctx_next:
-        next
+        jp ctx_plus_4
 
 ;Z DRIVE%  (  -- u )  size of stucture
     head_utils(DRIVECTX,DRIVE%,docon)
@@ -1730,29 +1748,19 @@ DEFC SLICECTX_NUM = 8
 
 ;Z SLICE>DRIVE  ( slice-id -- a-addr' )  get address of drive ID for disk
     head_utils(SLICETODRIVE,SLICE>DRIVE,docode)
-        jp diskctx_next
+        jp ctx_next
 
 ;Z SLICE>OFFSET  ( slice-id -- a-addr' )  get address of LBA OFFSET for disk
     head_utils(SLICETOOFFSET,SLICE>OFFSET,docode)
-        jp diskctx_plus_2
+        jp ctx_plus_2
 
 ;Z SLICE>LIMIT  ( slice-id -- a-addr' )  get address of LIMIT for disk
     head_utils(SLICETOLIMIT,SLICE>LIMIT,docode)
-        inc bc
-        inc bc
-diskctx_plus_4:
-        inc bc
-        inc bc
-diskctx_plus_2:
-        inc bc
-        inc bc
-diskctx_next:
-        next
+        jp ctx_plus_6
 
 ;Z SLICESIZE  (  -- u )  size of disk context stucture
     head_utils(SLICESIZE,SLICE%,docon)
         dw SLICECTX_SIZE
-
 
 
         DEFC SLICE_SECTORS = 8192*2

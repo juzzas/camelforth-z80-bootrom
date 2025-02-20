@@ -16,10 +16,6 @@
 
 \ Additional double number definitions
 
-: 2VARIABLE  ( --      define a Forth double variable )
-   CREATE 2 CELLS ALLOT ;
-: 2CONSTANT  ( x1 x2  -      define a Forth constant )
-   CREATE , , DOES> 2@  ;
 : 2VALUE CREATE , ,
    DOES> TO-STATE @ IF 2!  FALSE TO-STATE ! ELSE 2@ THEN  ;
 
