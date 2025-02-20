@@ -15,21 +15,21 @@ ONLY FORTH DEFINITIONS   ALSO UTILS
 
 
    ( blkfile - extension to treat blocks as files       1 / n)
-\ start of BLKFILE extension
-BEGIN-STRUCTURE BLKFILE-CONTEXT
-   FIELD: blkfile.open
-   FIELD: blk.origin
-   FIELD: blk.cur
-   FIELD: blk.offset
-   FIELD: blkfile.fam
-   FIELD: blkfile.eof
-END-STRUCTURE
+\ blkfile structure
+: blkfile.open  ( blkfile -- addr )       ;
+: blk.origin  ( blkfile -- addr )    2 +  ;
+: blk.cur  ( blkfile -- addr )       4 +  ;
+: blk.offset  ( blkfile -- addr )    6 +  ;
+: blkfile.fam  ( blkfile -- addr )   8 +  ;
+: blkfile.eof  ( blkfile -- addr )  10 +  ;
+12 CONSTANT BLKFILE-CONTEXT
 
 4 CONSTANT #BLKFILE
 256 CONSTANT BLKFILE-BUFFER-SIZE
 CREATE blkfiles BLKFILE-CONTEXT #BLKFILE * ALLOT
 CREATE blkfile-buffer BLKFILE-BUFFER-SIZE ALLOT
 VARIABLE 'blkfile   0 'blkfile !
+
    ( blkfile - extension to treat blocks as files       2 / n)
 
    \ blkfile-id  manipulation
