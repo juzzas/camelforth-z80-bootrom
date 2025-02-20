@@ -1035,9 +1035,9 @@ scandone: push hl   ; updated address
         pop bc      ; TOS in bc
         next
 
-;Z COMPARE    c-addr1 c-addr2 u -- n   string compare
+;Z STRCMP    c-addr1 c-addr2 u -- n   string compare
 ;Z             n<0: s1<s2, n=0: s1=s2, n>0: s1>s2
-    head(COMPARE,COMPARE,docode)
+    head(STRCMP,STRCMP,docode)
         push bc
         exx
         pop bc      ; count
