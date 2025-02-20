@@ -1476,38 +1476,6 @@ ENDCASE2:
         DW EXIT
 
 
-;: BEGIN-STRUCTURE                       ( -- addr 0 ; -- size )
-;   CREATE   HERE 0 0 ,                ( mark stack, lay dummy )
-;   DOES> @  ;                              ( -- record length )
-    head(BEGIN_STRUCTURE,BEGIN-STRUCTURE,docolon)
-        DW CREATE,HERE,lit,0,lit,0,COMMA
-        DW XDOES
-        call dodoes
-        DW FETCH,EXIT
-
-;: +FIELD ( # n ++ #'  define a field with offset # and size n )
-;   CREATE OVER , +
-;   DOES> @ + ;  ( addr1 -- addr2 ; calculate address of field )
-    head(PLUSFIELD,+FIELD,docolon)
-        DW CREATE,OVER,COMMA,PLUS
-        DW XDOES
-        call dodoes
-        DW FETCH,PLUS,EXIT
-
-;: FIELD: ALIGNED 1 CELLS +FIELD ;
-    head(FIELDCOLON,FIELD:,docolon)
-        DW lit,2,PLUSFIELD
-        DW EXIT
-
-;: CFIELD: 1 CHARS +FIELD ;
-    head(CFIELDCOLON,CFIELD:,docolon)
-        DW lit,1,PLUSFIELD
-        DW EXIT
-
-;: END-STRUCTURE SWAP ! ;
-    head(END_STRUCTURE,END-STRUCTURE,docolon)
-        DW SWOP,STORE
-        DW EXIT
 
 ; BLOCK implementation ==========================
 
