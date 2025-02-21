@@ -144,6 +144,7 @@ SECTION code_16k
         head(UTILS_WORDLIST,UTILS-WORDLIST,docon)
             dw utils_wordlist_head
 
+
 ;C (CREATE-WID)  c-addr u wid --  )    create an empty definition to WID
 ;   DUP WID>NFA , 0 C,         link & `immed' field
 ;   HERE SWAP WID>NFA!               new "latest" link on wid
@@ -1081,9 +1082,6 @@ STACK_WORDLISTS:
 
 vocab_wordlist_head:
         ds 2
-
-environment_wordlist_head:
-       ds 2
 
 utils_wordlist_head:
         ds 2

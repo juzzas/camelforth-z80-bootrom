@@ -1,7 +1,7 @@
 \ forth2012 string wordlist                          jps  0 / 2
 .( Loading string definitions... ) CR
 FORTH DEFINITIONS
-1 3 +THRU
+1 4 +THRU
 
 
 
@@ -29,23 +29,40 @@ FORTH DEFINITIONS
 
 
 
-   \ forth2012 string wordlist -- SEARCH           jps  2 / 2
-: SEARCH  ( caddr1 u1 caddr2 u2 -- caddr3 u3 flag )
-    BEGIN 
+
+   \ forth2012 string wordlist -- (SEARCH)         jps  2 / 2
+: (SEARCH)  ( caddr1 u1 caddr2 u2 -- caddr3 u3 flag )
+   2OVER   BEGIN 
       DUP
    WHILE 
      2OVER  3 PICK  OVER  COMPARE
      WHILE
        1 /STRING
      REPEAT
-     2NIP  TRUE EXIT
+     2NIP 2NIP  TRUE EXIT
    THEN
-   2DROP FALSE ;
+   2DROP 2DROP FALSE ;
 
 
 
 
-   \ forth2012 string wordlist -- -TRAILING        jps  3 / 3
+   \ forth2012 string wordlist -- SEARCH           jps  3 / 2
+: SEARCH  ( caddr1 u1 caddr2 u2 -- caddr3 u3 flag )
+  2 PICK OVER < IF      \ Is $1 shorter than $2?
+    2DROP FALSE EXIT    \ Yes - $2 *can't* be in $1.
+  THEN
+  DUP 1 < IF            \ Is $2 zero length?
+    2DROP TRUE EXIT     \ Yes - found it at the start of $1.
+  THEN
+  2 PICK 1 < IF         \ Is $1 zero length?
+    2DROP FALSE EXIT    \ Yes - string not found.
+  THEN
+  (SEARCH) ;
+
+
+
+
+   \ forth2012 string wordlist -- -TRAILING, BLANK jps  4 / 3
 : -TRAILING     \ c-addr u1 -- c-addr u2
     DUP 0 ?DO
         2DUP + 1 - C@  DUP BL <> SWAP $09 <> AND IF LEAVE THEN
