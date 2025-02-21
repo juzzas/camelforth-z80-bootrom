@@ -817,6 +817,11 @@ not_lowercase:
         sub '0'
         cp 10
         jr c, end_digit_val           ; if A<10 just return
+        cp 17
+        jr nc,alphanum_ok
+        ld a,255
+        jr end_digit_val
+alphanum_ok:
         sub 7           ; else subtract 'A'-'0' (17) and add 10
 end_digit_val:
         ld c,a
