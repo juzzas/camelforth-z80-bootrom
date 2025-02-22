@@ -1251,8 +1251,8 @@ FIND_NAME:
 ;: SEARCH-WORDLIST ( c-addr u wid -- 0 | xt 1 | xt -1 )
 ;    FIND-NAME-IN   ( c-addr len nfa|0 )
 ;    NIP NIP
-;    DUP IF
-;       NIP DUP NFA>CFA        -- nfa xt
+;    DUP IF         ( nfa | 0 )
+;       DUP NFA>CFA            -- nfa xt
 ;       SWAP IMMED?            -- xt iflag
 ;       0= 1 OR                -- xt 1/-1
 ;    THEN ;
@@ -1263,7 +1263,7 @@ FIND_NAME:
     head(SEARCH_WORDLIST,SEARCH-WORDLIST,docolon)
         DW FIND_NAME_IN,NIP,NIP
         DW DUP,qbranch,SEARCHWID1
-        DW NIP,DUP,NFATOCFA
+        DW DUP,NFATOCFA
         DW SWOP,IMMEDQ
         DW ZEROEQUAL,lit,1,OR
 SEARCHWID1:
