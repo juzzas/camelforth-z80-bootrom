@@ -45,6 +45,7 @@ WORDLIST CONSTANT wid-subst
 
 
 
+
    \ forth2012 string wordlist                     jps  3 / 9
 : REPLACES \ text tlen name nlen --
 \ Define the string text/tlen as the text to substitute for
@@ -61,7 +62,6 @@ WORDLIST CONSTANT wid-subst
 
 
 
-
    \ forth2012 string wordlist                     jps  4 / 9
 CHAR % CONSTANT delim     \ Character used as the subst. delim.
 string-max BUFFER: Name   \ Holds subst. name as a counted str.
@@ -73,19 +73,20 @@ VARIABLE SubstErr         \ Holds zero or an error code.
 : addDest \ char --
 \ Add the character to the destination string.
    Dest @ DestLen @ < IF
-     Dest 2@ + C! 1 CHARS Dest +!
-   ELSE
-     DROP -1 SubstErr !
-   THEN
+     SubstErr @ 0= IF
+       Dest 2@ + C! 1 CHARS Dest +!
+     ELSE  DROP  THEN
+   ELSE  DROP -1 SubstErr !  THEN
 ;
    \ forth2012 string wordlist                     jps  5 / 9
-: formName \ c-addr len -- c-addr' len'
+: formName \ c-addr len -- c-addr' len' name nlen
 \ Given a source string pointing at a leading delimiter, place
 \ the name string in the name buffer.
-   1 /STRING 2DUP delim SCAN >R DROP \ find length of residue
-   2DUP R> - DUP >R Name PLACE        \ save name in buffer
-   R> 1 CHARS + /STRING        \ step over name and trailing %
-;
+   1 /STRING 2DUP delim SCAN DUP IF
+     >R DROP    \ use length of residue
+     2DUP R> - TUCK      ( c-addr' len' nlen name nlen )
+     2>R 1+ /STRING  2R>      \ step over name and trailing %
+   THEN ;
 
 : >dest \ c-addr len --
 \ Add a string to the output string.
@@ -95,15 +96,14 @@ VARIABLE SubstErr         \ Holds zero or an error code.
 ;
 
    \ forth2012 string wordlist                     jps  6 / 9
-: processName \ -- flag
+: processName \ caddr len -- flag
 \ Process the last substitution name. Return true if found, 
 \                                     0 if not found.
-   Name COUNT findSubst DUP >R IF
-     EXECUTE COUNT >dest
+   2DUP findSubst IF
+     NIP NIP EXECUTE COUNT >dest TRUE
    ELSE
-     delim addDest Name COUNT >dest delim addDest
+     delim addDest >dest delim addDest FALSE
    THEN
-   R>
 ;
 
 
@@ -127,8 +127,10 @@ VARIABLE SubstErr         \ Holds zero or an error code.
          delim addDest 2 /STRING       \ add one % to output
        ELSE
    \ forth2012 string wordlist                     jps  8 / 9
-         formName processName IF
-           ROT 1+ -ROT                    \ count substitutions
+         formName DUP IF 
+           processName IF
+           ROT 1+ -ROT THEN               \ count substitutions
+         ELSE 2DROP delim addDest
          THEN
        THEN
      THEN
@@ -137,7 +139,6 @@ VARIABLE SubstErr         \ Holds zero or an error code.
      DROP SubstErr @
    THEN
 ;
-
 
 
 
