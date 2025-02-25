@@ -17,7 +17,7 @@ OPEN:  build/cf-image.blk
 +BLOCKS: extensions/tools-ext.fth
 +BLOCKS: extensions/facility-ext.fth
 +BLOCKS: extensions/string-ext.fth
-+BLOCKS: extensions/memory.fth
++BLOCKS: extensions/dyn-memory.fth
 +BLOCKS: extensions/search.fth
 
 

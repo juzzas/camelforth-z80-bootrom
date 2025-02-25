@@ -94,7 +94,6 @@ VARIABLE SubstErr         \ Holds zero or an error code.
      I C@ addDest
    1 CHARS +LOOP
 ;
-
    \ forth2012 string wordlist                     jps  6 / 9
 : processName \ caddr len -- flag
 \ Process the last substitution name. Return true if found, 
@@ -105,6 +104,7 @@ VARIABLE SubstErr         \ Holds zero or an error code.
      delim addDest >dest delim addDest FALSE
    THEN
 ;
+
 
 
 
@@ -139,7 +139,6 @@ VARIABLE SubstErr         \ Holds zero or an error code.
      DROP SubstErr @
    THEN
 ;
-
 
 
 
