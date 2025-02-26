@@ -128,6 +128,45 @@ ramtop_ptr:
 
 SECTION code_16k
 
+;Z CFA>NFA   cfa -- nfa    code field -> namefield
+;  32 1 DO      ( cfa )
+;    DUP I -    ( cfa nfa? )
+;    2DUP NFA>CFA =   ( cfa nfa? f )
+;    IF NIP UNLOOP EXIT ELSE DROP THEN
+;  LOOP
+;  DROP 0 ;
+    head(CFATONFA,CFA>NFA,docolon)
+        DW lit,32,lit,1,xdo
+CFATONFA1:
+        DW DUP,II,MINUS
+        DW TWODUP,NFATOCFA,EQUAL
+        DW qbranch,CFATONFA2
+        DW NIP,UNLOOP,EXIT
+CFATONFA2:
+        DW DROP,xloop,CFATONFA1
+        DW DROP,lit,0
+        DW EXIT
+
+;Z (ID)  xt -- c-addr u   or   xt 0 
+;    DUP CFA>NFA   ( xt nfa|0 )
+;    DUP IF  ( xt nfa|0 )
+;       NIP COUNT $7F AND
+;    THEN  ;
+    head(XID,(ID),docolon)
+        DW DUP,CFATONFA
+        DW DUP,qbranch,XID1
+        DW NIP,COUNT,lit,0x7f,AND
+XID1:
+        DW EXIT
+
+;Z ID.   xt --        print out NFA, if found, else XT
+;    (ID)  ?DUP IF TYPE ELSE U. THEN ;
+    head(DOTID,.ID,docolon)
+        DW XID,QDUP,qbranch,DOTID1
+        DW TYPE,EXIT
+DOTID1:
+        DW UDOT,EXIT
+
 
 ;: FORTH-WORDLIST ( -- wid )
 ; Return wid, the identifier of the word list that includes all standard
