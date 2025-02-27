@@ -1482,9 +1482,8 @@ roll_end:
         DW EXIT
 
 ; : ?OF ( dest? -- orig )
-;     POSTPONE DUP POSTPONE IF POSTPONE DROP ; IMMEDIATE
+;     POSTPONE IF POSTPONE DROP ; IMMEDIATE
     immed(QOF,?OF,docolon)
-        DW lit,DUP,COMMAXT
         DW IF
         DW lit,DROP,COMMAXT
         DW EXIT
