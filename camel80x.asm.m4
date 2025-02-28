@@ -1497,6 +1497,18 @@ roll_end:
         DW HERE,DUP,COMMADEST,TOL
         DW THEN,EXIT
 
+; : ESAC ( dest? -- )
+;     BEGIN L> ?DUP WHILE POSTPONE THEN REPEAT
+;                                 resolve LEAVEs
+;     ; IMMEDIATE
+    immed(ESAC,ESAC,docolon)
+ESAC1:
+        DW LFROM,QDUP,qbranch,ESAC2
+        DW THEN,branch,ESAC1
+
+ESAC2:
+        DW EXIT
+
 ; : ENDCASE ( dest? -- )
 ;     POSTPONE DROP
 ;     BEGIN L> ?DUP WHILE POSTPONE THEN REPEAT
@@ -1504,12 +1516,7 @@ roll_end:
 ;     ; IMMEDIATE
     immed(ENDCASE,ENDCASE,docolon)
         DW lit,DROP,COMMAXT
-ENDCASE1:
-        DW LFROM,QDUP,qbranch,ENDCASE2
-        DW THEN,branch,ENDCASE1
-
-ENDCASE2:
-        DW EXIT
+        DW ESAC,EXIT
 
 
 
