@@ -1,7 +1,7 @@
 \ CamelForth tools                                    jps  0 / 4
 .( Loading CamelForth tools definitions... ) CR
 FORTH DEFINITIONS
-1 4 +THRU
+1 5 +THRU
 
 
 
@@ -34,39 +34,46 @@ SET-CURRENT
 : ?   ( addr -- ) @ U.  ;
 
 VARIABLE ^see
-
+VARIABLE see-xt  \ current xt for SEE
 : see@    ( -- u )  ^see @ @ ;
 : seeC@    ( -- c )  ^see @ C@ ;
 : see@++  ( -- u )  see@  CELL ^see +! ;
+: see!   ( n -- )  ^see ! ;
 : see+!   ( n -- )  ^see +! ;
 : seedump ( -- )   ^see @ DUP  COUNT
    DUP 2 U.R ."  bytes: "
    BOUNDS ?DO I C@ 2 U.R SPACE LOOP C@ 1+ see+! ;
 : (see-step)   ( -- f   where -1 is "continue" )
    CR ^see @   4 U.R  ." : " 
-   see@++  CASE
-      ['] EXIT  OF ." EXIT"  FALSE ENDOF
-      ['] (S")  OF ['] (S") .ID SPACE seedump TRUE ENDOF
-      ['] ?branch  OF ." ?branch --> " see@++ 4 U.R TRUE ENDOF
-      ['] branch  OF ." branch --> "  see@++ 4 U.R TRUE ENDOF
-      ['] LIT  OF ." LIT "  see@++ .ID TRUE ENDOF
-      .ID  TRUE
+   see@++ DUP .ID CASE
+      ['] EXIT  OF FALSE ENDOF
+      ['] (S")  OF seedump TRUE ENDOF
+      ['] ?branch  OF  see@++ 4 U.R TRUE ENDOF
+      ['] branch  OF ."  --> "  see@++ 4 U.R TRUE ENDOF
+      ['] LIT  OF  see@++ .ID TRUE ENDOF
+      ['] (DOES>)  OF 3 see+! TRUE ENDOF
+      DROP  TRUE
    ESAC ;
 
-: OF-CREATED? ( xt -- xt f )  DUP ['] ^see  3  STRCMP 0= ;
-: OF-COLON?   ( xt -- xt f )  DUP ['] OF-CREATED? 3 STRCMP 0= ;
-: OF-USER?    ( xt --xt f )   DUP ['] DP 3 STRCMP 0= ;
-: OF-CONSTANT?  ( xt -- xt f )  DUP ['] BL 3 STRCMP 0= ;
-\ : OF-DODOES?  ( xt -- xt f )  DUP ['] BL 3 STRCMP 0= ;
-
+: OF-STRCMP:   ( xt -- )    CREATE ,
+   DOES>  ( xt -- xt f )     >R DUP R> @  3 STRCMP 0= ;
+' ^see  OF-STRCMP: OF-DOCREATE?
+' see@  OF-STRCMP: OF-DOCOLON?
+' DP OF-STRCMP: OF-DOUSER?
+' BL OF-STRCMP: OF-DOCON?
+' OF-DOCOLON? 1+ @ 1+ @  CONSTANT DODOES
+: OF-DODOES?  DUP 1+ @ 1+ @ DODOES = ;
 : (see-loop)  BEGIN (see-step)  0= UNTIL ;
 : (see)  ( xt -- )
+    DUP see-xt !
     DUP 3 + ^see !  DUP ." WORD: " .ID
     CASE
-       OF-COLON? ?OF ."  docolon" (see-loop) ENDOF
-       OF-CREATED? ?OF ."  docreate" ENDOF
-       OF-USER? ?OF ."  douser" ENDOF
-       OF-CONSTANT? ?OF ."  docon" ENDOF
+       OF-DOCOLON? ?OF ."  docolon" (see-loop) ENDOF
+       OF-DOCREATE? ?OF ."  docreate" ENDOF
+       OF-DOUSER? ?OF ."  douser" ENDOF
+       OF-DOCON? ?OF ."  docon" ENDOF
+       OF-DODOES? ?OF ."  dodoes" 
+            see-xt @ 1+ @ 3 + see! (see-loop) ENDOF
        ."  (CODE)"
     ENDCASE    CR
    ;
