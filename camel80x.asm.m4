@@ -666,6 +666,12 @@ DMAX1:
 DMIN1:
         DW TWODROP,EXIT
 
+;C AHEAD       -- orig    unconditional forward branch
+;   ['] branch ,BRANCH  HERE DUP ,DEST ;
+;   IMMEDIATE
+    immed(AHEAD,AHEAD,docolon)
+        DW lit,branch,COMMABRANCH
+        DW HERE,DUP,COMMADEST,EXIT
 
 ;: BUFFER:    ( u "name" -- )
 ;             ( execution:   -- addr )
