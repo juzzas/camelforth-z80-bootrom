@@ -144,25 +144,24 @@ ALSO EDITOR
 
 \  RC2014 Full screen editor =========================
 : ?CH ( c i -- c i' )
-    OVER CASE
-            8  OF  1- ENDOF                         \ left ^h
-            19 OF  1- ENDOF                         \ left ^s
-            4  OF  1+ ENDOF                         \ right ^d
-            5  OF  C/L - ENDOF                      \ up ^e
-            24 OF  C/L + ENDOF                      \ down ^x
-            13 OF  C/L 2DUP MOD - + ENDOF           \ crlf return
-            127 OF  1- ENDOF                        \ left delete
-            18 OF  B  >R >R  V  R> R>  ENDOF        \ back ^r
-            3  OF  N  >R >R  V  R> R>  ENDOF        \ nextscr ^c
-            22 OF  INSERT_CHAR ENDOF            \ insert space ^v
-            7  OF  DELETE_CHAR ENDOF              \ delete char ^g
-    \       25 OF CUT_LINE ENDOF          \ cut line, shift up ^y
-            15 OF INSERT_LINE ENDOF   \ shift down, empty line ^o
-    \       16 OF PASTE_LINE ENDOF    \ shift down, paste line ^p
-    \       11 OF UPDATE_SCREEN ENDOF              \ do UPDATE ^k
-            BL - 95 U<  ?OF !CH 1+ EXIT ENDOF  \ text
-        ENDCASE 
-    THEN ;
+   OVER CASE
+      8  OF  1- ENDOF                          \ left ^h
+      19 OF  1- ENDOF                          \ left ^s
+      4  OF  1+ ENDOF                          \ right ^d
+      5  OF  C/L - ENDOF                       \ up ^e
+      24 OF  C/L + ENDOF                       \ down ^x
+      13 OF  C/L 2DUP MOD - + ENDOF            \ crlf return
+      127 OF  1- ENDOF                         \ left delete
+      18 OF  B  2>R  V  2R>  ENDOF             \ back ^r
+      3  OF  N  2>R  V  2R>  ENDOF             \ nextscr ^c
+      22 OF  INSERT_CHAR ENDOF            \ insert space ^v
+      7  OF  DELETE_CHAR ENDOF             \ delete char ^g
+   \  25 OF CUT_LINE ENDOF          \ cut line, shift up ^y
+      15 OF INSERT_LINE ENDOF   \ shift down, empty line ^o
+   \  16 OF PASTE_LINE ENDOF    \ shift down, paste line ^p
+   \  11 OF UPDATE_SCREEN ENDOF              \ do UPDATE ^k
+      DUP BL - 95 U<  ?OF !CH 1+ EXIT ENDOF  \ text
+   ENDCASE ;
 
 
 : EDIT ( n -- )    S V  0
