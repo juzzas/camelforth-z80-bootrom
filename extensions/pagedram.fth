@@ -15,7 +15,7 @@ PREVIOUS DEFINITIONS
 
 
 \ Fetch byte from paged RAM   ( addr -- c )
-CODE: PRC@
+CODE PRC@
     $F3 C,            \ DI
     $D3 C, $38 C,     \ OUT $38,A
     $0A C,            \ LD A,(BC)
@@ -31,7 +31,7 @@ CODE: PRC@
 
 
 \ Store byte from paged RAM   ( c addr -- )
-CODE: PRC!
+CODE PRC!
     $C5 C,            \ PUSH BC
     $E1 C,            \ POP HL      ; addr 
     $C1 C,            \ POP BC      ; c 
@@ -47,7 +47,7 @@ CODE: PRC!
 
 
 \ Copy block from paged RAM  ( src dest u -- )
-CODE: PRMOVE
+CODE PRMOVE
     $C5 C,            \ PUSH BC
     $D9 C,            \ EXX
     $C1 C,            \ POP BC   ; u
