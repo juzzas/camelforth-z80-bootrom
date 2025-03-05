@@ -91,5 +91,5 @@ Additional CamelForth exception values are in the rang -256 and -512, and are li
 
 -256 invalid DISK
 -257 invalid SLICE
-
+-258 invalid RESTORE
 

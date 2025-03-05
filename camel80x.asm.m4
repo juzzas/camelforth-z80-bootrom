@@ -2654,28 +2654,29 @@ XSAVEHDR:
         dw EXIT
 
 ;: RESTORE   ( blk -- )
-;    DUP >R BLOCK                   ( blk buffer -- ; blk )
-;    DUP @                       ( buffer hdr_size ; blk )
-;    OVER +                      ( buffer buffer' ; blk )
-;    SWAP CELL+ DUP @            ( buffer' buffer data_size ; blk )
-;    SWAP CELL+ SNAPSHOT>    ( buffer' data_size ; blk )
+;    DUP >R BLOCK                   ( buffer -- ; blk )
+;    DUP @                         ( buffer hdr_size ; blk )
+;    BLK_HEADER_SIZE = IF
+;      CELL+ DUP @                 ( buffer' data_size ; blk )
+;      SWAP CELL+ SNAPSHOT>        ( data_size ; blk )
 ;
-;    SWAP enddict ROT       ( buffer' enddict u ; blk )
+;      enddict SWAP               ( enddict u=data_size ; blk )
 ;
-;    R>  BLK_HEADER_SIZE
-;    BEGIN-BLKFILE
-;    GETCHARS,DROP
-;    END-BLKFILE 2DROP   
-;    ENTRY @ EXECUTE  ;
+;      R>  BLK_HEADER_SIZE     ( enddict u blk hdr_size )
+;      BEGIN-BLKFILE           ( enddict u )
+;      GETCHARS,DROP           (  )
+;      END-BLKFILE 2DROP
+;      ENTRY @ EXECUTE
+;   ELSE -258 THROW THEN   ;
     head(RESTORE,RESTORE,docolon)
         dw DUP,TOR,BLOCK
         dw DUP,FETCH               ; header size
-        dw OVER,PLUS
-        dw SWOP,CELLPLUS,DUP,FETCH
+        dw lit,BLK_HEADER_SIZE,EQUAL,qbranch,RESTORE1
+        dw CELLPLUS,DUP,FETCH
         dw SWOP,CELLPLUS
         dw SNAPSHOTFROM
 
-        dw SWOP,lit,enddict,ROT
+        dw lit,enddict,SWOP
 
         dw RFROM,lit,BLK_HEADER_SIZE
         dw BEGIN_BLKFILE
@@ -2684,7 +2685,8 @@ XSAVEHDR:
         dw ENTRY,FETCH,EXECUTE
         dw EXIT
 
-
+RESTORE1:
+        dw lit,-258,THROW
 
 
 ; an alternative implementation of recognizers. It
