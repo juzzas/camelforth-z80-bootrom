@@ -1745,11 +1745,12 @@ DEFC DRIVECTX_SIZE = 8
     head_utils(DRIVECTX,DRIVE%,docon)
         DW DRIVECTX_SIZE
 
-;Z DRIVE:  ( xt-read xt-write xt-capacity    "ccc" -- drive-id )
+;Z DRIVE:  ( xt-read xt-write xt-capacity    "ccc" -- )
+;          ( execution: -- drive-id )
     head_utils(DRIVECOLON,DRIVE:,docolon)
-        DW CREATE,HERE,TOR
+        DW CREATE
         DW ROT,COMMA,SWOP,COMMA,COMMA
-        DW RFROM,EXIT
+        DW EXIT
 
 ; SLICE implementation ==========================
 
@@ -1812,12 +1813,12 @@ SLICE1:
         DW RESLICE
         DW EXIT
 
-;Z SLICE:  ( drive-id n "ccc" -- slice-id )
+;Z SLICE:  ( drive-id n "ccc" -- )
+;          ( execution:  -- slice-id )
     head_utils(SLICECOLON,SLICE:,docolon)
         DW CREATE,HERE
         DW SLICESIZE,ALLOT
-        DW DUP,TOR,SLASHSLICE
-        DW RFROM
+        DW SLASHSLICE
         DW EXIT
 
 ;Z SLICE  ( -- slice-id )
