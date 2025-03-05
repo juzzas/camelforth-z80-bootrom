@@ -25,6 +25,7 @@ OPEN:  build/cf-image.blk
 +BLOCKS: extensions/random.fth
 +BLOCKS: extensions/leds.fth
 +BLOCKS: extensions/pagedram.fth
++BLOCKS: extensions/ramdrive.fth
 
 
 3000 BLOCKS: test/testsuite.fth
