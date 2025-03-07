@@ -1,11 +1,36 @@
-ALSO UTILS   HEX
-CODE: [I  F3 C, ( DI )  NEXT, ;CODE \ enter critical section
-CODE: I]  FB C, ( EI )  NEXT, ;CODE \ exit critical section
-DECIMAL
+\ CamelForth BootROM multi-tasking wordset
+
+CR .( Loading multi-tasking extension... )
+
+ONLY FORTH DEFINITIONS  ALSO UTILS
+
+1 4 +THRU
+
+PREVIOUS
+
+
+
+
+
+
+
+   \ CamelForth BootROM multi-tasking wordset     1 / 4
+
+CODE [I  $F3 C, ( DI )  NEXT, ;CODE \ enter critical section
+CODE I]  $FB C, ( EI )  NEXT, ;CODE \ exit critical section
+
+
 : ATOMIC@ ( a-addr -- n )  [I @ I] ;
 : ATOMIC! ( n a-addr -- )  [I ! I] ;
 : ATOMIC+! ( n a-addr -- )  [I +! I] ;
-: ATOMIC!@  ( n a-addr -- n' )  DUP [I @ >R  !  R> I] ;
+: ATOMIC@!  ( n a-addr -- n' )  DUP [I @ >R  !  R> I] ;
+
+
+
+
+
+
+   \ CamelForth BootROM multi-tasking wordset     2 / 4
 : TASK  ( ccc"name" --  allocate task )
         ( Execution:  -- task-id )    CREATE TASK% ALLOT ;
 
@@ -14,6 +39,14 @@ DECIMAL
 : TASK>LINK ( task-id -- addr ) LINK U0 - + ;
 : TASK>ENTRY ( task-id -- addr ) ENTRY U0 - + ;
 
+
+
+
+
+
+
+
+   \ CamelForth BootROM multi-tasking wordset     3 / 4
 : START-TASK ( xt task-id -- ) 
     DUP INIT-TASK  TASK>ENTRY !  ;
 : RESTART-TASK ( xt task-id -- ) 
@@ -21,25 +54,18 @@ DECIMAL
 
 : STOP-TASK  ( task-id -- )
    TASK>STATUS ['] <SLEEP> SWAP ! ;
-: AWAKEN-TASK  TASK>STATUS  ['] <WAKE>  SWAP ! ;
-: WAKE ( -- ) ['] <WAKE> STATUS ! ;
-: SLEEP ( -- ) ['] <SLEEP> STATUS ! ;
+: WAKE-TASK  ( task-id -- )
+   TASK>STATUS  ['] <WAKE>  SWAP ! ;
+: SLEEP ( -- ) ['] <SLEEP> STATUS ! PAUSE ;
+
+
+
+
+
+   \ CamelForth BootROM multi-tasking wordset     4 / 4
 
 : MULTI ( -- )  ['] (PAUSE) 'PAUSE ! ;
 : SINGLE ( -- ) ['] NOOP 'PAUSE ! ;
-: PAUSE  'PAUSE @ EXECUTE ;
-PREVIOUS
 
 
 
-VARIABLE task-count ;
-: task1 
-   0 task-count ! BEGIN  1 task-count ATOMIC+!  PAUSE  AGAIN ;
-: task2 ." hello!" ;
-TASK t1    ' task1 t1 START-TASK
-TASK t2    ' task2 t2 START-TASK
-: .t1  task-count ATOMIC@ . ;
-
-MULTI
-
-DECIMAL

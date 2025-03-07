@@ -3268,6 +3268,9 @@ XINIT1:
         dw EXIT
 
 ;Z INIT-TASK     ( task-id --  )
+;  U0 OVER 256 MOVE   ( task-id )
+;  DUP LINK !         ( task-id )
+;  ['] <INIT>  SWAP !
     head_utils(INIT_TASK,INIT-TASK,docolon)
        dw U0,OVER,lit,256,MOVE  ; copy USER variables
        dw DUP,LINK,STORE
@@ -3287,11 +3290,7 @@ SLASH16KROM:
         DW U0,LINK,STORE
         DW lit,XWAKE,U0,STORE
         DW lit,65535,RAMTOPSTORE
-        DW lit,FIND_16K,lit,xt_find,STORE
-        DW lit,POSTPONE_16K,lit,xt_postpone,STORE
-        DW lit,INTERPRET_16K,lit,xt_interpret,STORE
-        DW lit,WORDS_16K,lit,xt_words,STORE
-        DW lit,XREFILL_16K,lit,xt_refill,STORE
+        DW lit,default_xt_16k_start,lit,default_xt,lit,default_xt_16k_len,MOVE
         DW lit,utils_lastword,UTILS_WORDLIST,STORE
         DW lit,vocab_lastword,VOCAB_WORDLIST,STORE
         DW WORDLISTS,lit,STACK_WORDLISTS_SIZE,SLASHSTACK
@@ -3306,4 +3305,13 @@ SLASH16KROM:
         DW CF_SLICE_ID,SELECT
         dw EXIT
 
+default_xt_16k_start:
+        DW INTERPRET_16K
+        DW POSTPONE_16K
+        DW FIND_16K
+        DW WORDS_16K
+        DW XREFILL_16K
+        DW NOOP         ; pause
+default_xt_16k_end:
+defc default_xt_16k_len = default_xt_16k_end - default_xt_16k_start
 

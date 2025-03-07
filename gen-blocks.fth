@@ -50,6 +50,6 @@ OPEN:  build/cf-image.blk
 3600 BLOCKS: test/hexload_test.fth
 +BLOCKS: test/hexload_test2.fth
 +BLOCKS: test/blkfile_test1.fth
-+BLOCKS: test/stack_test.fth
++BLOCKS: test/multi_test.fth
 FLUSH
 BYE

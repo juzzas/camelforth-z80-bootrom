@@ -152,9 +152,6 @@ SECTION code
     ; 44 USER LINK
     ; 46 USER STACKTOP
 
-    PAUSEVEC:
-            call douser
-            dw 48
 
     ;Z s0       -- a-addr     end of parameter stack
         head(S0,S0,douser)
@@ -190,14 +187,11 @@ UINIT:
             DW NOOP         ; ENTRY
             DW 1            ; CURRENT                    30
             DW 0            ; 'SOURCE-ID
-            DW NOOP         ; 'PAUSE
+            DW NOOP         ; empty
             DW RX           ; 'KEY
             DW RXQ          ; 'KEY?
             DW TX           ; 'EMIT                      40
             DW XREFILL0     ; 'REFILL
-            DW NOOP         ; 'LINK
-            DW NOOP         ; 'STACKTOP
-            DW NOOP         ; 'PAUSE
 
 
     ;Z #init    -- n    #bytes of user area init data
@@ -1552,11 +1546,7 @@ DOTSIGNON:
 
 COLD1:  DW lit,lastword8k,LATEST,STORE
         DW lit,0,lit,flag_rom16k,STORE
-        DW lit,FIND_8K,lit,xt_find,STORE
-        DW lit,POSTPONE_8K,lit,xt_postpone,STORE
-        DW lit,INTERPRET_8K,lit,xt_interpret,STORE
-        DW lit,WORDS_8K,lit,xt_words,STORE
-        DW lit,XREFILL8K,lit,xt_refill,STORE
+        DW lit,default_xt,lit,default_xt_start,lit,default_xt_len,MOVE
         DW QUIT
 
 ;Z WARM     --      warm start Forth system
@@ -1605,6 +1595,10 @@ CONTEXT1:
             dw LATEST
             dw EXIT
 
+PAUSEVEC:
+        call docon
+        DW xt_pause
+
 
 signon_msg:
     DEFM "RC2014 - Z80 CamelForth BootROM - STAGING", 13, 10
@@ -1619,6 +1613,8 @@ SECTION data
 
 flag_rom16k:
         DEFS 2
+
+default_xt:
 xt_interpret:
         DEFS 2
 xt_postpone:
@@ -1629,6 +1625,20 @@ xt_words:
         DEFS 2
 xt_refill:
         DEFS 2
+xt_pause:
+        DEFS 2
 exception_msg:
         DEFS 80
+
 SECTION code
+default_xt_start:
+        DW INTERPRET_8K
+        DW POSTPONE_8K
+        DW FIND_8K
+        DW WORDS_8K
+        DW XREFILL8K
+        DW NOOP
+default_xt_end:
+
+defc default_xt_len = default_xt_end - default_xt_start
+
