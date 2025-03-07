@@ -59,34 +59,34 @@ SECTION code_16k
             dw 28
 
     ;Z 'KEY      -- xt     if set, use XT as KEY destination
-    ;  36 USER 'KEY
+    ;  34 USER 'KEY
         head(TICKKEY,'KEY,docode)
             jp KEYVEC
 
     ;Z 'KEY?      -- xt     if set, use XT as KEY? destination
-    ;  38 USER 'KEY?
+    ;  36 USER 'KEY?
         head(TICKKEYQ,'KEY?,docode)
             jp KEYQVEC
 
     ;Z 'EMIT      -- xt     if set, use XT as EMIT destination
-    ;  40 USER 'EMIT
+    ;  38 USER 'EMIT
         head(TICKEMIT,'EMIT,docode)
             jp EMITVEC
 
     ;Z 'REFILL      -- xt    if set, use XT as REFILL source
-    ;  42 USER 'REFILL
+    ;   USER 'REFILL
         head(TICKREFILL,'REFILL,docode)
             jp REFILLVEC
 
     ;Z LINK        -- a-addr  link to following round-robin task
-    ;  44 USER LINK
+    ;  42 USER LINK
         head(LINK,LINK,douser)
-            dw 44
+            dw 42
 
     ;Z STACKTOP      -- a-addr  address of stored stack top for task
-    ;  46 USER STACKTOP
+    ;  44 USER STACKTOP
         head(STACKTOP,STACKTOP,douser)
-            dw 46
+            dw 44
 
 
 EXTERN intvec_ptr

@@ -123,34 +123,32 @@ SECTION code
         head(TICKSOURCE_ID,'SOURCE-ID,douser)
             dw 32
 
-    ; 34 USER empty
-
     ;Z 'KEY      -- xt     if set, use XT as KEY destination
-    ;  36 USER KEYVEC
+    ;  34 USER KEYVEC
     KEYVEC:
+            call douser
+            dw 34
+
+    ;Z 'KEY?      -- xt     if set, use XT as KEY? destination
+    ;  36 USER KEY?VEC
+    KEYQVEC:
             call douser
             dw 36
 
-    ;Z 'KEY?      -- xt     if set, use XT as KEY? destination
-    ;  38 USER KEY?VEC
-    KEYQVEC:
+    ;Z 'EMIT      -- xt     if set, use XT as EMIT destination
+    ;  38 USER EMITVEC
+    EMITVEC:
             call douser
             dw 38
 
-    ;Z 'EMIT      -- xt     if set, use XT as EMIT destination
-    ;  40 USER EMITVEC
-    EMITVEC:
+    ;Z 'REFILL      -- xt    if set, use XT as REFILL source
+    ;  40 USER REFILLVEC
+    REFILLVEC:
             call douser
             dw 40
 
-    ;Z 'REFILL      -- xt    if set, use XT as REFILL source
-    ;  42 USER REFILLVEC
-    REFILLVEC:
-            call douser
-            dw 42
-
-    ; 44 USER LINK
-    ; 46 USER STACKTOP
+    ; 42 USER LINK
+    ; 44 USER STACKTOP
 
 
     ;Z s0       -- a-addr     end of parameter stack
@@ -187,16 +185,15 @@ UINIT:
             DW NOOP         ; ENTRY
             DW 1            ; CURRENT                    30
             DW 0            ; 'SOURCE-ID
-            DW NOOP         ; empty
             DW RX           ; 'KEY
             DW RXQ          ; 'KEY?
-            DW TX           ; 'EMIT                      40
-            DW XREFILL0     ; 'REFILL
+            DW TX           ; 'EMIT
+            DW XREFILL0     ; 'REFILL                    40
 
 
     ;Z #init    -- n    #bytes of user area init data
         head(NINIT,``#INIT'',docon)
-            DW 50
+            DW 46
 
     ; ARITHMETIC OPERATORS ==========================
 
