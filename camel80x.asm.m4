@@ -38,55 +38,55 @@ EXTERN asm_z80_delay_tstate
 SECTION code_16k
 
 
-    ;Z BLK      -- a-addr     block number storage
-    ;  20 USER BLK
-        head(USERBLK,BLK,docode)
-            jp BLK
+;Z BLK      -- a-addr     block number storage
+;  20 USER BLK
+    head(USERBLK,BLK,docode)
+        jp BLK
 
-    ;Z SLICE-ID      -- a-addr   storage of current slice-id
-    ;  22 USER SLICE-ID
-        head(USERSLICE_ID,SLICE-ID,douser)
-            JP SLICE_ID
+;Z SLICE-ID      -- a-addr   storage of current slice-id
+;  22 USER SLICE-ID
+    head(USERSLICE_ID,SLICE-ID,douser)
+        JP SLICE_ID
 
-    ;Z SCR          -- a-addr  last edited screen number
-    ;  24 USER SCR
-        head(SCR,SCR,douser)
-            dw 24
+;Z SCR          -- a-addr  last edited screen number
+;  24 USER SCR
+    head(SCR,SCR,douser)
+        dw 24
 
-    ;Z ENTRY      -- a-addr  address of xt for entry point of task
-    ;  28 USER ENTRY
-        head(ENTRY,ENTRY,douser)
-            dw 28
+;Z ENTRY      -- a-addr  address of xt for entry point of task
+;  28 USER ENTRY
+    head(ENTRY,ENTRY,douser)
+        dw 28
 
-    ;Z 'KEY      -- xt     if set, use XT as KEY destination
-    ;  34 USER 'KEY
-        head(TICKKEY,'KEY,docode)
-            jp KEYVEC
+;Z 'KEY      -- xt     if set, use XT as KEY destination
+;  34 USER 'KEY
+    head(TICKKEY,'KEY,docode)
+        jp KEYVEC
 
-    ;Z 'KEY?      -- xt     if set, use XT as KEY? destination
-    ;  36 USER 'KEY?
-        head(TICKKEYQ,'KEY?,docode)
-            jp KEYQVEC
+;Z 'KEY?      -- xt     if set, use XT as KEY? destination
+;  36 USER 'KEY?
+    head(TICKKEYQ,'KEY?,docode)
+        jp KEYQVEC
 
-    ;Z 'EMIT      -- xt     if set, use XT as EMIT destination
-    ;  38 USER 'EMIT
-        head(TICKEMIT,'EMIT,docode)
-            jp EMITVEC
+;Z 'EMIT      -- xt     if set, use XT as EMIT destination
+;  38 USER 'EMIT
+    head(TICKEMIT,'EMIT,docode)
+        jp EMITVEC
 
-    ;Z 'REFILL      -- xt    if set, use XT as REFILL source
-    ;   USER 'REFILL
-        head(TICKREFILL,'REFILL,docode)
-            jp REFILLVEC
+;Z 'REFILL      -- xt    if set, use XT as REFILL source
+;   USER 'REFILL
+    head(TICKREFILL,'REFILL,docode)
+        jp REFILLVEC
 
-    ;Z LINK        -- a-addr  link to following round-robin task
-    ;  42 USER LINK
-        head(LINK,LINK,douser)
-            dw 42
+;Z LINK        -- a-addr  link to following round-robin task
+;  42 USER LINK
+    head(LINK,LINK,douser)
+        dw 42
 
-    ;Z STACKTOP      -- a-addr  address of stored stack top for task
-    ;  44 USER STACKTOP
-        head(STACKTOP,STACKTOP,douser)
-            dw 44
+;Z STACKTOP      -- a-addr  address of stored stack top for task
+;  44 USER STACKTOP
+    head(STACKTOP,STACKTOP,douser)
+        dw 44
 
 
 EXTERN intvec_ptr
