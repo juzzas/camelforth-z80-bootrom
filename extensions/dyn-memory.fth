@@ -11,7 +11,7 @@
 \ Use the following standard Forth words to manipulate
 \     ALLOCATE, FREE, RESIZE
 
-.( Loading dynamic memory... )
+CR .( Loading dynamic memory... )
 1 5 +THRU
 
 ( Dynamic Memory Allocation -- Screen 1 )

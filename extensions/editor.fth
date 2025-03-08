@@ -5,10 +5,10 @@ ALSO EDITOR DEFINITIONS
 
 CR .( Loading Editor... )
 1 13 +THRU
-.( loaded )
 
 ONLY FORTH DEFINITIONS
 ALSO EDITOR
+
 
 
 

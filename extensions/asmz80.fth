@@ -6,7 +6,7 @@
 
 VOCABULARY ASSEMBLER ( --- )
 ALSO ASSEMBLER DEFINITIONS
-.( Loading Z80 Assembler )
+CR .( Loading Z80 Assembler... )
 1 31 +THRU
 
 PREVIOUS DEFINITIONS
@@ -482,9 +482,9 @@ FORTH DEFINITIONS ALSO ASSEMBLER
 \ Start assembling.
   ALSO ASSEMBLER NOINSTR ;
 
-: CODE: ( "ccc" --- )
+: CODE ( "ccc" --- )
 \ Defining word to create a code definition.
-    CODE:
+    CODE
     ASSEMBLE ;
 : END-CODE ( --- )
 \ Terminate a code definition

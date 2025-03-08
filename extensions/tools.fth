@@ -1,5 +1,5 @@
 \ CamelForth tools                                    jps  0 / 4
-.( Loading CamelForth tools definitions... ) CR
+CR .( Loading CamelForth tools definitions... )
 FORTH DEFINITIONS
 1 5 +THRU
 

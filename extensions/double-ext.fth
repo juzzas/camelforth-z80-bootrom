@@ -1,5 +1,5 @@
 \ Additional double number definitions
-.( Loading additional double number definitions... ) CR
+CR .( Loading additional double number definitions... )
 1 3 +THRU
 
 GET-CURRENT   ENVIRONMENT-WORDLIST SET-CURRENT

@@ -1,7 +1,7 @@
 \ FIXED.SCR                                  hhh 12:30 02/09/97
 
 
-.( Loading fixed point decimal definitions... )
+CR .( Loading fixed point decimal definitions... )
 
 FORTH DEFINITIONS
 DECIMAL

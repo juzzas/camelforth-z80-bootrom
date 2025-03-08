@@ -1,5 +1,5 @@
 \ forth2012 tools-ext wordlist                        jps  0 / 4
-.( Loading tools-ext definitions... ) CR
+CR .( Loading tools-ext definitions... )
 FORTH DEFINITIONS
 1 5 +THRU
 

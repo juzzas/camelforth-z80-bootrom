@@ -1,5 +1,5 @@
 \ forth2012 string wordlist                          jps  0 / 9
-.( Loading string definitions... ) CR
+CR .( Loading string definitions... )
 FORTH DEFINITIONS
 1 9 +THRU
 

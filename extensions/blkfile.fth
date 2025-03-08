@@ -1,6 +1,6 @@
 ( blkfile - extension to treat blocks as files          0 / n)
 
-.( Loading blkfile... ) CR
+CR .( Loading blkfile... )
 
 
 1 CONSTANT BIN 
