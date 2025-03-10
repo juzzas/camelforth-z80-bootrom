@@ -183,6 +183,9 @@ DOTID1:
         head(UTILS_WORDLIST,UTILS-WORDLIST,docon)
             dw utils_wordlist_head
 
+;: ENVIRONMENT-WORDLIST ( -- wid )
+        head(ENVIRONMENT_WORDLIST,ENVIRONMENT-WORDLIST,docon)
+            dw utils_wordlist_head
 
 ;C (CREATE-WID)  c-addr u wid --  )    create an empty definition to WID
 ;   DUP WID>NFA , 0 C,         link & `immed' field
@@ -1129,6 +1132,9 @@ vocab_wordlist_head:
         ds 2
 
 utils_wordlist_head:
+        ds 2
+
+environment_wordlist_head:
         ds 2
 
 SECTION code_16k
@@ -3293,6 +3299,7 @@ SLASH16KROM:
         DW lit,default_xt_16k_start,lit,default_xt,lit,default_xt_16k_len,MOVE
         DW lit,utils_lastword,UTILS_WORDLIST,STORE
         DW lit,vocab_lastword,VOCAB_WORDLIST,STORE
+        DW FALSE,ENVIRONMENT_WORDLIST,STORE
         DW WORDLISTS,lit,STACK_WORDLISTS_SIZE,SLASHSTACK
         DW VOCAB_WORDLIST,FORTH_WORDLIST,lit,2,WORDLISTS,STACKSET
         DW FORTH_WORDLIST,CURRENT,STORE
