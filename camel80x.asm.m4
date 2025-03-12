@@ -185,7 +185,7 @@ DOTID1:
 
 ;: ENVIRONMENT-WORDLIST ( -- wid )
         head(ENVIRONMENT_WORDLIST,ENVIRONMENT-WORDLIST,docon)
-            dw utils_wordlist_head
+            dw environment_wordlist_head
 
 ;C (CREATE-WID)  c-addr u wid --  )    create an empty definition to WID
 ;   DUP WID>NFA , 0 C,         link & `immed' field
@@ -223,18 +223,6 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
         push hl
         push de
         call asm_z80_delay_ms
-        pop de
-        pop hl
-        pop bc
-        next
-
-;Z   TDELAY ( n -- )  delay in t-states
-    head(TDELAY,TDELAY,docode)
-        push hl
-        push de
-        ld h, b
-        ld l, c
-        call asm_z80_delay_tstate
         pop de
         pop hl
         pop bc

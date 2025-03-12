@@ -569,7 +569,7 @@ SECTION code
         DW TOR,lit,0,RFETCH,UMSLASHMOD,ROT,ROT
         DW RFROM,UMSLASHMOD,ROT,EXIT
 
-;Z UD*      ud1 d2 -- ud3      32*16->32 multiply
+;Z UD*      ud1 u2 -- ud3      32*16->32 multiply
 ;   DUP >R UM* DROP  SWAP R> UM* ROT + ;
     head(UDSTAR,UD*,docolon)
         DW DUP,TOR,UMSTAR,DROP
