@@ -1,20 +1,20 @@
-\ Additional double number definitions
+\ Additional double number definitions              ( 0 / 5 )
+
+
+FORTH DEFINITIONS
+DECIMAL
+
 CR .( Loading additional double number definitions... )
 1 5 +THRU
 
 
+\ These were inspired from Real Time Forth by Tim Hendtlass
+\ And a couple of others words that would be useful in
+\ 32-bit number arithmatic
 
 
 
-
-
-
-
-
-
-
-
-\ Additional double number definitions
+  \ Additional double number definitions            ( 1 / 5 )
 : UDD* ( ud1 ud2 -- ud3 ) \ all numbers unsigned doubles
    ROT >R OVER >R >R OVER >R \ put c b a d on return stack
    UM* \ b*d = part of 32 bit answer
@@ -27,12 +27,9 @@ CR .( Loading additional double number definitions... )
    2R> XOR ?DNEGATE \ work out and apply final sign
 ;
 
-: D* ( d n -- d )  S>D DD* ;
-
 : 4DUP 2OVER 2OVER ;
 
-
-\ Additional double number definitions
+  \ Additional double number definitions            ( 2 / 5 )
 : T* ( ud un -- ut ) \ Unsigned double * unsigned single = unsigned triple
    DUP ROT UM* 2>R \ high-part of answer to return stack
    UM* 0 2R> D+ \ get low-part,offset 16 bits,add high-part
@@ -48,7 +45,8 @@ CR .( Loading additional double number definitions... )
 
 
 
-\ Additional double number definitions
+
+  \ Additional double number definitions            ( 3 / 5 )
 : U*/ ( ud un1 un2 -- ud2 ) \ ud * un1 / un2, triple intermediate product
    >R T* R> T/
 ;
@@ -64,7 +62,7 @@ CR .( Loading additional double number definitions... )
       NIP 0     \ /2^16, make answer double
    THEN  ;
 
-\ Additional double number definitions
+  \ Additional double number definitions            ( 4 / 5 )
 : DD/MOD ( dn1 dn2 -- drem dquot ) \ Divide two signed double numbers
    2 PICK OVER XOR >R    \ work out sign of answer
    DABS 2SWAP DABS 2SWAP    \ convert numbers to positive
@@ -80,7 +78,9 @@ CR .( Loading additional double number definitions... )
    R> ?DNEGATE    \ retrieve answer,apply final sign
 ;
 
-\ Additional double number definitions
+  \ Additional double number definitions            ( 5 / 5 )
+: D* ( d n -- d )  S>D DD* ;
+: D/ ( d n -- d )  S>D DD/ ;
 : D*/  ( d1 d2 d3 -- d )
     2>R DD* 2R> DD/  ;
 

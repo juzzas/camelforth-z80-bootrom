@@ -1,5 +1,8 @@
-\ FIXED.SCR                                  hhh 12:30 02/09/97
+\ 32-bit fixed point maths                           0 / 5
 
+\ These were taken from Real Time Forth by Tim Hendtlass
+\ These require the "double" routines LOADed
+\ By default, the default is scaled to 3 decimal places.
 
 CR .( Loading fixed point decimal definitions... )
 
@@ -11,101 +14,80 @@ DECIMAL
 
 
 
+  \ 32-bit fixed point maths                         1 / 5
+VARIABLE FDPL \ holds number of implied decimal places
+VARIABLE FSCL \ holds the scaling factor we are using
 
+: FPLACES ( -- n ) FDPL @ ; \ return number of implied decimal places
+: FSCALE ( -- n ) FSCL @ ; \ return the scaling factor we are using
+: FIXED ( n -- )
+   0 MAX 3 MIN FDPL ! \ clip to between 0 and 3 decimal places
+   1 FDPL @ 0 ?DO 10 * LOOP FSCL ! \ store # places, initialise scaling factor
+;
 
-
-   \ FIXED.SCR    --- readme                 hhh 12:30 02/09/97
-\  written using LMI PC/FORTH 3.2
-\  Heinrich Hohl, Lucent Technologies
-\ 
-\ This package facilitates the use of fixed point double length
-\ numbers (fd). These are double length numbers containing an
-\ implied decimal point at a known, fixed position. The 
-\ following words allow easy handling of fixed point numbers:
-\ PLACES ................ determine position of decimal point
-\ (FD.) FD. FD.R ........ used to display fd numbers
-\ FIXED ................. convert any d number to fd number
-\ D+ D- D* D/ ........... calculate with d or fd numbers
-\ T* T/ TU* TU/ TU// .... basic triple length number operators
-\ D*/ DU*/ DU*// ........ scale d or fd numbers; triple length
-\                         intermediate results are used
-   \ FIXED.SCR    --- variables              hhh 12:30 02/09/97
-VARIABLE places        ( number of digits behind decimal point )
+ 3 FIXED \ default to three decimal places
 
 
 
 
+  \ 32-bit fixed point maths                         2 / 5
+\ Outputting numbers
+: (F.) ( fn -- adr len ) \ prepare fixed point # ready to output
+   TUCK   \ keep copy of top byte so we know sign
+   DABS   \ convert to positive number
+   <# BL HOLD   \ start conversion with a leading blank
+   FDPL @ 0 ?DO # LOOP   \ convert places after decimal point
+   [CHAR] . HOLD   \ put a decimal point in place
+   #S \ convert integer part
+   ROT SIGN #>  ;   \ put sign in place, tidy stack
+: F. ( fn -- ) (F.) TYPE ;   \ print fixed point number
+: F.R ( fn p -- ) \ print right justified in a field of p places
+   >R (F.)   \ convert
+   R> OVER - 0 ?DO BL EMIT LOOP   \ pad with blanks as needed
+   TYPE  ;    \ then print
 
+  \ 32-bit fixed point maths                         3 / 5
+\  Divide unsigned double by a single, leaving a remainder and quotient.
+: MU/MOD        ( ud# un1 -- rem d#quot )
+  >R  0  R@  UM/MOD  R>  SWAP  >R  UM/MOD  R>   ;
 
+\ Inputting numbers
+: D10* ( d1 -- 10*d1)   \ multiply a 32 bit number by 10
+   D2* 2DUP D2* D2* D+   \ 8*d+2*d=10*d
+;
+: FIX ( dn -- fn )
+     FPLACES 0 ?DO D10* LOOP  \ scale the number up
+;
+: SFIX ( n -- fn )
+     S>D FIX ;
+;
 
+  \ 32-bit fixed point maths                         4 / 5
+\ Multiply two fixed point numbers producing a fixed point result.
+: FIX* ( f1 f2 -- f1*f2 )
+   ROT 2DUP XOR >R   \ sign of answer to return stack
+   -ROT DABS 2SWAP DABS   \ make both numbers positive
+   DUP >R ROT DUP >R >R OVER >R   \ put a c c b on return stack
+   >R SWAP DUP >R   \ put a d onto return stack
+   UM*   \ b*d
+   0 2R> UM* D+ 2R> UM* D+   \ offset 16 bits, add on a*d+b*c
+   2R> * +   \ add on low byte of a*c
+   FSCALE MU/MOD   \ divide ms32 bits, ans to R.
+   0<> ABORT" Fixed * Overflow" >R   \ unless overflow quotient to R....
+   FSCALE MU/MOD ROT DROP   \ divide remainder and last 16 bits
+   R> + R> ?DNEGATE   \ assemble final answer, negate if required
+;
 
+  \ 32-bit fixed point maths                         5 / 5
+\ Divide two fixed point numbers producing a fixed point result.
+: FIX/ ( f1 f2 -- fquot=f1/f2 )  \ Divide two fixed point numbers
+   2 PICK OVER XOR >R   \ work out sign of answer and save
+   DABS 2SWAP DABS 2SWAP   \ make all numbers positive
+   2DUP >R >R   \ keep copy of divisor
+   DD/MOD FSCALE 0 DD*   \ scale integer part of answer
+   2SWAP FSCALE 0 DD*   \ and then scale remainder
+   R> R> DD/   \ divide remainder by divisor
+   D+   \ add fractional part of ans
+   R> ?DNEGATE   \ put on final sign
+;
 
-
-
-
-
-
-   \ FIXED.SCR    --- number input           hhh 12:30 02/09/97
-( specify number of places behind the decimal point )
-: PLACES ( n -- )  0 MAX  places ! ;
-
-( decimal left shift (n<0 shifts |n| digits to the right )
-: DSHIFT ( d n -- d')
-  DUP 0<
-  IF    NEGATE
-        ?DUP IF 0 DO 10 D/  LOOP THEN
-  ELSE  ?DUP IF 0 DO 10 UD*  LOOP  THEN   THEN;
-
-( convert double length number to fd considering DPL )
-: FIXED ( d -- fd)
-  places @  DPL @ 0 MAX -  DSHIFT ;
-
-
-   \ FIXED.SCR    --- formatted output       hhh 12:30 02/09/97
-( convert fixed point double length number to formatted string )
-: (FD.) ( fd -- addr len)
-  TUCK DABS
-  <#  places @  ?DUP IF 0 DO # LOOP THEN  ASCII .
-      HOLD  #S  ROT SIGN  #> ;
-
-( display fixed point double length number )
-: FD. ( fd -- )  (FD.) TYPE SPACE ;
-
-( display number right justified in a field of specified width )
-: FD.R ( fd width -- )  >R  (FD.)  R> OVER - SPACES  TYPE ;
-
-
-
-
-   \ FIXED.SCR    --- extended arithmetics   hhh 12:30 02/09/97
-: UM/ ( ud u -- u')  UM/MOD NIP ;
-
-( multiply or divide signed long number by 0 <= v <= 7FFF )
-: T* ( d v -- t)  TUCK M* >R >R UM* 0 R> R> D+ ;
-: T/ ( t v -- d)  DUP >R M/MOD -ROT R> UM/ SWAP ;
-
-( multiply or divide unsigned long numbers by unsigned number )
-: TU* ( ud u -- ut)  TUCK UM* >R >R UM* 0 R> R> D+ ;
-: TU/ ( ut u -- ud)  DUP >R UM/MOD -ROT R> UM/ SWAP ;
-
-( divide ut number by ud number )
-: TU// ( ut ud -- u)
-  DUP 1+
-  DUP >R UM/ R> SWAP >R TU/ R> UM/ ;
-
-   \ FIXED.SCR    --- scaling                hhh 12:30 02/09/97
-( scale double length number d according to the unsigned )
-( numbers v1 and v2 of range 0 <= v <= 7FFF: (d*v1)/v2 = d' )
-: D*/ ( d v1 v2 -- d')  >R T* R> T/ ;
-
-( scale unsigned double length number ud according to the )
-( unsigned numbers u1 and u2: (ud*u1)/u2 = ud' )
-: DU*/ ( ud u1 u2 -- ud')  >R TU* R> TU/ ;
-
-( scale unsigned number u according to the unsigned double )
-( length numbers ud1 and ud2: (u*ud1)/ud2 = u' )
-: DU*// ( u ud1 ud2 -- u')  >R >R ROT TU* R> R> TU// ;
-
-( tip: avoid fussy stack operations by using basic triple )
-( length arithmetic operators for scaling instead of the  )
-( scaling operators shown in this screen                  )
