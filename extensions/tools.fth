@@ -16,7 +16,7 @@ FORTH DEFINITIONS
 
    \ CamelForth tools - environment                   jps  1 / 4
 .( creating environment )
-WORDLIST CONSTANT ENVIRONMENT-WORDLIST
+\  WORDLIST CONSTANT ENVIRONMENT-WORDLIST
 GET-CURRENT    ENVIRONMENT-WORDLIST SET-CURRENT
   256 CONSTANT /COUNTED-STRING    \ maximum size of a counted string, in characters
   44 CONSTANT /HOLD               \ size of the pictured numeric output string buffer, in characters

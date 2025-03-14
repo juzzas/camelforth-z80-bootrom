@@ -1,6 +1,6 @@
 \ Additional double number definitions
-CR .( Loading additional double number definitions... )
-1 3 +THRU
+.( Loading double number extensions... ) CR
+1 2 +THRU
 
 GET-CURRENT   ENVIRONMENT-WORDLIST SET-CURRENT
   4294967295. 2CONSTANT MAX-UD    \ largest usable unsigned 
@@ -21,7 +21,7 @@ SET-CURRENT
 
 : D>  2SWAP D< ;
 : D>S  DROP ;  ( d -- s )
-: DROT  2>R 2SWAP 2R> 2SWAP ;  ( d1 d2 d3 -- d2 d3 d1 )
+: 2ROT  2>R 2SWAP 2R> 2SWAP ;  ( d1 d2 d3 -- d2 d3 d1 )
 : D0<   NIP 32768 AND 0<> ;
 : DU<       \ ud1 ud2 -- flag
   ROT SWAP 2DUP U< IF
@@ -29,13 +29,4 @@ SET-CURRENT
   ELSE
     <> IF  2DROP FALSE  ELSE  U<  THEN
   THEN ;
-
-\ Additional double number definitions
-
-: DLSHIFT BEGIN ?DUP WHILE >R D2* R> 1- REPEAT ;
-: DRSHIFT BEGIN ?DUP WHILE >R D2/ R> 1- REPEAT ; ( d u -- d )
-
-: DAND ROT AND >R AND R> ; ( d d -- d )
-: DOR ROT OR >R OR R> ; ( d d -- d )
-: DXOR ROT XOR >R XOR R> ; ( d d -- d )
 

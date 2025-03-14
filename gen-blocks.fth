@@ -21,12 +21,16 @@ OPEN:  build/cf-image.blk
 +BLOCKS: extensions/search.fth
 
 
-600 BLOCKS: extensions/fixed.fth
+600 BLOCKS: extensions/double.fth
++BLOCKS: extensions/fixed.fth
 +BLOCKS: extensions/random.fth
 +BLOCKS: extensions/leds.fth
 +BLOCKS: extensions/pagedram.fth
 +BLOCKS: extensions/ramdrive.fth
 
+900 BLOCKS: examples/mandelbrot.fth
+915 BLOCKS: examples/gamelife.fth
+930 BLOCKS: examples/2048.fth
 
 3000 BLOCKS: test/testsuite.fth
 +BLOCKS: test/ttester.fth

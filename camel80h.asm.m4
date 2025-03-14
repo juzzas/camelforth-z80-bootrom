@@ -569,7 +569,7 @@ SECTION code
         DW TOR,lit,0,RFETCH,UMSLASHMOD,ROT,ROT
         DW RFROM,UMSLASHMOD,ROT,EXIT
 
-;Z UD*      ud1 d2 -- ud3      32*16->32 multiply
+;Z UD*      ud1 u2 -- ud3      32*16->32 multiply
 ;   DUP >R UM* DROP  SWAP R> UM* ROT + ;
     head(UDSTAR,UD*,docolon)
         DW DUP,TOR,UMSTAR,DROP
@@ -962,7 +962,7 @@ XREFILL0:
 ;       INTERPRET
 ;   R> >IN !  R> R> 'SOURCE 2! R> 'SOURCE-ID ! ;
     head(EVALUATE,EVALUATE,docolon)
-        DW SOURCE_ID,TOR
+        DW TICKSOURCE_ID,FETCH,TOR
         DW lit,65535,TICKSOURCE_ID,STORE
         DW TICKSOURCE,TWOFETCH,TOR,TOR
         DW TOIN,FETCH,TOR
@@ -985,7 +985,7 @@ XREFILL0:
 ;     R> DROP            ( )          \ discard saved stack ptr
 ;     0   ;              ( 0 )        \ normal completion
     head(CATCH,CATCH,docolon)
-        DW SOURCE_ID,TOR
+        DW TICKSOURCE_ID,FETCH,TOR
         DW TICKSOURCE,TWOFETCH,TOR,TOR
         DW TOIN,FETCH,TOR
         DW SPFETCH,TOR
@@ -1030,7 +1030,7 @@ CHECK_SP1:
 
 ;C QUIT     --    R: i*x --    interpret from kbd
 ;   L0 LP !  R0 RP!   0 STATE ! 0 HANDLER !  0 'SOURCE-ID !
-;   ['] XREFILL8K REFILLVEC !
+;   ['] XREFILL0 REFILLVEC !
 ;   BEGIN
 ;     CHECK_SP
 ;     REFILL  IF
@@ -1407,9 +1407,18 @@ MOVE2:  DW EXIT
 
 ;C ENVIRONMENT?  c-addr u -- false   system query
 ;                         -- i*x true
-;   2DROP 0 ;       the minimal definition!
+;   ROM16K? IF
+;      ENVIRONMENT-WORDLIST SEARCH-WORDLIST
+;      IF EXECUTE TRUE ELSE FALSE THEN
+;   ELSE
+;   2DROP 0 THEN ;       the minimal definition!
     head(ENVIRONMENTQ,ENVIRONMENT?,docolon)
-        DW TWODROP,lit,0,EXIT
+        DW ROM16KQ,qbranch,ENV2
+        DW ENVIRONMENT_WORDLIST,SEARCH_WORDLIST,qbranch,ENV1
+        DW EXECUTE,TRUE,EXIT
+
+ENV1:   DW FALSE,EXIT
+ENV2:   DW TWODROP,lit,0,EXIT
 
 ; UTILITY WORDS AND STARTUP =====================
 HIDDENQ: ;  ( nfa -- nfa f )
@@ -1543,7 +1552,7 @@ DOTSIGNON:
 
 COLD1:  DW lit,lastword8k,LATEST,STORE
         DW lit,0,lit,flag_rom16k,STORE
-        DW lit,default_xt,lit,default_xt_start,lit,default_xt_len,MOVE
+        DW lit,default_xt_start,lit,default_xt,lit,default_xt_len,MOVE
         DW QUIT
 
 ;Z WARM     --      warm start Forth system
