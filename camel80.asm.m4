@@ -280,12 +280,14 @@ dovar:  ; -- a-addr
         ld c,l
         next
 
+
 ;C CONSTANT   n --      define a Forth constant
 ;   CREATE , DOES> (machine code fragment)
     head(CONSTANT,CONSTANT,docolon)
         DW CREATE,COMMA,XDOES
 ; DOCON, code action of CONSTANT,
 ; entered by CALL DOCON
+; vectored variables have the same action
 docon:  ; -- x
         pop hl     ; parameter field address
         push bc    ; push old TOS

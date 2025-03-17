@@ -424,6 +424,12 @@ UMIN1:  DW DROP,EXIT
         DW TWODUP,ULESS,qbranch,UMAX1,SWOP
 UMAX1:  DW DROP,EXIT
 
+; VARIABLE LAST_KEY
+LAST_KEY:
+	call docon
+	DW last_key_ptr
+
+
 ; DO_KEY   ( -- char     line ending converted to 13 )
 ;   BEGIN
 ;    KEY    ( c )
@@ -441,10 +447,10 @@ DO_KEY:
 DO_KEY1:
     DW KEY
     DW DUP,lit,10,NOTEQUAL,qbranch,DO_KEY2
-    DW DUP,lit,LAST_KEY,STORE,EXIT
+    DW DUP,LAST_KEY,STORE,EXIT
 
 DO_KEY2:
-    DW lit,LAST_KEY,FETCH  ; is DOS Line-ending?
+    DW LAST_KEY,FETCH  ; is DOS Line-ending?
     DW lit,13,NOTEQUAL,qbranch,DO_KEY3
     DW DROP,lit,13,EXIT
 
@@ -452,9 +458,10 @@ DO_KEY3:   ; line ending is Unix style
     DW DROP
     DW branch,DO_KEY1
 
+
 SECTION data
 
-LAST_KEY:
+last_key_ptr:
     DS 2
 
 SECTION code
@@ -503,15 +510,15 @@ TYP5:   DW EXIT
 ; allocate a system PAD buffer for S"
 ;     supports 4 x 128byte strings at SQUOTE_TOP
 ;Z SPAD        -- c-addr
-;   sbuffer_index_ptr @ 3 AND    ( index )
+;   sbuffer_index @ 3 AND    ( index )
 ;   1+ 7 LSHIFT
 ;   SQUOTE_TOP -         ( addr )
-;   1 sbuffer_index_ptr +!  ;
+;   1 sbuffer_index +!  ;
     head(SPAD,SPAD,docolon)
-        DW lit,sbuffer_index_ptr,FETCH,lit,0x3,AND
+        DW SBUFFER_INDEX,FETCH,lit,0x3,AND
         DW ONEPLUS,lit,7,LSHIFT
         DW lit,SQUOTE_TOP,SWOP,MINUS
-        DW lit,1,lit,sbuffer_index_ptr,PLUSSTORE
+        DW lit,1,SBUFFER_INDEX,PLUSSTORE
         DW EXIT
 
 ;Z >SPAD    addr u -- addr' u'
@@ -541,6 +548,11 @@ TYP5:   DW EXIT
 SQUOTE1:
         DW TOSPAD
         DW EXIT
+
+;Z VARIABLE SECTION_INDEX
+SBUFFER_INDEX:
+	call docon
+	DW sbuffer_index_ptr
 
 SECTION data
 
@@ -1526,6 +1538,11 @@ MSTARSLASH1:
         DW STRCMP,ZEROEQUAL
         DW EXIT
 
+; VARIABLE FLAG_ROM16K
+FLAG_ROM16K:
+	call docon
+	DW flag_rom16k_ptr
+
 DOTSIGNON:
         call docolon
         DW lit,signon_msg
@@ -1541,12 +1558,12 @@ DOTSIGNON:
         DW UINIT,U0,NINIT,CMOVE
         DW DOTSIGNON,CR
         DW ROM16KQ,qbranch,COLD1
-        DW lit,65535,lit,flag_rom16k,STORE
+        DW lit,65535,FLAG_ROM16K,STORE
         DW SLASH16KROM
         DW QUIT
 
 COLD1:  DW lit,lastword8k,LATEST,STORE
-        DW lit,0,lit,flag_rom16k,STORE
+        DW lit,0,FLAG_ROM16K,STORE
         DW lit,default_xt_start,lit,default_xt,lit,default_xt_len,MOVE
         DW QUIT
 
@@ -1568,7 +1585,7 @@ WARM1:
 ; Return the address of the first name field in the word list identified by wid.
 ;       WORDLISTS DUP @ + @    ;
         head(WIDTONFA,WID>NFA,docolon)
-            dw lit,flag_rom16k,FETCH,qbranch,WIDTONFA1
+            dw FLAG_ROM16K,FETCH,qbranch,WIDTONFA1
             dw FETCH
             dw EXIT
 WIDTONFA1:
@@ -1579,7 +1596,7 @@ WIDTONFA1:
 ; Store the address of the first name field in the word list identified by wid.
 ;       CELLS,WORDLISTS DUP @ CELLS + !    ;
         head(WIDTONFASTORE,WID>NFA!,docolon)
-            dw lit,flag_rom16k,FETCH,qbranch,WIDTONFASTOR1
+            dw FLAG_ROM16K,FETCH,qbranch,WIDTONFASTOR1
             dw STORE
             dw EXIT
 WIDTONFASTOR1:
@@ -1589,7 +1606,7 @@ WIDTONFASTOR1:
 ;: CONTEXT      ( -- wid )
 ;    STACK_WORDLIST STACK@
         head(CONTEXT,CONTEXT,docolon)
-            dw lit,flag_rom16k,FETCH,qbranch,CONTEXT1
+            dw FLAG_ROM16K,FETCH,qbranch,CONTEXT1
             dw lit,STACK_WORDLISTS,STACKFETCH
             dw EXIT
 CONTEXT1:
@@ -1612,7 +1629,7 @@ defc signon_msg_len = signon_msg_end - signon_msg
 
 SECTION data
 
-flag_rom16k:
+flag_rom16k_ptr:
         DEFS 2
 
 default_xt:

@@ -671,7 +671,8 @@ DMIN1:
 
 ;Z SKIP-SPACE   c-addr u -- c-addr' u'
 ;Z                          skip chars <32
-    head(SKIP_SPACES,SKIP-SPACES,docode)
+dnl    head(SKIP_SPACES,SKIP-SPACES,docode)
+SKIP_SPACES:
         push bc
         exx
         pop bc      ; count
@@ -698,7 +699,8 @@ skipspacedone:
 
 ;Z SCAN-SPACE    c-addr u -- c-addr' u'
 ;Z                      find char <32
-    head(SCAN_SPACE,SCAN-SPACE,docode)
+dnl    head(SCAN_SPACE,SCAN-SPACE,docode)
+SCAN_SPACE:
         push bc
         exx
         pop bc      ; count
@@ -740,8 +742,6 @@ scanspacedone:
         dw TWODUP,lit,1,MIN,PLUS,SOURCE,DROP,MINUS,TOIN,STORE
         dw DROP,RFROM,TUCK,MINUS
         dw EXIT
-
-
 
 
 ; : HOLDS ( addr u -- )
