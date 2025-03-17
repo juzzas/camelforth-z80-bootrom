@@ -416,6 +416,30 @@ dnl         dw lit,0x1b,EMIT
 dnl         dw lit,'[',EMIT
 dnl         dw EXIT
 
+;C DEFER    ( "name" -- )      \  create a deferred word
+;   CREATE ['] NOOP ,
+;   DOES>
+;   @ EXECUTE ;
+    head(DEFER,DEFER,docolon)
+        DW CREATE,lit,-3,ALLOT
+        DW lit,dodefer,COMMACF
+        DW lit,NOOP,COMMAXT,EXIT
+
+;C DEFER!
+;    >BODY ! ;
+    head(DEFERSTORE,DEFER!,docolon)
+        DW TOBODY,STORE,EXIT
+        
+
+;C IS       ( xt "name" -- )     \ define a deferred word
+;   STATE @  IF  POSTPONE [']  POSTPONE DEFER!
+;   ELSE  ' DEFER!  THEN ; IMMEDIATE
+    immed(IS,IS,docolon)
+        DW STATE,FETCH,qbranch,IS1
+        DW BRACTICK,lit,DEFERSTORE,COMMAXT,EXIT
+IS1:
+        DW TICK,DEFERSTORE,EXIT
+
 ;C SLITERAL    c-addr u --    compile string literal
 ;    (SLITERAL)   ; IMMEDIATE
     immed(SLITERAL,SLITERAL,docode)

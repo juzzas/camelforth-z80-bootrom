@@ -336,6 +336,23 @@ dodoes: ; -- a-addr
         ld c,l
         next
 
+; Action to DEFER
+; Parameter field holds the  XT to jump to.
+dodefer:
+        pop hl     ; parameter field address
+	
+	push bc   ; save TOS
+
+	ld c,(hl)  ; get XT to BC
+        inc hl
+        ld b,(hl)
+        ld l,c     ; push XT to HL
+        ld h,b
+
+	pop bc   ; restore TOS
+
+	jp (hl)
+
 ; Action to jump to a vectored DEFER
 ; Parameter field holds the pointer to the vector
 ; of the XT to jump to.

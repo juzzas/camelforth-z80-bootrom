@@ -684,6 +684,34 @@ SIGN1:  DW EXIT
     head(CCOMMA,``C,'',docolon)
         dw HERE,CSTORE,lit,1,CHARS,ALLOT,EXIT
 
+;Z VARIABLE  TO?
+    head(TOQ,TO?,docon)
+	DW to_flag
+
+SECTION data
+
+to_flag:
+	DS 2
+
+SECTION code
+
+;C VALUE 
+;  CREATE , 
+;   DOES> TO-STATE @ IF !  FALSE TO-STATE ! ELSE @ THEN  ;
+    head(VALUE,VALUE,docolon)
+	DW CREATE,COMMA
+	DW XDOES
+	call dodoes
+	DW TOQ,FETCH,qbranch,VALUE1
+	DW STORE
+	DW FALSE,TOQ,STORE,EXIT
+VALUE1:
+	DW FETCH,EXIT
+
+;C TO
+    head(TO,TO,docolon)
+        DW TRUE,TOQ,STORE,EXIT
+
 ; INTERPRETER ===================================
 ; Note that NFA>LFA, NFA>CFA, IMMED?, and FIND
 ; are dependent on the structure of the Forth
