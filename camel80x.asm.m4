@@ -1134,7 +1134,7 @@ SECTION code_16k
 
 ;: SET-ORDER  ( wid1 .. widn n -- )
     head(SET_ORDER,SET-ORDER,docolon)
-        DW lit,-1,OVER,EQUAL,qbranch,SETORDER1
+        DW ALLONES,OVER,EQUAL,qbranch,SETORDER1
         DW DROP,VOCAB_WORDLIST,FORTH_WORDLIST,lit,2
         DW WORDLISTS,STACKSET,EXIT
 
@@ -1377,7 +1377,7 @@ XVOCDOES:
 
 ;: ONLY ( -- )  -1 SET-ORDER ;
     head(ONLY,ONLY,docolon)
-        dw lit,-1,SET_ORDER
+        dw ALLONES,SET_ORDER
         dw EXIT
 
 ;: VOCS  ( -- )      list all vocabularies in dict
@@ -2037,7 +2037,7 @@ UPDATE1:
 ;     THEN ;
     head(UPDATEDQ,UPDATED?,docolon)
         dw SLICE,BLKCTX_FIND,DUP,qbranch,UPDATEDQ1
-        dw BLKCTXTOFLAGS,FETCH,lit,-1,EQUAL
+        dw BLKCTXTOFLAGS,FETCH,ALLONES,EQUAL
 UPDATEDQ1:
         dw EXIT
 
@@ -3093,7 +3093,7 @@ XREFILL16K3:
         dw XREFILL8K,EXIT
 
 XREFILL16K2:
-        dw lit,-1,OVER,EQUAL,qbranch,XREFILL16K4
+        dw ALLONES,OVER,EQUAL,qbranch,XREFILL16K4
         dw DROP,FALSE,EXIT
 
 XREFILL16K4:
@@ -3272,7 +3272,7 @@ SLASH16KROM:
         call docolon
         DW U0,LINK,STORE
         DW lit,XWAKE,U0,STORE
-        DW lit,65535,RAMTOPSTORE
+        DW ALLONES,RAMTOPSTORE
         DW lit,default_xt_16k_start,lit,default_xt,lit,default_xt_16k_len,MOVE
         DW lit,utils_lastword,UTILS_WORDLIST,STORE
         DW lit,vocab_lastword,VOCAB_WORDLIST,STORE

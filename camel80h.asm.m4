@@ -590,7 +590,7 @@ SECTION code
 ;C HOLD  char --        add char to output string
 ;   -1 HP +!  HP @ C! ;
     head(HOLD,HOLD,docolon)
-        DW lit,-1,HP,PLUSSTORE
+        DW ALLONES,HP,PLUSSTORE
         DW HP,FETCH,CSTORE,EXIT
 
 ;C <#    --             begin numeric conversion
@@ -878,7 +878,7 @@ TONUM3: DW EXIT
         DW branch,QNUM3
 QNUM1:  DW TWODROP,NIP,RFROM,qbranch,QNUM2
         DW NEGATE
-QNUM2:  DW lit,-1
+QNUM2:  DW TRUE
 QNUM3:  DW EXIT
 
 ; INTERPRET_IHEX   ( src dest len flag  if flag = -1 -- )
@@ -890,7 +890,7 @@ QNUM3:  DW EXIT
 ;       THEN
 INTERPRET_IHEX:
         call docolon
-        DW lit,-1,EQUAL,qbranch,INTERPIHEX2
+        DW TRUE,EQUAL,qbranch,INTERPIHEX2
         DW STATE,FETCH,ZEROEQUAL,qbranch,INTERPIHEX1
         DW XIHEX,EXIT
 INTERPIHEX1:
@@ -950,7 +950,7 @@ INTER9: DW DROP,CHECK_SP,EXIT
 XREFILL8K:
         call docolon
         DW TIB,DUP,TIBSIZE,ACCEPT,TICKSOURCE,TWOSTORE
-        DW ZERO,TOIN,STORE,SPACE,lit,-1
+        DW ZERO,TOIN,STORE,SPACE,TRUE
         DW EXIT
 
 XREFILL0:
@@ -972,7 +972,7 @@ XREFILL0:
 ;   R> >IN !  R> R> 'SOURCE 2! R> 'SOURCE-ID ! ;
     head(EVALUATE,EVALUATE,docolon)
         DW TICKSOURCE_ID,FETCH,TOR
-        DW lit,65535,TICKSOURCE_ID,STORE
+        DW ALLONES,TICKSOURCE_ID,STORE
         DW TICKSOURCE,TWOFETCH,TOR,TOR
         DW TOIN,FETCH,TOR
         DW TICKSOURCE,TWOSTORE,ZERO,TOIN,STORE
@@ -1079,7 +1079,7 @@ QUIT1a: DW CR
         DW branch,QUIT1
 
         ; case ABORT
-QUIT2:  DW DUP,lit,65535,EQUAL,qbranch,QUIT3
+QUIT2:  DW DUP,ALLONES,EQUAL,qbranch,QUIT3
         DW DROP,XSQUOTE
         DB 6," ABORT"
         DW TYPE,CR
@@ -1189,12 +1189,12 @@ TICK1:
 ;C [        --      enter interpretive state
 ;   0 STATE ! ; IMMEDIATE
     immed(LEFTBRACKET,[,docolon)
-        DW ZERO,STATE,STORE,EXIT
+        DW FALSE,STATE,STORE,EXIT
 
 ;C ]        --      enter compiling state
 ;   -1 STATE ! ;
     head(RIGHTBRACKET,],docolon)
-        DW lit,-1,STATE,STORE,EXIT
+        DW TRUE,STATE,STORE,EXIT
 
 ;Z HIDE     --      "hide" latest definition
 ;   CURRENT @ WID>NFA DUP C@ 80 OR SWAP C! ;
@@ -1393,6 +1393,7 @@ LOOP3:  DW EXIT
 
 ;C TRUE
     head(TRUE,TRUE,docode)
+ALLONES:
         push bc
         jp tostrue
 
@@ -1570,7 +1571,7 @@ DOTSIGNON:
         DW UINIT,U0,NINIT,CMOVE
         DW DOTSIGNON,CR
         DW ROM16KQ,qbranch,COLD1
-        DW lit,65535,FLAG_ROM16K,STORE
+        DW TRUE,FLAG_ROM16K,STORE
         DW SLASH16KROM
         DW QUIT
 
