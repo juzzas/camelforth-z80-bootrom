@@ -144,7 +144,7 @@ CFATONFA1:
         DW NIP,UNLOOP,EXIT
 CFATONFA2:
         DW DROP,xloop,CFATONFA1
-        DW DROP,lit,0
+        DW DROP,ZERO
         DW EXIT
 
 ;Z (ID)  xt -- c-addr u   or   xt 0 
@@ -193,7 +193,7 @@ DOTID1:
 ;   2DUP HERE PLACE 1+ ALLOT DROP        name field
 ;   docreate ,CF                code field
     head(XCREATE_WID,(CREATE-WID),docolon)
-        DW DUP,WIDTONFA,COMMA,lit,0,CCOMMA
+        DW DUP,WIDTONFA,COMMA,ZERO,CCOMMA
         DW HERE,SWOP,WIDTONFASTORE
         DW TWODUP,HERE,PLACE,ONEPLUS,ALLOT,DROP
         DW lit,docreate,COMMACF,EXIT
@@ -211,9 +211,9 @@ dnl ;    0 C,          ( empty NFA )
 dnl ;    HERE               ( push xt to stack             )
 dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
     head(NONAME,:NONAME,docolon)
-        dw CURRENT,FETCH,FETCH,COMMA,lit,0,CCOMMA
+        dw CURRENT,FETCH,FETCH,COMMA,ZERO,CCOMMA
         dw HERE,CURRENT,FETCH,STORE
-        dw lit,0,CCOMMA
+        dw ZERO,CCOMMA
         dw HERE
         dw HIDE,RIGHTBRACKET,lit,docolon,COMMACF
         dw EXIT
@@ -231,16 +231,6 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
 ;C   PAUSE ( -- )   call idle routine
     head(PAUSE,PAUSE,dodeferv)
         DW xt_pause
-
-;C TRUE
-    head(TRUE,TRUE,docode)
-        push bc
-        jp tostrue
-
-;C FALSE
-    head(FALSE,FALSE,docode)
-        push bc
-        jp tosfalse
 
 ;C   UNUSED  ( -- u )  return unused space in data area
     head(UNUSED,UNUSED,docolon)
@@ -808,7 +798,7 @@ dnl ;       SP decremented before storing.
 dnl ;    head_utils(SLASHSTACK,``/STACK'',docolon)
 SLASHSTACK:
         call docolon
-        DW TWODUP,lit,0,FILL
+        DW TWODUP,ZERO,FILL
         DW OVER,PLUS
         DW SWOP,TWODUP,CELLPLUS
         DW STORE,STORE
@@ -949,7 +939,7 @@ STACKSET0:
         DW DUP,TOR,CELLPLUS,FETCH
         DW OVER,CELLS,MINUS
         DW DUP,TOR
-        DW SWOP,lit,0,xdo
+        DW SWOP,ZERO,xdo
 STACKSET1:
         DW TWODUP,STORE,CELLPLUS,NIP
         DW xloop,STACKSET1
@@ -981,7 +971,7 @@ STACKGET:
         DW DUP,STACKDEPTH
         DW DUP,qbranch,STACKGET2
         DW TOR,CELLPLUS,FETCH,CELLMINUS,RFETCH
-        DW lit,0,xdo
+        DW ZERO,xdo
 STACKGET1:
         DW DUP,II,CELLS,MINUS,FETCH
         DW SWOP
@@ -1016,7 +1006,7 @@ STACKGET2:
 ;    0 FILL
 ;    ;
     head(ERASE,ERASE,docolon)
-        dw lit,0,FILL
+        dw ZERO,FILL
         dw EXIT
 
 ;C BLANKS       ( a-addr u --   fill with spaces )
@@ -1048,7 +1038,7 @@ DDOTR1:
 ;Z U.R         ( u width --   right align )
 ;   0 SWAP D.R ;     ( quick convert to double )
     head(UDOTR,U.R,docolon)
-        dw lit,0,SWOP,DDOTR
+        dw ZERO,SWOP,DDOTR
         dw EXIT
 
 dnl ;Z (D.W)         ( d width --   width with leading 0's )
@@ -1058,7 +1048,7 @@ dnl         call docolon
 dnl         dw ONEMINUS,DUP,lit,1,LESS,qbranch,XDDOTW1
 dnl         dw DROP,lit,1
 dnl XDDOTW1:
-dnl         dw LESSNUM,lit,0,xdo
+dnl         dw LESSNUM,ZERO,xdo
 dnl XDDOTW2:
 dnl         dw NUM,xloop,XDDOTW2
 dnl         dw NUMS,NUMGREATER
@@ -1081,7 +1071,7 @@ dnl ;Z (U.W)        ( u width --   width with leading 0's )
 dnl ;    0 SWAP (D.W) ;
 dnl XUDOTW:
 dnl         call docolon
-dnl         dw lit,0,SWOP,XDDOTW
+dnl         dw ZERO,SWOP,XDDOTW
 dnl         dw EXIT
 dnl 
 dnl ;Z U.W         ( u width --   width with leading 0's )
@@ -1134,7 +1124,7 @@ SECTION code_16k
 ; of the system.
 ;   HERE  0 , ;
         head(WORDLIST,WORDLIST,docolon)
-            dw HERE,lit,0,COMMA
+            dw HERE,ZERO,COMMA
             dw EXIT
 
 ;: GET-ORDER  ( -- wid1 .. widn n )
@@ -1165,7 +1155,7 @@ SETORDER1:
             dw TOR,GET_ORDER,RFROM
             dw TWODUP,STORE
             dw SWOP,DUP,qbranch,SAVEORDER1
-            dw lit,0,xdo
+            dw ZERO,xdo
 SAVEORDER2:
             dw CELLPLUS,DUP,TOR,STORE,RFROM
             dw xloop,SAVEORDER2
@@ -1188,7 +1178,7 @@ SAVEORDER3:
             dw DUP,FETCH,DUP,TOR
             dw SWOP,OVER,CELLS,PLUS,SWOP
             dw DUP,qbranch,RESTOREORDER1
-            dw lit,0,xdo
+            dw ZERO,xdo
 RESTOREORDER2:
             dw DUP,TOR,FETCH,RFROM,lit,1,CELLS,MINUS
             dw xloop,RESTOREORDER2
@@ -1353,7 +1343,7 @@ FINDNG1:
 ;    DOES>  @ WORDLISTS TOSTACK
 ;  ;
     head(VOCABULARY,VOCABULARY,docolon)
-        dw VOCAB_WORDLIST,WIDTONFA,COMMA,lit,0,CCOMMA
+        dw VOCAB_WORDLIST,WIDTONFA,COMMA,ZERO,CCOMMA
         dw HERE,VOCAB_WORDLIST,WIDTONFASTORE
         dw BL,WORD,CFETCH,ONEPLUS,ALLOT
         dw lit,docreate,COMMACF
@@ -1468,7 +1458,7 @@ roll_end:
 
 ; : CASE ( -- 0 ) 0 >L ; IMMEDIATE
     immed(CASE,CASE,docolon)
-        DW lit,0,TOL,EXIT
+        DW ZERO,TOL,EXIT
 
 ; : OF ( dest? -- orig )
 ;     POSTPONE OVER POSTPONE =
@@ -1543,17 +1533,17 @@ DEFC BLOCK_FIRST = 0xE000
 ;    DROP  0 BLKCTX_IDX !   0 BLKCTX_CURR ! ;
 SLASHBLKCTX:
         call docolon
-        dw lit,BLKCTX_PTR,BLKCTXNUM,lit,0,xdo
+        dw lit,BLKCTX_PTR,BLKCTXNUM,ZERO,xdo
 SLASHBLKCTX1:
         dw lit,0xffff,OVER,BLKCTXTOBLOCK,STORE
         dw lit,0xffff,OVER,BLKCTXTOSLICE,STORE
-        dw lit,0x0000,OVER,BLKCTXTOBUFFER,STORE
-        dw lit,0x0000,OVER,BLKCTXTOFLAGS,STORE
+        dw ZERO,OVER,BLKCTXTOBUFFER,STORE
+        dw ZERO,OVER,BLKCTXTOFLAGS,STORE
         dw BLKCTXSIZE,PLUS
         dw xloop,SLASHBLKCTX1
         dw DROP
-        dw lit,0,lit,BLKCTX_IDX,STORE
-        dw lit,0,lit,BLKCTX_CURR,STORE
+        dw ZERO,lit,BLKCTX_IDX,STORE
+        dw ZERO,lit,BLKCTX_CURR,STORE
         dw EXIT
 
 ;Z BLKCTX>SLICE  ( ctx -- a-addr' )  get address of slice-id 
@@ -1639,7 +1629,7 @@ BLKCTX_NEXT:
 ;    2DROP DROP 0   ;
 BLKCTX_FIND:
         call docolon
-        dw lit,BLKCTX_PTR,BLKCTXNUM,lit,0,xdo
+        dw lit,BLKCTX_PTR,BLKCTXNUM,ZERO,xdo
 BLKCTXF1:
         dw TOR
         dw TWODUP
@@ -1686,7 +1676,7 @@ BLKCTXG1:
 ;    LOOP   2DROP  ;
 BLKCTX_MAP:
         call docolon
-        dw lit,BLKCTX_PTR,BLKCTXNUM,lit,0,xdo
+        dw lit,BLKCTX_PTR,BLKCTXNUM,ZERO,xdo
 BLKCTXMAP1:
         dw TOR
         dw DUP
@@ -1867,7 +1857,7 @@ EXTERN cflash_identify
         dw XSQUOTE
         db 9,"NO CFLASH"
         dw TYPE
-        dw lit,0
+        dw ZERO
         dw EXIT
 
 SLASHCFLASH1:
@@ -1980,7 +1970,7 @@ BLOCK_READWRITE:
         dw RFETCH,BLKCTXTOSLICE,FETCH
         dw RFETCH,BLKCTXTOBLOCK,FETCH
         dw RFETCH,BLKCTXTOBUFFER,FETCH
-        dw lit,0,RFETCH,BLKCTXTOFLAGS,STORE
+        dw ZERO,RFETCH,BLKCTXTOFLAGS,STORE
         dw RFROM,DROP,RFROM
         dw qbranch,BLOCK_READWRITE1
         dw BLOCK_WRITE,branch,BLOCK_READWRITE2
@@ -2026,7 +2016,7 @@ XBUFFER1:
     head(BLOCK,BLOCK,docolon)
         dw XBUFFER
         dw DUP,BLKCTXTOFLAGS,FETCH,lit,1,EQUAL,qbranch,BLOCK1
-        dw DUP,lit,0,BLOCK_READWRITE
+        dw DUP,ZERO,BLOCK_READWRITE
 BLOCK1:
         dw BLKCTXTOBUFFER,FETCH
         dw EXIT
@@ -2061,7 +2051,7 @@ XFLUSH:
         call docolon
         dw DUP,BLKCTXTOFLAGS,FETCH,TRUE,EQUAL,qbranch,FLUSH1
         dw DUP,TRUE,BLOCK_READWRITE
-        dw BLKCTXTOFLAGS,lit,0,SWOP,STORE
+        dw BLKCTXTOFLAGS,ZERO,SWOP,STORE
         dw EXIT
 FLUSH1:
         dw DROP,EXIT
@@ -2100,7 +2090,7 @@ LOAD_REFILL:
         dw BLK,FETCH,BLKLIMIT,ULESS,qbranch,LOAD_REFILL1
         dw lit,1,BLK,PLUSSTORE
         dw BLK,FETCH,BLOCK,B_BLK,TICKSOURCE,TWOSTORE
-        dw lit,0,TOIN,STORE
+        dw ZERO,TOIN,STORE
         dw TRUE,EXIT
 
 LOAD_REFILL1:
@@ -2118,7 +2108,7 @@ LOAD_REFILL1:
         dw SAVE_INPUT,NTOR
         dw DUP,BLK,STORE
         dw BLOCK,B_BLK,TICKSOURCE,TWOSTORE
-        dw lit,0,TOIN,STORE
+        dw ZERO,TOIN,STORE
         dw INTERPRET
         dw NRFROM,RESTORE_INPUT,DROP
         dw EXIT
@@ -2236,7 +2226,7 @@ CURRBLK1:
 INC_BLOCK:
     call docolon
     DW lit,1,lit,blk_curr,PLUSSTORE
-    DW lit,0,lit,blk_offset,STORE
+    DW ZERO,lit,blk_offset,STORE
     DW CURRENT_BLOCK
     DW EXIT
 
@@ -2288,7 +2278,7 @@ XWRITE_CHAR:
         DW QDUP,qbranch,PUTCHARS2
 
         DW CURRENT_BLOCK
-        DW lit,0,xdo
+        DW ZERO,xdo
 PUTCHARS1:
         DW DUP,II,PLUS,CFETCH
         DW XWRITE_CHAR
@@ -2330,7 +2320,7 @@ XREAD_CHAR:
         DW DUP,TOR,QDUP,qbranch,GETCHARS2
 
         DW CURRENT_BLOCK
-        DW lit,0,xdo
+        DW ZERO,xdo
 GETCHARS1:
         DW XREAD_CHAR
         DW OVER,II,PLUS,CSTORE
@@ -2352,7 +2342,7 @@ GETCHARS2:
 ;   REPEAT
 ;   DROP 0 FALSE ( u f )  ;
     head_utils(GETLINE,GETLINE,docolon)
-        DW SWOP,lit,0,lit,chars_count,STORE
+        DW SWOP,ZERO,lit,chars_count,STORE
 GETLINE1:
         DW OVER,lit,chars_count,FETCH,NOTEQUAL,qbranch,GETLINE2
         DW GETCH
@@ -2442,7 +2432,7 @@ TYPS5:  DW EXIT
 ;Z  (LIST)            --    runtime for list screen
 ;       L/B 0 DO I 2 .R SPACE I LL LOOP    ;
     head_utils(XLIST,(LIST),docolon)
-        dw L_B,lit,0,xdo
+        dw L_B,ZERO,xdo
 XLIST1:
         dw II,lit,2,DOTR,SPACE,II,LL,xloop,XLIST1
         dw EXIT
@@ -2465,7 +2455,7 @@ XLIST1:
 INDEX1:
         dw II,lit,5,DOTR,SPACE
         dw II,DUP,SCR,STORE,BLOCK,DROP
-        dw lit,0,LL,xloop,INDEX1
+        dw ZERO,LL,xloop,INDEX1
         dw EXIT
 
 ;Z WIPE     ( n -- erase block n )
@@ -2577,7 +2567,7 @@ defc SNAPSHOT_RST_LEN = 128-24
 ;     WRITE-BLKFILE
 ;     (CLOSE-BLKFILE)    ;
     head(BSAVE,BSAVE,docolon)
-        dw lit,0,BEGIN_BLKFILE
+        dw ZERO,BEGIN_BLKFILE
         dw PUTCHARS
         dw END_BLKFILE,TWODROP
         dw EXIT
@@ -2588,7 +2578,7 @@ defc SNAPSHOT_RST_LEN = 128-24
 ;     READ-BLKFILE,DROP
 ;     (CLOSE-BLKFILE)  ;
     head(BLOAD,BLOAD,docolon)
-        dw lit,0,BEGIN_BLKFILE
+        dw ZERO,BEGIN_BLKFILE
         dw GETCHARS,DROP
         dw END_BLKFILE,TWODROP
         dw EXIT
@@ -2864,7 +2854,7 @@ dnl ;   then
 SET_BASE:
         call docolon
         dw OVER,CFETCH,lit,'#',MINUS,DUP
-        dw lit,0,lit,4,WITHIN,qbranch,SET_BASE1
+        dw ZERO,lit,4,WITHIN,qbranch,SET_BASE1
         dw lit,num_bases,PLUS,CFETCH,BASE,STORE
         dw lit,1,SLASHSTRING
         dw branch,SET_BASEX
@@ -2926,7 +2916,7 @@ XREC_NUMBER:
         call docolon
         DW BASE,FETCH,TOR
         DW BASE_AND_SIGNQ,TOR
-        DW TOR,TOR,lit,0,DUP,RFROM,RFROM,TONUMBER
+        DW TOR,TOR,ZERO,DUP,RFROM,RFROM,TONUMBER
         DW RFROM,RFROM,BASE,STORE
         DW EXIT
 
@@ -3094,7 +3084,7 @@ INTRP_NG9: DW CHECK_SP,DROP
 XREFILL_16K:
         call docolon
         dw SOURCE_ID
-        dw lit,0,OVER,EQUAL,qbranch,XREFILL16K2
+        dw ZERO,OVER,EQUAL,qbranch,XREFILL16K2
 
         dw DROP,BLK,FETCH,qbranch,XREFILL16K3
         dw LOAD_REFILL,EXIT
@@ -3228,9 +3218,9 @@ XINIT1:
        dw S0,SPSTORE
        dw R0,RPSTORE
        dw L0,LP,STORE
-       dw lit,0,STATE,STORE
-       dw lit,0,HANDLER,STORE
-       dw lit,0,BLK,STORE
+       dw ZERO,STATE,STORE
+       dw ZERO,HANDLER,STORE
+       dw ZERO,BLK,STORE
        dw lit,XWAKE,U0,STORE
        dw ENTRY,FETCH,EXECUTE
        dw lit,XSLEEP,U0,STORE
@@ -3295,7 +3285,7 @@ SLASH16KROM:
         DB 7,"16K ROM"
         DW TYPE,CR
         DW SLASHCFLASH
-        DW CF_DRIVE_ID,lit,0,CF_SLICE_ID,SLASHSLICE
+        DW CF_DRIVE_ID,ZERO,CF_SLICE_ID,SLASHSLICE
         DW CF_SLICE_ID,SELECT
         dw EXIT
 

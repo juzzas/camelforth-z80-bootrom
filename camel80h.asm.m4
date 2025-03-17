@@ -578,7 +578,7 @@ SECTION code
 ;Z UD/MOD   ud1 u2 -- u3 ud4   32/16->32 divide
 ;   >R 0 R@ UM/MOD  ROT ROT R> UM/MOD ROT ;
     head(UDSLASHMOD,UD/MOD,docolon)
-        DW TOR,lit,0,RFETCH,UMSLASHMOD,ROT,ROT
+        DW TOR,ZERO,RFETCH,UMSLASHMOD,ROT,ROT
         DW RFROM,UMSLASHMOD,ROT,EXIT
 
 ;Z UD*      ud1 u2 -- ud3      32*16->32 multiply
@@ -630,7 +630,7 @@ SIGN1:  DW EXIT
 ;Z (U.)    u -- c-addr +n   u unsigned to counted string
 ;   <# 0 #S #> ;
     head(XUDOT,(U.),docolon)
-        DW LESSNUM,lit,0,NUMS,NUMGREATER
+        DW LESSNUM,ZERO,NUMS,NUMGREATER
         DW EXIT
 
 ;C U.    u --               display u unsigned
@@ -641,7 +641,7 @@ SIGN1:  DW EXIT
 ;Z (.)   n -- c-addr +n     n signed to counted string
 ;   <# DUP ABS 0 #S ROT SIGN #> ;
     head(XDOT,(.),docolon)
-        DW LESSNUM,DUP,ABS,lit,0,NUMS
+        DW LESSNUM,DUP,ABS,ZERO,NUMS
         DW ROT,SIGN,NUMGREATER,EXIT
 
 ;C .     n --           display n signed
@@ -872,9 +872,9 @@ TONUM3: DW EXIT
 ;       IF NEGATE THEN  -1  -- n -1   (ok)
 ;   THEN ;
     head(QNUMBER,?NUMBER,docolon)
-        DW DUP,lit,0,DUP,ROT,COUNT
+        DW DUP,ZERO,DUP,ROT,COUNT
         DW QSIGN,TOR,TONUMBER,qbranch,QNUM1
-        DW RFROM,TWODROP,TWODROP,lit,0
+        DW RFROM,TWODROP,TWODROP,FALSE
         DW branch,QNUM3
 QNUM1:  DW TWODROP,NIP,RFROM,qbranch,QNUM2
         DW NEGATE
@@ -950,7 +950,7 @@ INTER9: DW DROP,CHECK_SP,EXIT
 XREFILL8K:
         call docolon
         DW TIB,DUP,TIBSIZE,ACCEPT,TICKSOURCE,TWOSTORE
-        DW lit,0,TOIN,STORE,SPACE,lit,-1
+        DW ZERO,TOIN,STORE,SPACE,lit,-1
         DW EXIT
 
 XREFILL0:
@@ -975,7 +975,7 @@ XREFILL0:
         DW lit,65535,TICKSOURCE_ID,STORE
         DW TICKSOURCE,TWOFETCH,TOR,TOR
         DW TOIN,FETCH,TOR
-        DW TICKSOURCE,TWOSTORE,lit,0,TOIN,STORE
+        DW TICKSOURCE,TWOSTORE,ZERO,TOIN,STORE
         DW BLK,FETCH,TOR
         DW SLICE_ID,FETCH,TOR
         DW INTERPRET
@@ -1006,7 +1006,7 @@ XREFILL0:
         DW RFROM,TOIN,STORE,RFROM,RFROM
         DW TICKSOURCE,TWOSTORE
         DW RFROM,TICKSOURCE_ID,STORE
-        DW lit,0,EXIT
+        DW ZERO,EXIT
 
 
 ;C THROW ( ??? exception# -- ??? exception# )
@@ -1058,10 +1058,10 @@ CHECK_SP1:
     head(QUIT,QUIT,docolon)
         DW S0,SPSTORE
         DW L0,LP,STORE
-        DW R0,RPSTORE,lit,0,STATE,STORE
-        DW lit,0,HANDLER,STORE
-        DW lit,0,TICKSOURCE_ID,STORE
-        DW lit,0,BLK,STORE
+        DW R0,RPSTORE,ZERO,STATE,STORE
+        DW ZERO,HANDLER,STORE
+        DW ZERO,TICKSOURCE_ID,STORE
+        DW ZERO,BLK,STORE
         DW lit,XREFILL0,REFILLVEC,STORE
 
 QUIT1:  DW REFILL
@@ -1070,7 +1070,7 @@ QUIT1:  DW REFILL
         DW lit,INTERPRET,CATCH
 
         ; case 0
-        DW DUP,lit,0,EQUAL,qbranch,QUIT2
+        DW DUP,ZERO,EQUAL,qbranch,QUIT2
         DW DROP,STATE,FETCH,ZEROEQUAL,qbranch,QUIT1a
         DW XSQUOTE
         DB 3," OK"
@@ -1103,8 +1103,8 @@ QUIT4:
         DW QUIT
 
 QUITX:
-        DW lit,0,TICKSOURCE_ID,STORE
-        DW lit,0,BLK,STORE
+        DW ZERO,TICKSOURCE_ID,STORE
+        DW ZERO,BLK,STORE
         DW branch,QUIT1
 
 
@@ -1161,7 +1161,7 @@ TICK1:
 ;   BL WORD C@ 1+ ALLOT         name field
 ;   docreate ,CF                code field
     head(CREATE,CREATE,docolon)
-        DW CURRENT,FETCH,WIDTONFA,COMMA,lit,0,CCOMMA
+        DW CURRENT,FETCH,WIDTONFA,COMMA,ZERO,CCOMMA
         DW HERE,CURRENT,FETCH,WIDTONFASTORE
         DW BL,WORD,CFETCH,ONEPLUS,ALLOT
         DW lit,docreate,COMMACF,EXIT
@@ -1189,7 +1189,7 @@ TICK1:
 ;C [        --      enter interpretive state
 ;   0 STATE ! ; IMMEDIATE
     immed(LEFTBRACKET,[,docolon)
-        DW lit,0,STATE,STORE,EXIT
+        DW ZERO,STATE,STORE,EXIT
 
 ;C ]        --      enter compiling state
 ;   -1 STATE ! ;
@@ -1341,14 +1341,14 @@ POST2:  DW EXIT
 DO_COMMON:
         call docolon
         DW lit,xdo,COMMAXT,HERE
-        DW lit,0,TOL,EXIT
+        DW ZERO,TOL,EXIT
 
 ;C DO       -- 0 adrs   L: -- 0
 ;   0           flag to distiguish this from ?DO
 ;   ['] xdo ,XT   HERE     target for bwd branch
 ;   0 >L ; IMMEDIATE           marker for LEAVEs
     immed(DO,DO,docolon)
-        DW lit,0
+        DW ZERO
         DW DO_COMMON,EXIT
 
 ;Z ENDLOOP  f adrs xt --   L: 0 a1 a2 .. aN --
@@ -1391,6 +1391,18 @@ LOOP3:  DW EXIT
 
 ; OTHER OPERATIONS ==============================
 
+;C TRUE
+    head(TRUE,TRUE,docode)
+        push bc
+        jp tostrue
+
+;C FALSE
+    head(FALSE,FALSE,docode)
+ZERO:
+        push bc
+        jp tosfalse
+
+
 ;X WITHIN   n1|u1 n2|u2 n3|u3 -- f   n2<=n1<n3?
 ;  OVER - >R - R> U< ;          per ANS document
     head(WITHIN,WITHIN,docolon)
@@ -1419,14 +1431,14 @@ MOVE2:  DW EXIT
 ;      ENVIRONMENT-WORDLIST SEARCH-WORDLIST
 ;      IF EXECUTE TRUE ELSE FALSE THEN
 ;   ELSE
-;   2DROP 0 THEN ;       the minimal definition!
+;   2DROP FALSE THEN ;       the minimal definition!
     head(ENVIRONMENTQ,ENVIRONMENT?,docolon)
         DW ROM16KQ,qbranch,ENV2
         DW ENVIRONMENT_WORDLIST,SEARCH_WORDLIST,qbranch,ENV1
         DW EXECUTE,TRUE,EXIT
 
 ENV1:   DW FALSE,EXIT
-ENV2:   DW TWODROP,lit,0,EXIT
+ENV2:   DW TWODROP,FALSE,EXIT
 
 ; UTILITY WORDS AND STARTUP =====================
 HIDDENQ: ;  ( nfa -- nfa f )
@@ -1521,7 +1533,7 @@ DOTS2:  DW EXIT
 ;       ROT 0< IF DNEGATE THEN
     head(MSTARSLASH,M*/,docolon)
         DW ABS,TOR,TWODUP,XOR,SWOP,ABS,TOR,ROT,ROT
-        DW DABS,SWOP,RFETCH,UMSTAR,ROT,RFROM,UMSTAR,ROT,lit,0,DPLUS
+        DW DABS,SWOP,RFETCH,UMSTAR,ROT,RFROM,UMSTAR,ROT,ZERO,DPLUS
         DW RFETCH,UMSLASHMOD,ROT,ROT,RFROM,UMSLASHMOD,NIP,SWOP
         DW ROT,ZEROLESS,qbranch,MSTARSLASH1
         DW DNEGATE
@@ -1563,7 +1575,7 @@ DOTSIGNON:
         DW QUIT
 
 COLD1:  DW lit,lastword8k,LATEST,STORE
-        DW lit,0,FLAG_ROM16K,STORE
+        DW FALSE,FLAG_ROM16K,STORE
         DW lit,default_xt_start,lit,default_xt,lit,default_xt_len,MOVE
         DW QUIT
 

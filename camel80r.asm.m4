@@ -189,7 +189,7 @@ DUMP1:
         dw XSQUOTE
         db 4,0x1b,"[2J"
         dw TYPE
-        dw lit,0,lit,0,AT_XY
+        dw ZERO,ZERO,AT_XY
         dw EXIT
 
 
@@ -262,7 +262,7 @@ IHXWORD:
 ;    LOOP ;
 IHXRECSTORE:
         call docolon
-        DW ROT,lit,0,xdo
+        DW ROT,ZERO,xdo
 IHXRECSTORE1:
         DW IHXBYTE
         DW TOR
@@ -314,9 +314,9 @@ IHXCRC:
 XIHEXQ:
         call docolon
         DW DROP
-        DW lit,0,IHXCRC,CSTORE
+        DW ZERO,IHXCRC,CSTORE
         DW DUP,CFETCH,lit,58,NOTEQUAL,qbranch,XIHEXQ1
-        DW DROP,lit,0,EXIT
+        DW DROP,ZERO,EXIT
 
 XIHEXQ1:
         DW CHARPLUS
@@ -333,7 +333,7 @@ XIHEXQ2:
         DW lit,1,EQUAL,qbranch,XIHEXQ2a
         DW lit,1,EXIT
 XIHEXQ2a:
-        DW lit,0,EXIT
+        DW ZERO,EXIT
 
 XIHEXQ3:
         DW QIHXCRC,qbranch,XIHEXQ4
@@ -342,7 +342,7 @@ XIHEXQ3:
         DW PAD,CELLPLUS,FETCH,lit,-1
         DW EXIT
 XIHEXQ4:
-        DW lit,0,EXIT
+        DW ZERO,EXIT
 
 
 ;Z IHEX?
@@ -385,8 +385,8 @@ IHEXCOMMA:
 
 XHEXLOAD:
         call docolon
-        DW lit,0,IHEX_START,STORE
-        DW lit,0,IHEX_LENGTH,STORE
+        DW ZERO,IHEX_START,STORE
+        DW ZERO,IHEX_LENGTH,STORE
         DW EXIT
 
 XSEMIHEXLOAD:
@@ -409,7 +409,7 @@ HEXLOAD1:
 ;    IHEX_START @
 ;    IHEX_LENGTH @   ;
     head(SEMIHEXLOAD,;HEXLOAD,docolon)
-        DW lit,0,IHEX_FLAG,STORE
+        DW ZERO,IHEX_FLAG,STORE
         DW STATE,FETCH,qbranch,SEMIHEXLOAD1
         DW lit,XSEMIHEXLOAD,COMMAXT,EXIT
 SEMIHEXLOAD1:
