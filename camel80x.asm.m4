@@ -229,9 +229,8 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
         next
 
 ;C   PAUSE ( -- )   call idle routine
-    head(PAUSE,PAUSE,docolon)
-        DW PAUSEVEC,FETCH,EXECUTE
-        DW EXIT
+    head(PAUSE,PAUSE,dodeferv)
+        DW xt_pause
 
 ;C TRUE
     head(TRUE,TRUE,docode)

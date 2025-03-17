@@ -763,9 +763,8 @@ PARSE1: DW RFROM,RFROM,ROT,MINUS,TOIN,PLUSSTORE
 ;       SWAP IMMED?            -- xt iflag
 ;       0= 1 OR                -- xt 1/-1
 ;   THEN ;
-    head(FIND,FIND,docolon)
-        DW lit,xt_find,FETCH,EXECUTE
-        DW EXIT
+    head(FIND,FIND,dodeferv)
+        DW xt_find
 
 FIND_8K:
         call docolon
@@ -912,9 +911,8 @@ INTERPIHEX2:
 ;           THEN
 ;       THEN
 ;   REPEAT DROP ;
-    head(INTERPRET,INTERPRET,docolon)
-        DW lit,xt_interpret,FETCH,EXECUTE
-        DW EXIT
+    head(INTERPRET,INTERPRET,dodeferv)
+        DW xt_interpret
 
 INTERPRET_8K:
         call docolon
@@ -949,10 +947,9 @@ XREFILL0:
 
 
 ;X REFILL      -- f  refill input buffer
-;   ixt_refill @ EXECUTE   ;
-    head(REFILL,REFILL,docolon)
-        DW lit,xt_refill,FETCH,EXECUTE
-        DW EXIT
+;   xt_refill @ EXECUTE   ;
+    head(REFILL,REFILL,dodeferv)
+        DW xt_refill
 
 ;C EVALUATE  i*x c-addr u -- j*x  interpret string
 ;   SOURCE-ID R>
@@ -1241,9 +1238,8 @@ dnl ; be put on the stack.  (All xt's are one cell.)
 ;       ['] ,XT ,XT         to current definition
 ;   ELSE  ,XT      `immed': compile into cur. def'n
 ;   THEN ; IMMEDIATE
-    immed(POSTPONE,POSTPONE,docolon)
-        DW lit,xt_postpone,FETCH,EXECUTE
-        DW EXIT
+    immed(POSTPONE,POSTPONE,dodeferv)
+        DW xt_postpone
 
 POSTPONE_8K:
         call docolon
@@ -1463,9 +1459,8 @@ WORDS_8K:
 
 ;X WORDS    --          list all words in current wordlist.
 ;   xt_words @ EXECUTE ;
-    head(WORDS,WORDS,docolon)
-        DW lit,xt_words,FETCH,EXECUTE
-        DW EXIT
+    head(WORDS,WORDS,dodeferv)
+        DW xt_words
 
 ;X .S      --           print stack contents
 ;   SP@ S0 - IF
