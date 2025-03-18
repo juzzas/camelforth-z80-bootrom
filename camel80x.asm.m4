@@ -1038,10 +1038,10 @@ STACKGET2:
         dw ZERO,FILL
         dw EXIT
 
-;C BLANKS       ( a-addr u --   fill with spaces )
+;C BLANK       ( a-addr u --   fill with spaces )
 ;    BL FILL
 ;    ;
-    head(BLANKS,BLANKS,docolon)
+    head(BLANK,BLANK,docolon)
         dw lit,32,FILL
         dw EXIT
 
@@ -2488,10 +2488,10 @@ INDEX1:
         dw EXIT
 
 ;Z WIPE     ( n -- erase block n )
-;    BUFFER 1024 BLANKS
+;    BUFFER 1024 BLANK
 ;    UPDATE ;
     head(WIPE,WIPE,docolon)
-        dw BUFFER,lit,1024,BLANKS
+        dw BUFFER,lit,1024,BLANK
         dw UPDATE
         dw EXIT
 
