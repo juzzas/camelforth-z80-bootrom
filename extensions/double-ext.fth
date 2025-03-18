@@ -1,5 +1,5 @@
 \ Additional double number definitions
-CR .( Loading double number extensions... ) CR
+CR .( Loading double number extensions... )
 1 2 +THRU
 
 GET-CURRENT   ENVIRONMENT-WORDLIST SET-CURRENT
@@ -19,10 +19,8 @@ SET-CURRENT
 : 2VALUE CREATE , ,
    DOES> TO-STATE @ IF 2!  FALSE TO-STATE ! ELSE 2@ THEN  ;
 
-: D>  2SWAP D< ;
-: D>S  DROP ;  ( d -- s )
 : 2ROT  5 ROLL 5 ROLL ;  ( d1 d2 d3 -- d2 d3 d1 )
-: D0<   NIP 32768 AND 0<> ;
+
 : DU<       \ ud1 ud2 -- flag
   ROT SWAP 2DUP U< IF
     2DROP 2DROP TRUE

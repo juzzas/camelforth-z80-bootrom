@@ -83,6 +83,7 @@ CR .( Loading additional double number definitions... )
 : D/ ( d n -- d )  S>D DD/ ;
 : D*/  ( d1 d2 d3 -- d )
     2>R DD* 2R> DD/  ;
+: D>  2SWAP D< ;
 
 : DLSHIFT BEGIN DUP WHILE >R D2* R> 1- REPEAT DROP ;
 : DRSHIFT BEGIN DUP WHILE >R D2/ R> 1- REPEAT DROP ; ( d u -- d )

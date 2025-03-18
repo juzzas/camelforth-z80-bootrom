@@ -182,6 +182,11 @@ UINIT:
     head(STOD,S>D,docolon)
         dw DUP,ZEROLESS,EXIT
 
+;C D>S   ( d -- s )     double -> single prec.
+;   DROP ;
+    head(DTOS,D>S,docolon)
+        dw DROP,EXIT
+
 ;Z ?NEGATE  n1 n2 -- n3  negate n1 if n2 negative
 ;   0< IF NEGATE THEN ;        ...a common factor
     head(QNEGATE,?NEGATE,docolon)

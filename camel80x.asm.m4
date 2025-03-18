@@ -373,6 +373,9 @@ CQUOTE1:
         DW SWOP,MOVE
         DW EXIT
 
+; : D0<   NIP 32768 AND 0<> ;
+    head(DZEROLESS,D0<,docolon)
+        DW NIP,lit,32768,AND,ZERONOTEQUAL,EXIT
 
 ; RC2014 EXTENSION output ====================
 
