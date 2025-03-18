@@ -123,32 +123,15 @@ SLICE_ID:
     head(TICKSOURCE_ID,'SOURCE-ID,douser)
         dw 32
 
-;Z 'KEY      -- xt     if set, use XT as KEY destination
-;  34 USER KEYVEC
-KEYVEC:
+
+;Z 'REFILL      -- xt    if set, use XT as REFILL source
+;  34 USER REFILLVEC
+REFILLVEC:
         call douser
         dw 34
 
-;Z 'KEY?      -- xt     if set, use XT as KEY? destination
-;  36 USER KEY?VEC
-KEYQVEC:
-        call douser
-        dw 36
-
-;Z 'EMIT      -- xt     if set, use XT as EMIT destination
-;  38 USER EMITVEC
-EMITVEC:
-        call douser
-        dw 38
-
-;Z 'REFILL      -- xt    if set, use XT as REFILL source
-;  40 USER REFILLVEC
-REFILLVEC:
-        call douser
-        dw 40
-
-; 42 USER LINK
-; 44 USER STACKTOP
+; 36 USER LINK
+; 38 USER STACKTOP
 
 
 ;Z s0       -- a-addr     end of parameter stack
@@ -185,15 +168,12 @@ UINIT:
         DW NOOP         ; ENTRY
         DW 1            ; CURRENT                    30
         DW 0            ; 'SOURCE-ID
-        DW RX           ; 'KEY
-        DW RXQ          ; 'KEY?
-        DW TX           ; 'EMIT
-        DW XREFILL0     ; 'REFILL                    40
+        DW XREFILL0     ; 'REFILL                    34
 
 
 ;Z #init    -- n    #bytes of user area init data
     head(NINIT,``#INIT'',docon)
-        DW 46
+        DW 40
 
 ; ARITHMETIC OPERATORS ==========================
 
@@ -358,6 +338,11 @@ MIN1:   dw DROP,EXIT
 
 ; INPUT/OUTPUT ==================================
 
+;C   PAUSE ( -- )   call idle routine
+    head(PAUSE,PAUSE,dodeferv)
+        DW xt_pause
+
+
 ;C KEY    -- char       input character
 ;   BEGIN KEY? UNTIL
 ;   'KEY @ EXECUTE ;
@@ -365,21 +350,21 @@ MIN1:   dw DROP,EXIT
 KEY1:
         DW KEYQ
         DW qbranch,KEY1
-        dw KEYVEC,FETCH,EXECUTE
+        dw RX
         dw EXIT
 
 ;C KEY?   -- flag       input character available
 ;   'KEY? @ EXECUTE ;
     head(KEYQ,KEY?,docolon)
-        dw PAUSEVEC,FETCH,EXECUTE
-        dw KEYQVEC,FETCH,EXECUTE
+        dw PAUSE
+        dw RXQ
         dw EXIT
 
 ;C EMIT   char --        output character
 ;   'EMIT @ EXECUTE ;
     head(EMIT,EMIT,docolon)
-        ; dw PAUSEVEC,FETCH,EXECUTE
-        dw EMITVEC,FETCH,EXECUTE
+        ; dw PAUSE
+        dw TX
         dw EXIT
 
 

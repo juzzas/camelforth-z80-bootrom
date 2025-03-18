@@ -58,35 +58,20 @@ SECTION code_16k
     head(ENTRY,ENTRY,douser)
         dw 28
 
-;Z 'KEY      -- xt     if set, use XT as KEY destination
-;  34 USER 'KEY
-    head(TICKKEY,'KEY,docode)
-        jp KEYVEC
-
-;Z 'KEY?      -- xt     if set, use XT as KEY? destination
-;  36 USER 'KEY?
-    head(TICKKEYQ,'KEY?,docode)
-        jp KEYQVEC
-
-;Z 'EMIT      -- xt     if set, use XT as EMIT destination
-;  38 USER 'EMIT
-    head(TICKEMIT,'EMIT,docode)
-        jp EMITVEC
-
 ;Z 'REFILL      -- xt    if set, use XT as REFILL source
 ;   USER 'REFILL
     head(TICKREFILL,'REFILL,docode)
         jp REFILLVEC
 
 ;Z LINK        -- a-addr  link to following round-robin task
-;  42 USER LINK
+;  36 USER LINK
     head(LINK,LINK,douser)
-        dw 42
+        dw 36
 
 ;Z STACKTOP      -- a-addr  address of stored stack top for task
-;  44 USER STACKTOP
+;  38 USER STACKTOP
     head(STACKTOP,STACKTOP,douser)
-        dw 44
+        dw 38
 
 
 EXTERN intvec_ptr
@@ -227,10 +212,6 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
         pop hl
         pop bc
         next
-
-;C   PAUSE ( -- )   call idle routine
-    head(PAUSE,PAUSE,dodeferv)
-        DW xt_pause
 
 ;C   UNUSED  ( -- u )  return unused space in data area
     head(UNUSED,UNUSED,docolon)
