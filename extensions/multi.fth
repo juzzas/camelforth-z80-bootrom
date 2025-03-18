@@ -2,7 +2,7 @@
 
 CR .( Loading multi-tasking extension... )
 
-ONLY FORTH DEFINITIONS  ALSO UTILS
+ONLY FORTH DEFINITIONS  ALSO SYSTEM
 
 1 4 +THRU
 

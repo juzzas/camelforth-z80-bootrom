@@ -65,7 +65,7 @@ dnl ;     OVER +               ( addr addr+u )
 dnl ;     SWAP                 ( addr+u  addr )
 dnl ;     DO I DUP 16 CR (MEMDUMP) 16 +LOOP
 dnl ;     R> BASE ! ;
-     head_utils(MEMDUMP,MEMDUMP,docolon)
+     head(MEMDUMP,MEMDUMP,docolon)
          dw BASE,FETCH,TOR,HEX
          dw OVER,PLUS,SWOP
          dw xdo
