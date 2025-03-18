@@ -16,24 +16,24 @@ CR .( Starting Forth 2012 test suite... )
 
 \ Forth-2012 test suite   1 / 2
 
-\ .( Starting preliminary tests... ) CR  3015 TLOAD
-\ .( Starting core tests... ) CR         3027 TLOAD DECIMAL
-\ .( Starting coreplustests ) CR         3057 TLOAD
+\ CR .( Starting preliminary tests... )  3015 TLOAD
+\ CR .( Starting core tests... )         3027 TLOAD DECIMAL
+\ CR .( Starting coreplustests )         3057 TLOAD
 30 LOAD      \ load Tools
-.( Loading test utilities... ) CR      3072 TLOAD
-.( Loading error reporting... ) CR     3081 TLOAD
+CR .( Loading test utilities... )        3072 TLOAD
+CR .( Loading error reporting... )       3081 TLOAD
 300 LOAD     \ load Forth 2012 extenstions
-.( Starting core ext tests... ) CR     3087 TLOAD
-.( Starting block tests... ) CR        3117 TLOAD
-.( Starting double tests... ) CR       3144 TLOAD
-.( Starting exception tests... ) CR    3162 TLOAD
-.( Starting facility tests... ) CR     3168 TLOAD
-\ .( Starting file tests... ) CR         3174 TLOAD
-\ .( Starting locals tests... ) CR       3186 TLOAD
+CR .( Starting core ext tests... )       3087 TLOAD
+CR .( Starting block tests... )          3117 TLOAD
+CR .( Starting double tests... )         3144 TLOAD
+CR .( Starting exception tests... )      3162 TLOAD
+CR .( Starting facility tests... )       3168 TLOAD
+\ CR .( Starting file tests... )         3174 TLOAD
+\ CR .( Starting locals tests... )       3186 TLOAD
 2048 CONSTANT heap-size
 heap-size BUFFER: heap
 heap heap-size INIT-HEAP
-.( Starting memory tests... ) CR       3195 TLOAD
-.( Starting tools tests... ) CR        3204 TLOAD
-.( Starting searchorder tests... ) CR  3222 TLOAD
-.( Starting string tests... ) CR       3231 TLOAD
+CR .( Starting memory tests... )         3195 TLOAD
+CR .( Starting tools tests... )          3204 TLOAD
+CR .( Starting searchorder tests... )    3222 TLOAD
+CR .( Starting string tests... )         3231 TLOAD
