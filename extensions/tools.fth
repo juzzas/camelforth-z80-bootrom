@@ -35,6 +35,7 @@ SET-CURRENT
 
 VARIABLE ^see
 VARIABLE see-xt  \ current xt for SEE
+VARIABLE max-branch
 : see@    ( -- u )  ^see @ @ ;
 : seeC@    ( -- c )  ^see @ C@ ;
 : see@++  ( -- u )  see@  CELL ^see +! ;
@@ -43,14 +44,18 @@ VARIABLE see-xt  \ current xt for SEE
 : seedump ( -- )   ^see @ DUP  COUNT
    DUP 2 U.R ."  bytes: "
    BOUNDS ?DO I C@ 2 U.R SPACE LOOP C@ 1+ see+! ;
+: ?update-max-branch ( addr -- addr )
+   DUP max-branch @ MAX max-branch ! ;
 : (see-step)   ( -- f   where -1 is "continue" )
    CR ^see @   4 U.R  ." : " 
    see@++ DUP .ID CASE
-      ['] EXIT  OF FALSE ENDOF
+      ['] EXIT  OF ^see @ max-branch @ 1+ U<  ENDOF
       ['] (S")  OF seedump TRUE ENDOF
-      ['] ?branch  OF  see@++ 4 U.R TRUE ENDOF
-      ['] branch  OF ."  --> "  see@++ 4 U.R TRUE ENDOF
-      ['] LIT  OF  see@++ .ID TRUE ENDOF
+      ['] ?branch  OF ."  --> "  see@++ ?update-max-branch
+            4 U.R TRUE ENDOF
+      ['] branch  OF ."  --> "  see@++ ?update-max-branch 
+            4 U.R TRUE ENDOF
+      ['] LIT  OF  see@++ BL EMIT .ID TRUE ENDOF
       ['] (DOES>)  OF 3 see+! TRUE ENDOF
       DROP  TRUE
    ESAC ;
@@ -65,6 +70,7 @@ VARIABLE see-xt  \ current xt for SEE
 : OF-DODOES?  DUP 1+ @ 1+ @ DODOES = ;
 : (see-loop)  BEGIN (see-step)  0= UNTIL ;
 : (see)  ( xt -- )
+    0 max-branch !
     DUP see-xt !
     DUP 3 + ^see !  DUP ." WORD: " .ID
     CASE
