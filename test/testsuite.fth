@@ -1,5 +1,5 @@
 \ Forth-2012 test suite
-.( Starting Forth 2012 test suite... ) CR
+CR .( Starting Forth 2012 test suite... )
 
 150 LOAD     \ blkfile
 3006 LOAD     \ ttester

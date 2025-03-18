@@ -11,8 +11,8 @@
 \               INCORRECT RESULT: T{ 1 2 3 SWAP -> 1 2 2 }T OK
 \     T{ 1 2 3 SWAP -> 1 2 }T
 \          WRONG NUMBER OF RESULTS: T{ 1 2 3 SWAP -> 1 2 }T OK
-DECIMAL  FORTH DEFINITIONS   .( Loading ttester... )
-1 5 +THRU                    .( done )  CR
+DECIMAL  FORTH DEFINITIONS   CR .( Loading ttester... )
+1 5 +THRU
 
 ( ttester is based on the original tester suite by Hayes: 1/5  )
 VARIABLE ACTUAL-DEPTH

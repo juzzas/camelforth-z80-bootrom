@@ -1,9 +1,9 @@
 \ Forth 2012 Core extensions for CamelForth BootROM
 
-.( Loading core-ext definitions... ) CR
+CR .( Loading core-ext definitions... )
 
 ONLY FORTH DEFINITIONS
-1 12 +THRU
+1 10 +THRU
 
 
 
@@ -15,30 +15,12 @@ ONLY FORTH DEFINITIONS
 
 
 \ Forth 2012 Core extensions for CamelForth BootROM       1 / n
-: DEFER    ( "name" -- )      \  create a deferred word
-   CREATE ['] NOOP ,
-   DOES>
-   @ EXECUTE ;
-
-: DEFER!   ( xt2 xt1 -- )     \        store xt2 in xt1
-   >BODY ! ;
-
-: DEFER@   ( xt1 -- xt2 )     \        fetch xt2 from xt1
-   >BODY @ ;
-
-: IS       ( xt "name" -- )     \ define a deferred word
-   STATE @  IF  POSTPONE [']  POSTPONE DEFER!
-   ELSE  ' DEFER!  THEN ; IMMEDIATE
-
-\ Forth 2012 Core extensions for CamelForth BootROM       2 / n
 
 \ get the action of a deferred word
 : ACTION-OF  ( "name -- xt" )    
    STATE @  IF POSTPONE ['] POSTPONE DEFER@
    ELSE  ' DEFER@  THEN ; IMMEDIATE
 
-: 2NIP  2SWAP 2DROP  ;
-: 2ROT  5 ROLL  5 ROLL ;
 
 VARIABLE TO-STATE  FALSE TO-STATE !
 : TO TRUE TO-STATE ! ;
@@ -46,7 +28,9 @@ VARIABLE TO-STATE  FALSE TO-STATE !
    DOES> TO-STATE @ IF !  FALSE TO-STATE ! ELSE @ THEN  ;
 
 
-\ Forth 2012 Core extensions for CamelForth BootROM       3 / n
+
+
+\ Forth 2012 Core extensions for CamelForth BootROM       2 / n
 
 : EXTRACTNUM    ( c-addr len base -- c-addr' len' u )
 \ Extract a number in the given base from the start of the
@@ -78,7 +62,7 @@ CREATE ESCAPETABLE    \  -- addr
 
 
 
-\ Forth 2012 Core extensions for CamelForth BootROM       3 / n
+\ Forth 2012 Core extensions for CamelForth BootROM       4 / n
 : ADDESCAPE   \ caddr len dest -- caddr' len'
 \ Add an escape sequence to the counted string at dest,
 \ returning the remaining string.

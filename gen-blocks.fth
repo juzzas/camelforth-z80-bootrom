@@ -12,14 +12,14 @@ OPEN:  build/cf-image.blk
 180 BLOCKS: extensions/asmz80.fth
 
 300 BLOCKS: extensions/forth2012.fth
-+BLOCKS: extensions/string.fth
-+BLOCKS: extensions/core-ext.fth
-+BLOCKS: extensions/double-ext.fth
-+BLOCKS: extensions/tools-ext.fth
-+BLOCKS: extensions/facility-ext.fth
-+BLOCKS: extensions/string-ext.fth
-+BLOCKS: extensions/dyn-memory.fth
-+BLOCKS: extensions/search.fth
+330 BLOCKS: extensions/string.fth
+360 BLOCKS: extensions/core-ext.fth
+390 BLOCKS: extensions/double-ext.fth
+420 BLOCKS: extensions/tools-ext.fth
+450 BLOCKS: extensions/facility-ext.fth
+480 BLOCKS: extensions/string-ext.fth
+510 BLOCKS: extensions/dyn-memory.fth
+540 BLOCKS: extensions/search.fth
 
 
 600 BLOCKS: extensions/double.fth

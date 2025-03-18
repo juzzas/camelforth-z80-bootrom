@@ -1,5 +1,5 @@
-\ forth2012 string wordlist                          jps  0 / 2
-.( Loading string definitions... ) CR
+\ forth2012 string wordlist                          jps  0 / 4
+CR .( Loading string definitions... )
 FORTH DEFINITIONS
 1 4 +THRU
 
@@ -14,7 +14,7 @@ FORTH DEFINITIONS
 
 
 
-   \ forth2012 string wordlist -- COMPARE          jps  1 / 2
+   \ forth2012 string wordlist -- COMPARE          jps  1 / 4
 : COMPARE   ( caddr1 u1 caddr2 u2 -- flag )
   ROT SWAP                      \ c-addr1 c-addr2 u1 u2
   2DUP - >R MIN                 \ c-addr1 c-addr2 minlen --
@@ -30,7 +30,7 @@ FORTH DEFINITIONS
 
 
 
-   \ forth2012 string wordlist -- (SEARCH)         jps  2 / 2
+   \ forth2012 string wordlist -- (SEARCH)         jps  2 / 4
 : (SEARCH)  ( caddr1 u1 caddr2 u2 -- caddr3 u3 flag )
    2OVER   BEGIN 
       DUP
@@ -46,7 +46,7 @@ FORTH DEFINITIONS
 
 
 
-   \ forth2012 string wordlist -- SEARCH           jps  3 / 2
+   \ forth2012 string wordlist -- SEARCH           jps  3 / 4
 : SEARCH  ( caddr1 u1 caddr2 u2 -- caddr3 u3 flag )
   2 PICK OVER < IF      \ Is $1 shorter than $2?
     2DROP FALSE EXIT    \ Yes - $2 *can't* be in $1.
@@ -62,14 +62,10 @@ FORTH DEFINITIONS
 
 
 
-   \ forth2012 string wordlist -- -TRAILING, BLANK jps  4 / 3
+   \ forth2012 string wordlist -- -TRAILING, BLANK jps  4 / 4
 : -TRAILING     \ c-addr u1 -- c-addr u2
     DUP 0 ?DO
         2DUP + 1 - C@  DUP BL <> SWAP $09 <> AND IF LEAVE THEN
         1-
     LOOP ;
 
-\ If u is greater than zero, store the character value for
-\ space in u consecutive character positions beginning at
-\ c-addr.
-: BLANK  ( c-addr u -- )   BL FILL ;

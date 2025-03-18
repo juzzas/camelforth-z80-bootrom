@@ -429,7 +429,12 @@ dnl         dw EXIT
 ;    >BODY ! ;
     head(DEFERSTORE,DEFER!,docolon)
         DW TOBODY,STORE,EXIT
-        
+
+;C DEFER@
+;    >BODY @ ;
+    head(DEFERFETCH,DEFER@,docolon)
+        DW TOBODY,FETCH,EXIT
+
 
 ;C IS       ( xt "name" -- )     \ define a deferred word
 ;   STATE @  IF  POSTPONE [']  POSTPONE DEFER!
