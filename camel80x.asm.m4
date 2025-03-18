@@ -3199,14 +3199,14 @@ RESTORE_INPUT1:
 ; RC2014 Multitasking ====================
 
 ;Z UP!
-    head(UPSTORE,UP!,docode)
+    head_system(UPSTORE,UP!,docode)
         push bc
         pop iy
         pop bc
         next
 
 ;Z UP@
-    head(UPFETCH,UP@,docode)
+    head_system(UPFETCH,UP@,docode)
         push bc
         push iy
         pop bc
