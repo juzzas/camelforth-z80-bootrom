@@ -32,6 +32,7 @@ OPEN:  build/cf-image.blk
 900 BLOCKS: examples/mandelbrot.fth
 915 BLOCKS: examples/gamelife.fth
 930 BLOCKS: examples/2048.fth
+945 BLOCKS: examples/calendar.fth
 
 3000 BLOCKS: test/testsuite.fth
 +BLOCKS: test/ttester.fth
