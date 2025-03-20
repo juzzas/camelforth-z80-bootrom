@@ -1591,6 +1591,7 @@ DOTSIGNON:
         DW DOTSIGNON,CR
         DW ROM16KQ,qbranch,COLD1
         DW TRUE,FLAG_ROM16K,STORE
+        DW FALSE,TO_STATE,STORE
         DW SLASH16KROM
         DW QUIT
 
@@ -1608,6 +1609,7 @@ COLD1:  DW lit,lastword8k,LATEST,STORE
         DB 6,"(warm)"
         DW TYPE,CR
         DW ROM16KQ,qbranch,WARM1
+        DW FALSE,TO_STATE,STORE
         DW SLASH16KROM
 WARM1:
         DW QUIT
