@@ -80,10 +80,10 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 
   \ blkfilefs
 : $cd ( s -- )   ($lookup) found?   cwd! ;
+
 : CD ( <name> )   BL WORD $cd ;
 : CD/ ( -- )   root @ DUP 0= ABORT" No root"   cwd! ;
 : MOUNT   DUP cwd!   root ! ;
-
 
 
 
@@ -170,8 +170,8 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 
 : .head ( -- )   CR ." Type     Start   Length  Name" CR ;
 : .ls ( -- )   .head   0   ['] (.ls)   entriesDo ;
-: LS   .ls ;
 
+: LS   .ls ;
 
 
   \ blkfilefs
@@ -198,6 +198,7 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
    bffstype.dir R> dir>type ! UPDATE
    2DUP (initdir)
    bffstype.dir_free (initbody)    DROP ;
+
 : MKDIR ( nblk spaces"ccc" -- )   BL WORD $mkdir ;
 
 
