@@ -118,10 +118,10 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
    ($mkent)  ( nblk blk dirent )
    >R 2DUP + R@ dir>fence !  
    bffstype.file R> dir>type ! UPDATE
-   (initfile)
- ;
+   (initfile)  ;
 
 : CREAT   BL WORD $creat ;
+
 
 
 
@@ -180,15 +180,15 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
    ($dirent) found? ( type dirent )
    DUP dir>type @ ROT - 
         ABORT" Wrong type of entry"  dir>base @ ;
-
 : $open ( str -- blk )   bffstype.file SWAP ($open) ;
+
 : OPEN ( -- blk )   BL WORD $open ;
 : OPEN# ( -- blklow blkhigh )   
    OPEN   DUP (block>meta) meta>here @ 1- ;
 
-\ Load source from file
-: FLOAD   OPEN LOAD ;
-: FTHRU   OPEN# THRU ;
+
+
+
 
   \ blkfilefs
 \ Create directory
