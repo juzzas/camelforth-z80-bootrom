@@ -8,7 +8,7 @@ OPEN:  build/cf-image.blk
 90 BLOCKS: extensions/assembler.fth
 120 BLOCKS: extensions/multi.fth
 150 BLOCKS: extensions/blkfile.fth
-165 BLOCKS: extensions/blkfilefs.fth
+165 BLOCKS: extensions/blkfs.fth
 180 BLOCKS: extensions/asmz80.fth
 
 300 BLOCKS: extensions/forth2012.fth

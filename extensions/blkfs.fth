@@ -1,6 +1,6 @@
-( blkfilefs - extension to treat blocks as a filesystem         0 / n)
+( blkfs - extension to treat blocks as a filesystem      0 / n)
 
-CR .( Loading blkfile filesystem... )
+CR .( Loading blkfs "filesystem"... )
 
 
 
@@ -8,7 +8,8 @@ CR .( Loading blkfile filesystem... )
 
 
 ONLY FORTH DEFINITIONS
-1 12 +THRU
+1 14 +THRU
+
 
 
 
@@ -43,13 +44,15 @@ VARIABLE cwd   VARIABLE root
       meta>fence !
    SWAP 1+ OVER meta>here !   (magic) ;
 : (initbody) ( #blk blk type -- blk )   -ROT TUCK TUCK + SWAP 
-   1+ DO   OVER I SWAP (initfree)   LOOP NIP ;
+   1+ ?DO   OVER I SWAP (initfree)   LOOP NIP ;
 : MKFS ( base #blk -- )   2DUP SWAP bffstype.dir (inithead)
    SWAP bffstype.dir_free (initbody)   DROP ;
   \ blkfilefs
 : dir>name  ( blkfilefs -- addr )    ;
 : dir>base  ( blkfilefs -- addr )    #NAMECHARS +  ;
-#NAMECHARS 2 +  CONSTANT BLKFILEDIR-CONTEXT
+: dir>fence  ( blkfilefs -- addr )  #NAMECHARS + 2 + ;
+: dir>type  ( blkfilefs -- addr )  #NAMECHARS + 4 + ;
+#NAMECHARS 6 +  CONSTANT BLKFILEDIR-CONTEXT
 
 BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 : (cwd@) ( -- blk )   cwd @ DUP 0= ABORT" No CWD" ;
@@ -59,18 +62,14 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 
 
 
-
-
-
   \ blkfilefs
 : ($namecmp) ( source dest -- f ) COUNT ROT COUNT ROT
    MAX STRCMP 0= ;
 : ($dirent) ( str -- dirent | 0 )   (cwd>)   ( str blk-addr )
-   #DIRFILES 0 DO   DUP dir>base @ 0= IF
+   #DIRFILES 0 ?DO   DUP dir>base @ 0= IF
        UNLOOP 2DROP 0 EXIT THEN
    2DUP dir>name ($namecmp)   IF  UNLOOP NIP EXIT  THEN
    BLKFILEDIR-CONTEXT + LOOP   2DROP 0 ;
-
 : ($lookup) ( str -- block | 0 )   ($dirent) DUP 0= IF
       EXIT   THEN
    dir>base @ ;
@@ -83,7 +82,8 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 : $cd ( s -- )   ($lookup) found?   cwd! ;
 : CD ( <name> )   BL WORD $cd ;
 : CD/ ( -- )   root @ DUP 0= ABORT" No root"   cwd! ;
-: ROOT!   DUP cwd!   root ! ;
+: MOUNT   DUP cwd!   root ! ;
+
 
 
 
@@ -102,28 +102,28 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
    OVER meta>fence @ OVER < ABORT" Out of space"
    SWAP meta>here ! ;
 : ($namecopy) ( source dest ) SWAP COUNT ROT PLACE ;
-: ($mkent) ( nblk name -- nblk blk )
+: ($mkent) ( nblk name -- nblk blk dirent )
    OVER 0< ABORT" Bad size"   DUP ($dirent) ABORT" Exists"
    SWAP TUCK (cwd>)  ( nblk name nblk blkptr )  DUP (>meta) >R
    (slot) ROT OVER dir>name ($namecopy)
                                     ( nblk dirent R: metaptr )
    R@ meta>here @ -ROT   SWAP R> (blkallot)  
                                           ( nblk here dirent )
-   OVER -ROT dir>base !   UPDATE ;
-
+   OVER -ROT DUP >R dir>base ! R>  UPDATE ;
   \ blkfilefs
 : (blankbod) ( blk -- )   BUFFER   DUP BASESIZ BL FILL
    [CHAR] \ SWAP C! ;
 : (initfile) ( nblk block -- )   TUCK  bffstype.file (inithead)
    (blankbod)   UPDATE ;
-: $creat ( nblk name -- block )   ($mkent)   2DUP (initfile)
-   bffstype.file_free (initbody) ;
+: $creat ( nblk name -- block ) 
+   ($mkent)  ( nblk blk dirent )
+   >R 2DUP + R@ dir>fence !  
+   bffstype.file R> dir>type ! UPDATE
+   2DUP (initfile)
+   bffstype.file (initbody)
+ ;
 
 : CREAT   BL WORD $creat ;
-
-
-
-
 
 
   \ blkfilefs
@@ -138,48 +138,49 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
    #DIRFILES 0 DO   2DUP
       (cwd>) I BLKFILEDIR-CONTEXT * +   
           ( arg 'fn arg 'fn dirent )
-      DUP dir>base @ 0= IF   2DROP 2DROP DROP UNLOOP EXIT  THEN
-      SWAP EXECUTE   LOOP 2DROP ;
-
+     DUP dir>base @ 0= IF   2DROP 2DROP DROP UNLOOP EXIT  THEN
+     SWAP EXECUTE   LOOP 2DROP ;
 
 
   \ blkfilefs
-: .entry ( dirent blkno meta -- )
+: .entry ( dirent blkno -- )
+   DUP (block>meta) 
    SWAP >R ( dirent meta R: blkno )
    DUP meta>type @ (.type)   R@ 6 U.R   SPACE
    DUP meta>here @ R@ - 4 U.R   ." /"
-   meta>fence @ R> - 4 U.R   SPACE   dir>name COUNT TYPE  CR ;
+   meta>fence @ R> - 4 U.R    2 SPACES
+   dir>name COUNT TYPE  CR ;
 
-: (.ls) ( 0 dirent -- )   
-   NIP   DUP dir>base @   DUP (block>meta)
-   ( dirent blkno meta )
-   DUP meta>type @ bffstype.file_free = IF 
-      DROP 2DROP   EXIT THEN
-   .entry ;
-
+: .fileentry ( dirent blkno -- )
+   >R ( dirent R: blkno )
+   DUP dir>type @ (.type)   R@ 6 U.R  6 SPACES
+   DUP dir>fence @ R> - 4 U.R   2 SPACES
+   dir>name COUNT TYPE  CR ;
 
 
   \ blkfilefs
-: .head ( -- )   CR ." Type  Start   Length  Name" CR ;
+: (.ls) ( 0 dirent -- )   
+   NIP   DUP dir>base @   ( dirent blk )
+   OVER dir>type @
+   CASE
+      bffstype.file_free OF 2DROP ENDOF
+      bffstype.file OF .fileentry ENDOF
+      >R .entry R>
+   ENDCASE   ;
+
+: .head ( -- )   CR ." Type     Start   Length  Name" CR ;
 : .ls ( -- )   .head   0   ['] (.ls)   entriesDo ;
 : LS   .ls ;
 
 
 
-
-
-
-
-
-
-
-
-
   \ blkfilefs
 \ Return "open" file
-: ($open) ( type str -- blk )   ($lookup) found? ( type blk )
-   DUP (block>meta) meta>type @ ROT - 
-        ABORT" Wrong type of entry" ;
+: ($open) ( type str -- blk )   
+   ($dirent) found? ( type dirent )
+   DUP dir>type @ ROT - 
+        ABORT" Wrong type of entry"  dir>base @ ;
+
 : $open ( str -- blk )   bffstype.file SWAP ($open) ;
 : OPEN ( -- blk )   BL WORD $open ;
 : OPEN# ( -- blklow blkhigh )   
@@ -189,12 +190,13 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 : FLOAD   OPEN LOAD ;
 : FTHRU   OPEN# THRU ;
 
-
-
   \ blkfilefs
 \ Create directory
 : (initdir) ( nblk block -- )   bffstype.dir (inithead) ;
-: $mkdir ( nblk name -- )   ($mkent)   2DUP (initdir)
+: $mkdir ( nblk name -- )   ($mkent)
+   >R 2DUP + R@ dir>fence !  
+   bffstype.dir R> dir>type ! UPDATE
+   2DUP (initdir)
    bffstype.dir_free (initbody)    DROP ;
 : MKDIR ( nblk spaces"ccc" -- )   BL WORD $mkdir ;
 
