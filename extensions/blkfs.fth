@@ -111,19 +111,19 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
                                           ( nblk here dirent )
    OVER -ROT DUP >R dir>base ! R>  UPDATE ;
   \ blkfilefs
-: (blankbod) ( blk -- )   BUFFER   DUP BASESIZ BL FILL
-   [CHAR] \ SWAP C! ;
-: (initfile) ( nblk block -- )   TUCK  bffstype.file (inithead)
-   (blankbod)   UPDATE ;
+: (initfile) ( nblk block -- )
+    SWAP BOUNDS ?DO I WIPE UPDATE LOOP ;
+
 : $creat ( nblk name -- block ) 
    ($mkent)  ( nblk blk dirent )
    >R 2DUP + R@ dir>fence !  
    bffstype.file R> dir>type ! UPDATE
-   2DUP (initfile)
-   bffstype.file (initbody)
+   (initfile)
  ;
 
 : CREAT   BL WORD $creat ;
+
+
 
 
   \ blkfilefs
