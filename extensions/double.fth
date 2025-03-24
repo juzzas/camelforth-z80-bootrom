@@ -92,4 +92,4 @@ CR .( Loading additional double number definitions... )
 : DOR ROT OR >R OR R> ; ( d d -- d )
 : DXOR ROT XOR >R XOR R> ; ( d d -- d )
 
-
+: U>D  0 ;   ( u -- d )
