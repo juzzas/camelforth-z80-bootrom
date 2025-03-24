@@ -176,15 +176,16 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 
   \ blkfilefs
 \ Return "open" file
-: ($open) ( type str -- blk )   
+: ($open) ( type str -- blk blkhigh )   
    ($dirent) found? ( type dirent )
    DUP dir>type @ ROT - 
-        ABORT" Wrong type of entry"  dir>base @ ;
-: $open ( str -- blk )   bffstype.file SWAP ($open) ;
+        ABORT" Wrong type of entry"
+   DUP dir>fence @ 1- SWAP dir>base @ SWAP ;
+: $open ( str -- blk blkhigh )   bffstype.file SWAP ($open) ;
 
-: OPEN ( -- blk )   BL WORD $open ;
 : OPEN# ( -- blklow blkhigh )   
-   OPEN   DUP (block>meta) meta>here @ 1- ;
+   BL WORD $open ;
+: OPEN ( -- blk )  OPEN# DROP ;
 
 
 
