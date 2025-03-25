@@ -79,9 +79,9 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 : found? ( blk -- blk )   DUP 0= ABORT" Not found" ;
 
   \ blkfilefs
-: $cd ( s -- )   ($lookup) found?   cwd! ;
+: $cd ( str -- )   ($lookup) found?   cwd! ;
 
-: CD ( <name> )   BL WORD $cd ;
+: CD ( "name" -- )   BL WORD $cd ;
 : CD/ ( -- )   root @ DUP 0= ABORT" No root"   cwd! ;
 : MOUNT   DUP cwd!   root ! ;
 
@@ -102,7 +102,7 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
    OVER meta>fence @ OVER < ABORT" Out of space"
    SWAP meta>here ! ;
 : ($namecopy) ( source dest ) SWAP COUNT ROT PLACE ;
-: ($mkent) ( nblk name -- nblk blk dirent )
+: ($mkent) ( nblk str -- nblk blk dirent )
    OVER 0< ABORT" Bad size"   DUP ($dirent) ABORT" Exists"
    SWAP TUCK (cwd>)  ( nblk name nblk blkptr )  DUP (>meta) >R
    (slot) ROT OVER dir>name ($namecopy)
@@ -114,7 +114,7 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 : (initfile) ( nblk block -- )
     SWAP BOUNDS ?DO I WIPE UPDATE LOOP ;
 
-: $creat ( nblk name -- block ) 
+: $creat ( nblk str -- block ) 
    ($mkent)  ( nblk blk dirent )
    >R 2DUP + R@ dir>fence !  
    bffstype.file R> dir>type ! UPDATE
@@ -183,9 +183,9 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
    DUP dir>fence @ 1- SWAP dir>base @ SWAP ;
 : $open ( str -- blk blkhigh )   bffstype.file SWAP ($open) ;
 
-: OPEN# ( -- blklow blkhigh )   
+: OPEN# ( "name" -- blklow blkhigh )   
    BL WORD $open ;
-: OPEN ( -- blk )  OPEN# DROP ;
+: OPEN ( "name" -- blk )  OPEN# DROP ;
 
 
 
@@ -194,12 +194,12 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
   \ blkfilefs
 \ Create directory
 : (initdir) ( nblk block -- )   bffstype.dir (inithead) ;
-: $mkdir ( nblk name -- )   ($mkent)
+: $mkdir ( nblk str -- )   ($mkent)
    >R 2DUP + R@ dir>fence !  
    bffstype.dir R> dir>type ! UPDATE
    2DUP (initdir)
    bffstype.dir_free (initbody)    DROP ;
 
-: MKDIR ( nblk spaces"ccc" -- )   BL WORD $mkdir ;
+: MKDIR ( nblk "name" -- )   BL WORD $mkdir ;
 
 
