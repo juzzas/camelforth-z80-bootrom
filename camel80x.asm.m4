@@ -3,7 +3,7 @@
 ; ===============================================
 ; CamelForth for the Zilog Z80
 ; Copyright (c) 1994,1995 Bradford J. Rodriguez
-; Copyright (c) 2020 Justin Skists
+; Copyright (c) 2020-2025 Justin Skists
 ;
 ; This program is free software; you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -535,7 +535,7 @@ ntor_done:
         push bc
         exx
         ld l,(ix+0)     ; pop count from rtn skt
-        inc ix          ;       
+        inc ix          ;
         ld h,(ix+0)
         inc ix
 
@@ -556,7 +556,6 @@ nrfrom_done:
         exx
         pop bc
         next
-        
 
 ;C 0<>     x1 -- flag    test not eq to 0
     head(ZERONOTEQUAL,0<>,docode)
@@ -1446,7 +1445,7 @@ roll_do:
         inc bc   ; correct for stack offset
         sla c    ; convert to cells
         rl b
-	push bc   ; push count
+        push bc   ; push count
 
         ld hl,bc   ; do pick
         add hl,sp
@@ -2182,25 +2181,37 @@ LOADNEXT1:
 
 ; BLKFILE implementation =====================================
 
-;VARIABLE   blk-ptr
-
-;VARIABLE   blk-curr
-
-;VARIABLE   blk-offset
-
-;VARIABLE   blk-fence
-BLK_FENCE:
+;VARIABLE   blkfile-ptr
+BLKFILE_PTR:
         call docon
-        DW blk_fence
+        DW blkfile_ptr
+
+;VARIABLE   blkfile-curr
+BLKFILE_CURR:
+        call docon
+        DW blkfile_curr
+
+;VARIABLE   blkfile-offset
+BLKFILE_OFFSET:
+        call docon
+        DW blkfile_offset
+
+;VARIABLE   blkfile-fence
+BLKFILE_FENCE:
+        call docon
+        DW blkfile_fence
 
 ;CVARIABLE   blkfile-dirty
+BLKFILE_DIRTY:
+        call docon
+        DW blkfile_dirty
 
 SECTION data
 
-blk_ptr: DS 2
-blk_curr: DS 2
-blk_offset: DS 2
-blk_fence: DS 2
+blkfile_ptr: DS 2
+blkfile_curr: DS 2
+blkfile_offset: DS 2
+blkfile_fence: DS 2
 blkfile_dirty: DS 1
 chars_count: DS 2
 
@@ -2234,26 +2245,26 @@ IS_DIRTYQ:
 
 ;: current-block ( -- )
 ;   is-dirty? IF UPDATE clear-dirty THEN
-;   blk-cur @ BLOCK blk-ptr ! ;
+;   blkfile-curr @ BLOCK blkfile-ptr ! ;
 CURRENT_BLOCK:
     call docolon
     DW IS_DIRTYQ,qbranch,CURRBLK1
     DW UPDATE,CLEAR_DIRTY
 CURRBLK1:
-    DW lit,blk_curr,FETCH,BLOCK,lit,blk_ptr,STORE
+    DW BLKFILE_CURR,FETCH,BLOCK,BLKFILE_PTR,STORE
     DW EXIT
 
 ;: inc-block  ( -- ) 
-;   1 blk-cur +!   (  )
-;   blk-cur @ blk-fence @ U< IF
-;      0 blk-offset ! (  )
+;   1 blkfile-curr +!   (  )
+;   blkfile-curr @ blkfile-fence @ U< IF
+;      0 blkfile-offset ! (  )
 ;      current-block 
 ;   ELSE  -39 THROW THEN  ;
 INC_BLOCK:
     call docolon
-    DW lit,1,lit,blk_curr,PLUSSTORE
-    DW lit,blk_curr,FETCH,BLK_FENCE,FETCH,ULESS,qbranch,INC_BLOCK1
-    DW ZERO,lit,blk_offset,STORE
+    DW lit,1,BLKFILE_CURR,PLUSSTORE
+    DW BLKFILE_CURR,FETCH,BLKFILE_FENCE,FETCH,ULESS,qbranch,INC_BLOCK1
+    DW ZERO,BLKFILE_OFFSET,STORE
     DW CURRENT_BLOCK
     DW EXIT
 
@@ -2261,14 +2272,14 @@ INC_BLOCK1:
     DW lit,-39,THROW
 
 ;: inc-offset  ( -- )
-;   1 blk-offset +! ( )
-;   blk-offset @ 1023 > IF
+;   1 blkfile-offset +! ( )
+;   blkfile-offset @ 1023 > IF
 ;      inc-block
 ;   THEN   ;
 INC_OFFSET:
     call docolon
-    DW lit,1,lit,blk_offset,PLUSSTORE
-    DW lit,blk_offset,FETCH,lit,1023,GREATER
+    DW lit,1,BLKFILE_OFFSET,PLUSSTORE
+    DW BLKFILE_OFFSET,FETCH,lit,1023,GREATER
     DW qbranch,INCOFFSET1
     DW INC_BLOCK
 
@@ -2276,14 +2287,14 @@ INCOFFSET1:
     DW EXIT
 
 ;: (write-char) ( c -- )
-;   blk-ptr @  ( c blk-ptr )
-;   blk-offset @ + c!   ( )
+;   blkfile-ptr @  ( c blk-ptr )
+;   blkfile-offset @ + c!   ( )
 ;   set-dirty
 ;   inc-offset ;
 XWRITE_CHAR:
     call docolon
-    DW lit,blk_ptr,FETCH
-    DW lit,blk_offset,FETCH,PLUS,CSTORE
+    DW BLKFILE_PTR,FETCH
+    DW BLKFILE_OFFSET,FETCH,PLUS,CSTORE
     DW SET_DIRTY
     DW INC_OFFSET
     DW EXIT
@@ -2319,20 +2330,19 @@ PUTCHARS2:
         DW EXIT
 
 ;: (read-char) ( c -- )
-;   blk-ptr @  ( blk-ptr )
-;   blk-offset @ + c@   ( c )
+;   blkfile-ptr @  ( blk-ptr )
+;   blkfile-offset @ + c@   ( c )
 ;   inc-offset ;
 XREAD_CHAR:
         call docolon
-        DW lit,blk_ptr,FETCH
-        DW lit,blk_offset,FETCH,PLUS,CFETCH
+        DW BLKFILE_PTR,FETCH
+        DW BLKFILE_OFFSET,FETCH,PLUS,CFETCH
         DW INC_OFFSET
         DW EXIT
 
 ;: GETCH ( -- c )
-;   blk-ptr @  ( blk-ptr )
-;   blk-offset @ + c@   ( c )
-;   inc-offset ;
+;   CURRENT-BLOCK
+;   (read-char)  ;
     head_system(GETCH,GETCH,docolon)
         DW CURRENT_BLOCK
         DW XREAD_CHAR
@@ -2393,20 +2403,18 @@ GETLINE2:
 
 
 ;: BEGIN-BLKFILE ( blk offset fence -- )
-;   blk-offset !
-;   blk-fence !
-;   blk-cur !
+;   blkfile-offset !
+;   blkfile-fence !
+;   blkfile-curr !
 ;   clear-dirty  current-block ;
     head_system(BEGIN_BLKFILE,``BEGIN-BLKFILE'',docolon)
-        DW BLK_FENCE,STORE
-        DW lit,blk_offset,STORE
-        DW lit,blk_curr,STORE
+        DW BLKFILE_FENCE,STORE
+        DW BLKFILE_OFFSET,STORE
+        DW BLKFILE_CURR,STORE
         DW CLEAR_DIRTY
         DW CURRENT_BLOCK
         DW EXIT
 
-;: open-blkfile ( blk -- )
-;
 ;: END-BLKFILE ( -- blk' offset' )
 ;   is-dirty? IF UPDATE clear-dirty THEN
 ;   FLUSH ;
@@ -2415,7 +2423,7 @@ GETLINE2:
         DW UPDATE,CLEAR_DIRTY
 
 END_BLKFILE1:
-        DW lit,blk_curr,FETCH,lit,blk_offset,FETCH,EXIT
+        DW BLKFILE_CURR,FETCH,BLKFILE_OFFSET,FETCH,EXIT
 
 
 
