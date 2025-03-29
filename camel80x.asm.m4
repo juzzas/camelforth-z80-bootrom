@@ -2183,13 +2183,24 @@ LOADNEXT1:
 ; BLKFILE implementation =====================================
 
 ;VARIABLE   blk-ptr
-;VARIABLE   blkfile-dirty
+
+;VARIABLE   blk-curr
+
+;VARIABLE   blk-offset
+
+;VARIABLE   blk-fence
+BLK_FENCE:
+        call docon
+        DW blk_fence
+
+;CVARIABLE   blkfile-dirty
 
 SECTION data
 
 blk_ptr: DS 2
 blk_curr: DS 2
 blk_offset: DS 2
+blk_fence: DS 2
 blkfile_dirty: DS 1
 chars_count: DS 2
 
@@ -2234,14 +2245,20 @@ CURRBLK1:
 
 ;: inc-block  ( -- ) 
 ;   1 blk-cur +!   (  )
-;   0 blk-offset ! (  )
-;   current-block ;
+;   blk-cur @ blk-fence @ U< IF
+;      0 blk-offset ! (  )
+;      current-block 
+;   ELSE  -39 THROW THEN  ;
 INC_BLOCK:
     call docolon
     DW lit,1,lit,blk_curr,PLUSSTORE
+    DW lit,blk_curr,FETCH,BLK_FENCE,FETCH,ULESS,qbranch,INC_BLOCK1
     DW ZERO,lit,blk_offset,STORE
     DW CURRENT_BLOCK
     DW EXIT
+
+INC_BLOCK1:
+    DW lit,-39,THROW
 
 ;: inc-offset  ( -- )
 ;   1 blk-offset +! ( )
@@ -2375,11 +2392,13 @@ GETLINE2:
         DW DROP,FALSE,EXIT
 
 
-;: BEGIN-BLKFILE ( blk offset -- )
+;: BEGIN-BLKFILE ( blk offset fence -- )
 ;   blk-offset !
+;   blk-fence !
 ;   blk-cur !
 ;   clear-dirty  current-block ;
     head_system(BEGIN_BLKFILE,``BEGIN-BLKFILE'',docolon)
+        DW BLK_FENCE,STORE
         DW lit,blk_offset,STORE
         DW lit,blk_curr,STORE
         DW CLEAR_DIRTY
@@ -2576,22 +2595,22 @@ defc SNAPSHOT_RST_LEN = 128-24
         dw EXIT
 
 ;: BSAVE   ( c-addr u blk -- )
-;     0 (OPEN-BLKFILE)
-;     WRITE-BLKFILE
-;     (CLOSE-BLKFILE)    ;
+;     0 -1 BEGIN-BLKFILE
+;     PUTCHARS
+;     END-BLKFILE 2DROP   ;
     head(BSAVE,BSAVE,docolon)
-        dw ZERO,BEGIN_BLKFILE
+        dw ZERO,ALLONES,BEGIN_BLKFILE
         dw PUTCHARS
         dw END_BLKFILE,TWODROP
         dw EXIT
 
 
 ;: BLOAD   ( c-addr u blk -- )
-;     0 (OPEN-BLKFILE)
-;     READ-BLKFILE,DROP
-;     (CLOSE-BLKFILE)  ;
+;     0 -1 BEGIN-BLKFILE
+;     GETCHARS DROP
+;     END-BLKFILE  2DROP;
     head(BLOAD,BLOAD,docolon)
-        dw ZERO,BEGIN_BLKFILE
+        dw ZERO,ALLONES,BEGIN_BLKFILE
         dw GETCHARS,DROP
         dw END_BLKFILE,TWODROP
         dw EXIT
@@ -2631,7 +2650,7 @@ XSAVEHDR:
 ;    (SAVEHDR)                   ( c-addr u ; blk )
 ;
 ;    R> BLK_HEADER_SIZE
-;    BEGIN-BLKFILE
+;    -1 BEGIN-BLKFILE
 ;    PUTCHARS
 ;    END-BLKFILE  2DROP
 ;    FLUSH  ;
@@ -2643,7 +2662,7 @@ XSAVEHDR:
         dw XSAVEHDR
 
         dw RFROM,lit,BLK_HEADER_SIZE
-        dw BEGIN_BLKFILE
+        dw ALLONES,BEGIN_BLKFILE
         dw PUTCHARS
         dw END_BLKFILE,TWODROP
         dw FLUSH
@@ -2659,7 +2678,7 @@ XSAVEHDR:
 ;      enddict SWAP               ( enddict u=data_size ; blk )
 ;
 ;      R>  BLK_HEADER_SIZE     ( enddict u blk hdr_size )
-;      BEGIN-BLKFILE           ( enddict u )
+;      -1 BEGIN-BLKFILE           ( enddict u )
 ;      GETCHARS,DROP           (  )
 ;      END-BLKFILE 2DROP
 ;      ENTRY @ EXECUTE
@@ -2675,7 +2694,7 @@ XSAVEHDR:
         dw lit,enddict,SWOP
 
         dw RFROM,lit,BLK_HEADER_SIZE
-        dw BEGIN_BLKFILE
+        dw ALLONES,BEGIN_BLKFILE
         dw GETCHARS,DROP
         dw END_BLKFILE,TWODROP
         dw ENTRY,FETCH,EXECUTE

@@ -3,11 +3,11 @@
 CR .( Loading blkfile... )
 
 
+
+
 ONLY FORTH DEFINITIONS   ALSO SYSTEM
-1 10 +THRU
+1 11 +THRU
 /BLKFILE  ONLY FORTH
-
-
 
 
 
@@ -20,13 +20,22 @@ ONLY FORTH DEFINITIONS   ALSO SYSTEM
 : blk.origin  ( blkfile -- addr )    2 +  ;
 : blk.cur  ( blkfile -- addr )       4 +  ;
 : blk.offset  ( blkfile -- addr )    6 +  ;
-8 CONSTANT BLKFILE-CONTEXT
+: blk.fence  ( blkfile -- addr )     8 +  ;
+10 CONSTANT BLKFILE-CONTEXT
 
 4 CONSTANT #BLKFILE
 256 CONSTANT BLKFILE-BUFFER-SIZE
 CREATE blkfiles BLKFILE-CONTEXT #BLKFILE * ALLOT
 CREATE blkfile-buffer BLKFILE-BUFFER-SIZE ALLOT
 $8000 CONSTANT flag.open
+$0001 CONSTANT flag.binary
+$0002 CONSTANT flag.readable
+$0004 CONSTANT flag.writable
+
+flag.binary CONSTANT BIN
+flag.readable CONSTANT R/O
+flag.readable flag.writable +  CONSTANT R/W
+
 0 VALUE 'blkfile
 
 
@@ -40,18 +49,20 @@ $8000 CONSTANT flag.open
 
 : BLKFILE!  ( blk offset blkfile-id -- )
    TUCK  blk.offset !  blk.cur ! ;
-: BLKFILE@  ( blkfile-id -- blk offset )
-   DUP blk.cur @  SWAP blk.offset @ ;
+: BLKFILE@  ( blkfile-id -- blk offset fence )
+   DUP >R
+   blk.cur @   R@ blk.offset @   R> blk.fence @ ;
 
 
 
 
    ( blkfile - extension to treat blocks as files       3 / n)
-: get-blkfile-id  ( -- blkfile-id | 0 )  #BLKFILE 0 DO
+: get-blkfile-id  ( flags -- blkfile-id | 0 )  #BLKFILE 0 DO
    I i>blkfile  blkfile.flags @  flag.open AND  0= IF
-      I i>blkfile flag.open OVER blkfile.flags !
-         UNLOOP EXIT THEN
-   LOOP  0 ;
+      flag.open +
+      I i>blkfile DUP >R  blkfile.flags  !
+      R>   UNLOOP EXIT THEN
+   LOOP   DROP 0 ;
 
 : free-blkfile-id ( blkfile-id -- )
    FALSE SWAP blkfile.flags ! ;
@@ -79,8 +90,9 @@ $8000 CONSTANT flag.open
 
 
    ( blkfile - extension to treat blocks as files       5 / n)
-: OPEN-BLKFILE ( blk -- blkfileid ior )
-   get-blkfile-id ?DUP IF    ( blk blkfile-id )
+: OPEN-BLKFILE ( blk fence fam -- blkfileid ior )
+   get-blkfile-id ?DUP IF    ( blk fence blkfile-id )
+     TUCK  blk.fence !
      SWAP   ( blkfile-id blk )
      OVER 2DUP   blk.cur !  blk.origin !   ( blkfile-id )
      0 OVER blk.offset !   0
@@ -112,7 +124,7 @@ $8000 CONSTANT flag.open
 
    ( blkfile - extension to treat blocks as files       7 / n)
 : TLIST ( blk -- )
-   OPEN-BLKFILE THROW  ( blkfile-id )
+   -1  R/O OPEN-BLKFILE THROW  ( blkfile-id )
    BEGIN
      DUP blkfile-buffer BLKFILE-BUFFER-SIZE ROT
           READLINE-BLKFILE THROW
@@ -144,7 +156,7 @@ $8000 CONSTANT flag.open
 
    ( blkfile - extension to treat blocks as files       9 / n)
 : (TLOAD) ( blk -- )
-   OPEN-BLKFILE THROW  ( blkfile-id )
+   -1  R/O  OPEN-BLKFILE THROW  ( blkfile-id )
    'SOURCE-ID  !
    0 BLK !
    BEGIN

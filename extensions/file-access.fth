@@ -1,5 +1,6 @@
 \ file-access wordset
 
+\ requires blkfile and blkfs wordsets
 
 1 CONSTANT BIN 
 2 CONSTANT R/O
