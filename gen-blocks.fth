@@ -20,6 +20,7 @@ OPEN:  build/cf-image.blk
 480 BLOCKS: extensions/string-ext.fth
 510 BLOCKS: extensions/dyn-memory.fth
 540 BLOCKS: extensions/search.fth
+570 BLOCKS: extensions/file-access.fth
 
 
 600 BLOCKS: extensions/double.fth

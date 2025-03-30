@@ -134,7 +134,7 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
    ($mkent)  ( nblk blk dirent )
    >R 2DUP + R@ dir>fence !  
    bffstype.file R> dir>type ! UPDATE
-   (initfile)  ;
+   TUCK  (initfile)  ;
 
 : CREAT   PARSE-NAME $creat ;
 

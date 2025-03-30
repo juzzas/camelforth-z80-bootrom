@@ -8,4 +8,5 @@ CR .( Loading Forth2012 extensions... )
 480 LOAD     \ load string-ext
 510 LOAD     \ load memory
 540 LOAD     \ search order
+570 LOAD     \ file access
 

@@ -1656,11 +1656,24 @@ BLKCTXF2:
         dw TWODROP,DROP,FALSE
         dw EXIT
 
+;Z  BLKCTX_NOT_INUSE?   ( ctx -- f )
+;   DUP BLKCTX>BLOCK @ SWAP BLKCTX>SLICE @
+;   BLK @  SLICE
+;   D=  INVERT  ;
+BLKCTX_NOT_INUSEQ:
+        call docolon
+        DW DUP,BLKCTXTOBLOCK,FETCH,SWOP,BLKCTXTOSLICE,FETCH
+        DW BLK,FETCH,SLICE
+        DW DEQUAL,INVERT
+        DW EXIT
+
 ;Z BLKCTX-GET  ( blk slice-id -- ctx )  increment buffer structure
 ;     2DUP BLKCTX-FIND ?DUP IF   ( blk slice-id ctx )
 ;         NIP NIP
 ;     ELSE                       ( blk slice-id )
-;         BLKCTX-NEXT    ( blk slice-id ctx )
+;         BEGIN
+;            BLKCTX-NEXT    ( blk slice-id ctx )
+;         DUP BLKCTX-NOT-USED?  UNTIL
 ;         >R
 ;         R@ BLKCTX>SLICE !
 ;         R@ BLKCTX>BLOCK !
@@ -1671,8 +1684,11 @@ BLKCTX_GET:
         dw TWODUP,BLKCTX_FIND,QDUP,qbranch,BLKCTXG1
         dw NIP,NIP
         dw EXIT
+
 BLKCTXG1:
         dw BLKCTX_NEXT
+        dw DUP,BLKCTX_NOT_INUSEQ,qbranch,BLKCTXG1
+
         dw TOR
         dw RFETCH,BLKCTXTOSLICE,STORE
         dw RFETCH,BLKCTXTOBLOCK,STORE

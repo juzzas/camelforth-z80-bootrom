@@ -17,10 +17,10 @@ ONLY FORTH DEFINITIONS   ALSO SYSTEM
    ( blkfile - extension to treat blocks as files       1 / n)
 \ blkfile structure
 : blkfile.flags  ( blkfile -- addr )      ;
-: blk.origin  ( blkfile -- addr )    2 +  ;
-: blk.cur  ( blkfile -- addr )       4 +  ;
-: blk.offset  ( blkfile -- addr )    6 +  ;
-: blk.fence  ( blkfile -- addr )     8 +  ;
+: blkfile.origin  ( blkfile -- addr )    2 +  ;
+: blkfile.cur  ( blkfile -- addr )       4 +  ;
+: blkfile.offset  ( blkfile -- addr )    6 +  ;
+: blkfile.fence  ( blkfile -- addr )     8 +  ;
 10 CONSTANT BLKFILE-CONTEXT
 
 4 CONSTANT #BLKFILE
@@ -48,10 +48,10 @@ flag.readable flag.writable +  CONSTANT R/W
    LOOP  ;
 
 : BLKFILE!  ( blk offset blkfile-id -- )
-   TUCK  blk.offset !  blk.cur ! ;
+   TUCK  blkfile.offset !  blkfile.cur ! ;
 : BLKFILE@  ( blkfile-id -- blk offset fence )
    DUP >R
-   blk.cur @   R@ blk.offset @   R> blk.fence @ ;
+   blkfile.cur @   R@ blkfile.offset @   R> blkfile.fence @ ;
 
 
 
@@ -92,10 +92,10 @@ flag.readable flag.writable +  CONSTANT R/W
    ( blkfile - extension to treat blocks as files       5 / n)
 : OPEN-BLKFILE ( blk fence fam -- blkfileid ior )
    get-blkfile-id ?DUP IF    ( blk fence blkfile-id )
-     TUCK  blk.fence !
+     TUCK  blkfile.fence !
      SWAP   ( blkfile-id blk )
-     OVER 2DUP   blk.cur !  blk.origin !   ( blkfile-id )
-     0 OVER blk.offset !   0
+     OVER 2DUP  blkfile.cur !  blkfile.origin !  ( blkfile-id )
+     0 OVER blkfile.offset !   0
    ELSE DROP -69  THEN ;
 
 : CLOSE-BLKFILE ( blkfileid -- ior )
