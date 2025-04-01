@@ -104,50 +104,50 @@ flag.readable flag.writable +  CONSTANT R/W
 
 
    ( blkfile - extension to treat blocks as files       5 / n)
-: OPEN-BLKFILE ( blk fence fam -- blkfileid ior )
+: OPEN-BLKFILE ( blk fence fam -- blkfileid )
    get-blkfile-id ?DUP IF    ( blk fence blkfile-id )
      TUCK  blkfile.fence !
      SWAP   ( blkfile-id blk )
      OVER 2DUP  blkfile.cur !  blkfile.origin !  ( blkfile-id )
      0 OVER blkfile.offset !
-     DUP ?BLKFILE   0
-   ELSE 2DROP DROP   0 -69  THEN ;
+     DUP ?BLKFILE
+   ELSE   -69 THROW   THEN ;
 
-: CLOSE-BLKFILE ( blkfileid -- ior )
+: CLOSE-BLKFILE ( blkfileid -- )
    DUP ?BLKFILE
    'blkfile  ?DUP IF END-BLKFILE BLKFILE!  0 TO 'blkfile  THEN
-   free-blkfile-id   0 ;
+   free-blkfile-id ;
 
 
 
 
    ( blkfile - extension to treat blocks as files       6 / n)
 
-: READ-BLKFILE ( c-addr u blkfileid -- u ior )
-   ?BLKFILE  GETCHARS  0 ;
+: READ-BLKFILE ( c-addr u blkfileid -- u )
+   ?BLKFILE  GETCHARS ;
 
-: READLINE-BLKFILE ( c-addr u blkfileid -- u f ior ) 
-   ?BLKFILE GETLINE 0 ;
+: READLINE-BLKFILE ( c-addr u blkfileid -- u f ) 
+   ?BLKFILE GETLINE ;
 
-: WRITE-BLKFILE ( c-addr u blkfileid -- ior )
-   ?BLKFILE  PUTCHARS  0 ;
+: WRITE-BLKFILE ( c-addr u blkfileid --  )
+   ?BLKFILE  PUTCHARS  ;
 
-: WRITELINE-BLKFILE ( c-addr u blkfileid -- u f ior ) 
-   ?BLKFILE PUTCHARS  13 PUTCH  0 ;
+: WRITELINE-BLKFILE ( c-addr u blkfileid -- u f ) 
+   ?BLKFILE PUTCHARS  13 PUTCH ;
 
 
 
    ( blkfile - extension to treat blocks as files       7 / n)
 : TLIST ( blk -- )
-   -1  R/O OPEN-BLKFILE THROW  ( blkfile-id )
+   -1  R/O OPEN-BLKFILE   ( blkfile-id )
    BEGIN
      DUP blkfile-buffer BLKFILE-BUFFER-SIZE ROT
-          READLINE-BLKFILE THROW
+          READLINE-BLKFILE 
    WHILE
      blkfile-buffer SWAP TYPE CR
    REPEAT
    DROP
-   CLOSE-BLKFILE THROW  ;
+   CLOSE-BLKFILE   ;
 
 
 
@@ -156,7 +156,7 @@ flag.readable flag.writable +  CONSTANT R/W
    ( blkfile - extension to treat blocks as files       8 / n)
 : tload-refill  ( -- flag )
     blkfile-buffer BLKFILE-BUFFER-SIZE SOURCE-ID 
-       READLINE-BLKFILE THROW
+       READLINE-BLKFILE 
     IF
        blkfile-buffer SWAP  'SOURCE 2!
        0 >IN !  TRUE
@@ -171,7 +171,7 @@ flag.readable flag.writable +  CONSTANT R/W
 
    ( blkfile - extension to treat blocks as files       9 / n)
 : (TLOAD) ( blk -- )
-   -1  R/O  OPEN-BLKFILE THROW  ( blkfile-id )
+   -1  R/O  OPEN-BLKFILE  ( blkfile-id )
    'SOURCE-ID  !
    0 BLK !
    BEGIN
@@ -179,7 +179,7 @@ flag.readable flag.writable +  CONSTANT R/W
        ( SOURCE TYPE  CR )
        INTERPRET
      ELSE  'SOURCE-ID @ 
-           CLOSE-BLKFILE  THROW  EXIT
+           CLOSE-BLKFILE  EXIT
      THEN
    AGAIN  ;
 

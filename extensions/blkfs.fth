@@ -77,7 +77,7 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 : cwd! ( blk -- )   DUP (block>meta)
    meta>type @ bffstype.dir -  ABORT" Not dir"
    root @ 0= IF DUP root ! THEN   cwd ! ;
-: found? ( blk -- blk )   DUP 0= ABORT" Not found" ;
+: found? ( blk -- blk )   DUP 0= IF -38 THROW THEN ;
   \ blkfilefs
 : $cd ( c-addr u -- )   ($lookup) found?   cwd! ;
 
