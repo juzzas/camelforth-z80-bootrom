@@ -28,7 +28,7 @@ $FEED CONSTANT FSMAGIC   32 CONSTANT #NAMECHARS
 2 CONSTANT bffstype.dir_free    3 CONSTANT bffstype.file_free
 
 B/BLK 32 - CONSTANT BASESIZ
-VARIABLE cwd   VARIABLE root
+VARIABLE cwd   0 cwd !     VARIABLE root  0 root !
 
 
   \ blkfilefs
@@ -130,13 +130,13 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 : (initfile) ( nblk block -- )
     SWAP BOUNDS ?DO I WIPE UPDATE LOOP ;
 
-: $creat ( nblk c-addr u -- block ) 
+: $creat ( nblk c-addr u -- block fence ) 
    ($mkent)  ( nblk blk dirent )
-   >R 2DUP + R@ dir>fence !  
+   >R 2DUP +   ( nblk blk fence )   DUP R@ dir>fence !  
    bffstype.file R> dir>type ! UPDATE
-   TUCK  (initfile)  ;
+   -ROT TUCK  (initfile) SWAP ;
 
-: CREAT   PARSE-NAME $creat ;
+: CREAT   PARSE-NAME $creat DROP ;
 
 
 

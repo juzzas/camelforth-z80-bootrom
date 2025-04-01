@@ -24,10 +24,9 @@ CR .( Loading file access words... )
 
 
 : CREATE-FILE ( c-addr u fam -- fileid ior )
-   >R DEFAULT-FILESIZE -ROT $creat   ( blk  R: fam )
-   DEFAULT-FILESIZE OVER +  1+  R>   ( blk fence fam )
-   OPEN-BLKFILE   ;
-
+   >R DEFAULT-FILESIZE -ROT $creat  R> ( blk fence fam )
+   OPEN-BLKFILE   
+;
 
 
    \ file-access wordset: DELETE-FILE RENAME-FILE RESIZE-FILE
@@ -37,8 +36,8 @@ CR .( Loading file access words... )
 : RENAME-FILE ( c-addr1 u1 c-addr2 u2 -- ior )
    2DROP 2DROP      -72 ;
 
-: RESIZE-FILE ( u fileid -- ior ) 
-   2DROP            -74 ;
+: RESIZE-FILE ( ud fileid -- ior ) 
+   2DROP DROP       -74 ;
 
 : READ-FILE ( c-addr u fileid -- u ior ) 
    READ-BLKFILE   ;
@@ -53,32 +52,42 @@ CR .( Loading file access words... )
    WRITELINE-BLKFILE  ;
 
 : FILE-POSITION  ( fileid -- ud ior )
-   DROP            -65 ;
+   DROP        0 0  -65 ;
 
 : REPOSITION-FILE ( ud fileid -- ior )
    DROP 2DROP      -73 ;
 
 : FILE-SIZE ( fileid -- ud ior )
-   DROP            -66 ;
+   DROP        0 0 -66 ;
 
 : FILE-STATUS ( c-addr u -- x ior )
-   2DROP           -67 ;
+   2DROP       0   -67 ;
 
 : FLUSH-FILE ( fileid -- ior ) 
-   FLUSH  0 ;
+   FLUSH DROP 0 ;
 
 : INCLUDE-FILE ( i * x fileid -- j * x )  
-   DROP            -39  ;
+   DROP         ;
 
 : INCLUDE ( i * x "name" -- j * x ) 
-   OPEN  TLOAD  ;
+   POSTPONE OPEN  TLOAD  ;
 
 : INCLUDED ( i * x c-addr u -- j * x ) 
    $open DROP TLOAD  ;
 
 : REQUIRE ( i * x "name" -- i * x )
-   OPEN  TLOAD  ;
+   POSTPONE OPEN  TLOAD  ;
 
 : REQUIRED ( i * x c-addr u -- i * x )
    $open DROP TLOAD  ;
+
+: (    \ multi-line comment
+   BEGIN
+      BEGIN
+         PARSE-NAME  DUP
+      WHILE
+         1 =   SWAP   C@ ')' =  AND   IF   EXIT   THEN
+      REPEAT  2DROP
+      REFILL 0=
+   UNTIL  ;  IMMEDIATE
 

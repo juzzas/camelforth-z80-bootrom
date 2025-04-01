@@ -6,7 +6,7 @@ CR .( Loading blkfile... )
 
 
 ONLY FORTH DEFINITIONS   ALSO SYSTEM
-1 11 +THRU
+1 13 +THRU
 /BLKFILE  ONLY FORTH
 
 
@@ -23,6 +23,14 @@ ONLY FORTH DEFINITIONS   ALSO SYSTEM
 : blkfile.fence  ( blkfile -- addr )     8 +  ;
 10 CONSTANT BLKFILE-CONTEXT
 
+
+
+
+
+
+
+
+   ( blkfile - extension to treat blocks as files       1 / n)
 4 CONSTANT #BLKFILE
 256 CONSTANT BLKFILE-BUFFER-SIZE
 CREATE blkfiles BLKFILE-CONTEXT #BLKFILE * ALLOT
@@ -32,12 +40,12 @@ $0001 CONSTANT flag.binary
 $0002 CONSTANT flag.readable
 $0004 CONSTANT flag.writable
 
-flag.binary CONSTANT BIN
 flag.readable CONSTANT R/O
+flag.writable CONSTANT W/O
 flag.readable flag.writable +  CONSTANT R/W
+: BIN   flag.binary + ;
 
 0 VALUE 'blkfile
-
 
    ( blkfile - extension to treat blocks as files       2 / n)
 : i>blkfile  ( n -- blkfileid ) 
@@ -55,18 +63,24 @@ flag.readable flag.writable +  CONSTANT R/W
 
 
 
-
    ( blkfile - extension to treat blocks as files       3 / n)
-: get-blkfile-id  ( flags -- blkfile-id | 0 )  #BLKFILE 0 DO
-   I i>blkfile  blkfile.flags @  flag.open AND  0= IF
-      flag.open +
-      I i>blkfile DUP >R  blkfile.flags  !
-      R>   UNLOOP EXIT THEN
-   LOOP   DROP 0 ;
+: (find-free-blkfile-id)  ( -- blkfile-id | 0 )
+   blkfiles
+   #BLKFILE 0 DO
+      DUP blkfile.flags @  flag.open AND 
+      0= IF   UNLOOP EXIT   THEN
+      BLKFILE-CONTEXT +  LOOP
+   DROP 0  ;
+
+: get-blkfile-id  ( flags -- blkfile-id | 0 ) 
+   (find-free-blkfile-id)                ( flags blkfile-id|0 )
+   DUP IF
+      SWAP flag.open +  OVER
+      blkfile.flags  !
+   ELSE  NIP  THEN  ;
 
 : free-blkfile-id ( blkfile-id -- )
    FALSE SWAP blkfile.flags ! ;
-
 
 
 
@@ -80,8 +94,8 @@ flag.readable flag.writable +  CONSTANT R/W
          END-BLKFILE  ( blkfile-id blkfile-id.old blk offset )
          ROT BLKFILE!  ( blkfile-id )
       THEN
-      DUP TO 'blkfile   BLKFILE@ BEGIN-BLKFILE ELSE DROP THEN ;
-
+      DUP TO 'blkfile   BLKFILE@ BEGIN-BLKFILE 
+   ELSE DROP THEN ;
 
 
 
@@ -95,13 +109,14 @@ flag.readable flag.writable +  CONSTANT R/W
      TUCK  blkfile.fence !
      SWAP   ( blkfile-id blk )
      OVER 2DUP  blkfile.cur !  blkfile.origin !  ( blkfile-id )
-     0 OVER blkfile.offset !   0
-   ELSE DROP -69  THEN ;
+     0 OVER blkfile.offset !
+     DUP ?BLKFILE   0
+   ELSE 2DROP DROP   0 -69  THEN ;
 
 : CLOSE-BLKFILE ( blkfileid -- ior )
+   DUP ?BLKFILE
    'blkfile  ?DUP IF END-BLKFILE BLKFILE!  0 TO 'blkfile  THEN
    free-blkfile-id   0 ;
-
 
 
 

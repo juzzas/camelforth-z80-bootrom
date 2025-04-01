@@ -1532,7 +1532,6 @@ ESAC2:
 
 DEFC BLOCKCTX_SIZE = 8
 DEFC BLOCKCTX_NUM = 4
-DEFC BLOCK_FIRST = 0xE000
 
 ;Z /BLKCTX   ( -- ) initialise the block contexts
 ;    BLKCTX_PTR BLKCTX# 0 DO   ( ctx[i] )
@@ -1590,15 +1589,13 @@ ctx_next:
 
 ;Z BLKCTX%  (  -- u )  size of stucture
 BLKCTXSIZE:
-        push bc
-        ld bc,BLOCKCTX_SIZE
-        jp ctx_next
+        call docon
+        dw BLOCKCTX_SIZE
 
 ;Z BLKCTX#  ( -- u )  number of buffer structures
 BLKCTXNUM:
-        push bc
-        ld bc,BLOCKCTX_NUM
-        jp ctx_next
+        call docon
+        dw BLOCKCTX_NUM
 
 
 ;Z BLKFIRST      -- a-adrs      address of first block buffer
@@ -1608,23 +1605,62 @@ BLKFIRST:
         dw RAMTOP,lit,0xFC00,AND,lit,0x1000,MINUS
         dw EXIT
 
-;Z BLKCTX-NEXT  ( -- ctx )  increment buffer structure
-;   BLKCTX_PTR   BLKCTX_IDX @
-;   BLKCTX% * +  ( new-ctx )
-;   DUP (FLUSH)
-;   BLKCTX_IDX @  B/BLK *  BLKFIRST PLUS  ( new-ctx buffer )
-;   OVER BLKCTX>BUFFER !  ( new-ctx )
-;   BLKCTX_IDX @ 1+ BLKCTXNUM MOD  BLKCTX_IDX !
-;   ;
-BLKCTX_NEXT:
+;Z  BLKCTX_NOT_INUSE?   ( ctx -- f )
+;   DUP BLKCTX>BLOCK @ SWAP BLKCTX>SLICE @
+;   BLK @  SLICE
+;   D=  INVERT  ;
+BLKCTX_NOT_INUSEQ:
+        call docolon
+        DW DUP,BLKCTXTOBLOCK,FETCH,SWOP,BLKCTXTOSLICE,FETCH
+        DW BLK,FETCH,SLICE
+        DW DEQUAL,INVERT
+        DW EXIT
+
+; Z IDX>BLKCTX   ( -- ctx )
+;      BLKCTX_PTR   BLKCTX_IDX @
+;      BLKCTX% * +  ( new-ctx )   ;
+IDX_TO_BLKCTX:
         call docolon
         dw lit,BLKCTX_PTR
         dw lit,BLKCTX_IDX,FETCH
         dw BLKCTXSIZE,STAR,PLUS
-        dw DUP,XFLUSH
-        dw lit,BLKCTX_IDX,FETCH,B_BLK,STAR,BLKFIRST,PLUS
-        dw OVER,BLKCTXTOBUFFER,STORE
+        dw EXIT
+
+; Z IDX>BUFFER   ( -- c-addr )
+;   BLKCTX_IDX @  B/BLK *  BLKFIRST PLUS  ( buffer )  ;
+IDX_TO_BUFFER:
+        call docolon
+        dw lit,BLKCTX_IDX,FETCH
+        dw B_BLK,STAR,BLKFIRST,PLUS
+        dw EXIT
+
+; Z IDX++   ( -- )
+;      BLKCTX_IDX @ 1+ BLKCTXNUM MOD  BLKCTX_IDX !    ;
+IDXPLUSPLUS:
+        call docolon
         dw lit,BLKCTX_IDX,FETCH,ONEPLUS,BLKCTXNUM,MOD,lit,BLKCTX_IDX,STORE
+        dw EXIT
+
+;Z BLKCTX-NEXT  ( -- ctx )  increment buffer structure
+;   BEGIN
+;      IDX++
+;      IDX>BLKCTX   ( ctx )
+;   BLKCTX_NOT_INUSE?  UNTIL
+;   IDX>BLKCTX   ( ctx )
+;   DUP (FLUSH)
+;   IDX>BUFFER    ( ctx buffer )
+;   OVER BLKCTX>BUFFER !  ( new-ctx )
+;   ;
+BLKCTX_NEXT:
+        call docolon
+BLKCTX_NEXT1:
+        dw IDXPLUSPLUS
+        dw IDX_TO_BLKCTX
+        dw BLKCTX_NOT_INUSEQ,qbranch,BLKCTX_NEXT1
+        dw IDX_TO_BLKCTX
+        dw DUP,XFLUSH
+        dw IDX_TO_BUFFER
+        dw OVER,BLKCTXTOBUFFER,STORE
         dw EXIT
 
 ;Z BLKCTX-FIND   blk slice-id -- ctx    address of matching buffer, if exists, else 0
@@ -1656,24 +1692,12 @@ BLKCTXF2:
         dw TWODROP,DROP,FALSE
         dw EXIT
 
-;Z  BLKCTX_NOT_INUSE?   ( ctx -- f )
-;   DUP BLKCTX>BLOCK @ SWAP BLKCTX>SLICE @
-;   BLK @  SLICE
-;   D=  INVERT  ;
-BLKCTX_NOT_INUSEQ:
-        call docolon
-        DW DUP,BLKCTXTOBLOCK,FETCH,SWOP,BLKCTXTOSLICE,FETCH
-        DW BLK,FETCH,SLICE
-        DW DEQUAL,INVERT
-        DW EXIT
 
 ;Z BLKCTX-GET  ( blk slice-id -- ctx )  increment buffer structure
 ;     2DUP BLKCTX-FIND ?DUP IF   ( blk slice-id ctx )
 ;         NIP NIP
 ;     ELSE                       ( blk slice-id )
-;         BEGIN
-;            BLKCTX-NEXT    ( blk slice-id ctx )
-;         DUP BLKCTX-NOT-USED?  UNTIL
+;         BLKCTX-NEXT    ( blk slice-id ctx )
 ;         >R
 ;         R@ BLKCTX>SLICE !
 ;         R@ BLKCTX>BLOCK !
@@ -1687,8 +1711,6 @@ BLKCTX_GET:
 
 BLKCTXG1:
         dw BLKCTX_NEXT
-        dw DUP,BLKCTX_NOT_INUSEQ,qbranch,BLKCTXG1
-
         dw TOR
         dw RFETCH,BLKCTXTOSLICE,STORE
         dw RFETCH,BLKCTXTOBLOCK,STORE
