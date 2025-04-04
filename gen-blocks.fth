@@ -10,6 +10,7 @@ OPEN:  build/cf-image.blk
 150 BLOCKS: extensions/blkfile.fth
 165 BLOCKS: extensions/blkfs.fth
 180 BLOCKS: extensions/asmz80.fth
+210 BLOCKS: extensions/locals.fth
 
 300 BLOCKS: extensions/forth2012.fth
 330 BLOCKS: extensions/string.fth

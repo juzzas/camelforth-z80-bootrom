@@ -105,6 +105,7 @@ EXTERN pausevec_ptr
         DW SLASHBLKCTX
         dw EXIT
 
+
 SECTION data
 
 ramtop_ptr:
@@ -557,6 +558,18 @@ nrfrom_done:
         pop bc
         next
 
+;C R'  n -- addr    get address of offset of R stack
+    head(RTICK,R',docode)
+        sla c           ; multiply by two
+        rl b
+        push ix         ; add offset to return stack pointer
+        pop hl
+        add hl,bc
+        push hl
+        pop bc
+        next
+
+
 ;C 0<>     x1 -- flag    test not eq to 0
     head(ZERONOTEQUAL,0<>,docode)
         ld a,b
@@ -760,6 +773,27 @@ HOLDS1:
         dw branch,HOLDS1
 HOLDS2:
         dw TWODROP,EXIT
+
+
+;: SYNONYM ( "<spaces>newname" "<spaces>oldname" -- ) 
+;   CREATE IMMEDIATE
+;      HIDE ' , REVEAL
+;   DOES>
+;      @ STATE @ 0= OVER IMMED? OR
+;      IF EXECUTE ELSE COMPILE, THEN ;
+    head(SYNONYM,SYNONYM,docolon)
+        DW CREATE,IMMEDIATE
+        DW HIDE,TICK,COMMA,REVEAL
+        DW XDOES
+
+        call dodoes
+        DW FETCH,STATE,FETCH,ZEROEQUAL,IMMEDQ,OR
+        DW qbranch,DOES_SYN1
+        DW EXECUTE,EXIT
+DOES_SYN1:
+        DW COMMAXT,EXIT
+
+
 
 ; RC2014 EXTENDED STRINGS =======================
 
@@ -1533,8 +1567,20 @@ ESAC2:
 DEFC BLOCKCTX_SIZE = 8
 DEFC BLOCKCTX_NUM = 4
 
+BLKCTXS:
+        call docon
+        DW blkctxs_ptr
+
+BLKCTX_IDX:
+        call docon
+        DW blkctx_idx_ptr
+
+BLKCTX_CURR:
+        call docon
+        DW blkctx_curr_ptr
+
 ;Z /BLKCTX   ( -- ) initialise the block contexts
-;    BLKCTX_PTR BLKCTX# 0 DO   ( ctx[i] )
+;    BLKCTXS BLKCTX# 0 DO   ( ctx[i] )
 ;       0xffff OVER BLKCTX>BLOCK !  ( ctx[i] )
 ;       0xffff OVER BLKCTX>SLICE !  ( ctx[i] )
 ;       0x0000 OVER BLKCTX>BUFFER !  ( ctx[i] )
@@ -1544,7 +1590,7 @@ DEFC BLOCKCTX_NUM = 4
 ;    DROP  0 BLKCTX_IDX !   0 BLKCTX_CURR ! ;
 SLASHBLKCTX:
         call docolon
-        dw lit,BLKCTX_PTR,BLKCTXNUM,ZERO,xdo
+        dw BLKCTXS,BLKCTXNUM,ZERO,xdo
 SLASHBLKCTX1:
         dw lit,0xffff,OVER,BLKCTXTOBLOCK,STORE
         dw lit,0xffff,OVER,BLKCTXTOSLICE,STORE
@@ -1553,8 +1599,8 @@ SLASHBLKCTX1:
         dw BLKCTXSIZE,PLUS
         dw xloop,SLASHBLKCTX1
         dw DROP
-        dw ZERO,lit,BLKCTX_IDX,STORE
-        dw ZERO,lit,BLKCTX_CURR,STORE
+        dw ZERO,BLKCTX_IDX,STORE
+        dw ZERO,BLKCTX_CURR,STORE
         dw EXIT
 
 ;Z BLKCTX>SLICE  ( ctx -- a-addr' )  get address of slice-id 
@@ -1617,12 +1663,12 @@ BLKCTX_NOT_INUSEQ:
         DW EXIT
 
 ; Z IDX>BLKCTX   ( -- ctx )
-;      BLKCTX_PTR   BLKCTX_IDX @
+;      BLKCTXS   BLKCTX_IDX @
 ;      BLKCTX% * +  ( new-ctx )   ;
 IDX_TO_BLKCTX:
         call docolon
-        dw lit,BLKCTX_PTR
-        dw lit,BLKCTX_IDX,FETCH
+        dw BLKCTXS
+        dw BLKCTX_IDX,FETCH
         dw BLKCTXSIZE,STAR,PLUS
         dw EXIT
 
@@ -1630,7 +1676,7 @@ IDX_TO_BLKCTX:
 ;   BLKCTX_IDX @  B/BLK *  BLKFIRST PLUS  ( buffer )  ;
 IDX_TO_BUFFER:
         call docolon
-        dw lit,BLKCTX_IDX,FETCH
+        dw BLKCTX_IDX,FETCH
         dw B_BLK,STAR,BLKFIRST,PLUS
         dw EXIT
 
@@ -1638,7 +1684,7 @@ IDX_TO_BUFFER:
 ;      BLKCTX_IDX @ 1+ BLKCTXNUM MOD  BLKCTX_IDX !    ;
 IDXPLUSPLUS:
         call docolon
-        dw lit,BLKCTX_IDX,FETCH,ONEPLUS,BLKCTXNUM,MOD,lit,BLKCTX_IDX,STORE
+        dw BLKCTX_IDX,FETCH,ONEPLUS,BLKCTXNUM,MOD,BLKCTX_IDX,STORE
         dw EXIT
 
 ;Z BLKCTX-NEXT  ( -- ctx )  increment buffer structure
@@ -1664,7 +1710,7 @@ BLKCTX_NEXT1:
         dw EXIT
 
 ;Z BLKCTX-FIND   blk slice-id -- ctx    address of matching buffer, if exists, else 0
-;    BLKCTX_PTR BLKCTX# 0 DO   ( blk slice-id ctx[i] )
+;    BLKCTXS BLKCTX# 0 DO   ( blk slice-id ctx[i] )
 ;       >R                ( blk slice-id ; r: ctx[i] )
 ;       2DUP              ( blk slice-id blk slice-id ; r: ctx[i] )
 ;       R@ BLKCTX>BLOCK @  ( blk slice-id blk slice-id blk[i] ; r: ctx[i] )
@@ -1677,7 +1723,7 @@ BLKCTX_NEXT1:
 ;    2DROP DROP 0   ;
 BLKCTX_FIND:
         call docolon
-        dw lit,BLKCTX_PTR,BLKCTXNUM,ZERO,xdo
+        dw BLKCTXS,BLKCTXNUM,ZERO,xdo
 BLKCTXF1:
         dw TOR
         dw TWODUP
@@ -1719,14 +1765,14 @@ BLKCTXG1:
         dw EXIT
 
 ;Z BLKCTX-MAP   xt --     execute xt for each blkctx
-;    BLKCTX_PTR BLKCTX# 0 DO   ( xt ctx[i] )
+;    BLKCTXS BLKCTX# 0 DO   ( xt ctx[i] )
 ;       >R                ( xt ; r: ctx[i] )
 ;       DUP R@ SWAP EXECUTE
 ;       R> BLKCTX% +      ( xt ctx[i+1] )
 ;    LOOP   2DROP  ;
 BLKCTX_MAP:
         call docolon
-        dw lit,BLKCTX_PTR,BLKCTXNUM,ZERO,xdo
+        dw BLKCTXS,BLKCTXNUM,ZERO,xdo
 BLKCTXMAP1:
         dw TOR
         dw DUP
@@ -1739,13 +1785,13 @@ BLKCTXMAP1:
 
 SECTION data
 
-BLKCTX_PTR:
+blkctxs_ptr:
         DEFS 32  ;  4 * 4 words
 
-BLKCTX_IDX:
+blkctx_idx_ptr:
         DEFS 2
 
-BLKCTX_CURR:
+blkctx_curr_ptr:
         DEFS 2
 
 SECTION code_16k
@@ -2040,7 +2086,7 @@ XBUFFER:
         dw DUP,BLKLIMIT,ULESS,qbranch,XBUFFER1
         dw SLICE
         dw BLKCTX_GET
-        dw DUP,lit,BLKCTX_CURR,STORE
+        dw DUP,BLKCTX_CURR,STORE
         dw EXIT
 XBUFFER1:
         dw lit,-35,THROW
@@ -2076,7 +2122,7 @@ BLOCK1:
 ;        BLKCTX>FLAGS -1 SWAP !
 ;     THEN ;
     head(UPDATE,UPDATE,docolon)
-        dw lit,BLKCTX_CURR,FETCH,QDUP,qbranch,UPDATE1
+        dw BLKCTX_CURR,FETCH,QDUP,qbranch,UPDATE1
         dw BLKCTXTOFLAGS,lit,0xffff,SWOP,STORE
 UPDATE1:
         dw EXIT
@@ -2202,20 +2248,20 @@ THRU2:
         dw EXIT
 
 
-;Z -->       \ -- ; LOAD NEXT screen
-;   blk @ 0= blk_blk0 ?throw
-;   refill drop   ; immediate
-    immed(LOADNEXT,``-->'',docolon)
-        DW BLK,FETCH,ZEROEQUAL,qbranch,LOADNEXT1
-        DW lit,-35,THROW
-LOADNEXT1:
-        DW REFILL,DROP
-
-;Z ;S         \ -- ; terminate loading of current screen
-;  source nip >in !   ;
-    head(SEMICOLONS,``;S'',docolon)
-        DW SOURCE,NIP,TOIN,STORE
-        DW EXIT
+dnl ;Z -->       \ -- ; LOAD NEXT screen
+dnl ;   blk @ 0= blk_blk0 ?throw
+dnl ;   refill drop   ; immediate
+dnl     immed(LOADNEXT,``-->'',docolon)
+dnl         DW BLK,FETCH,ZEROEQUAL,qbranch,LOADNEXT1
+dnl         DW lit,-35,THROW
+dnl LOADNEXT1:
+dnl         DW REFILL,DROP
+dnl 
+dnl ;Z ;S         \ -- ; terminate loading of current screen
+dnl ;  source nip >in !   ;
+dnl     head(SEMICOLONS,``;S'',docolon)
+dnl         DW SOURCE,NIP,TOIN,STORE
+dnl         DW EXIT
 
 ; BLKFILE implementation =====================================
 
