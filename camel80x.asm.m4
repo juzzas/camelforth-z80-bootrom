@@ -105,12 +105,10 @@ EXTERN pausevec_ptr
         DW SLASHBLKCTX
         dw EXIT
 
-
 SECTION data
 
 ramtop_ptr:
         DEFS 2
-
 
 SECTION code_16k
 
@@ -172,6 +170,11 @@ DOTID1:
 ;: ENVIRONMENT-WORDLIST ( -- wid )
         head(ENVIRONMENT_WORDLIST,ENVIRONMENT-WORDLIST,docon)
             dw environment_wordlist_head
+
+;Z LOCALS-WID   ( -- wid )
+    head_system(LOCALS_WID,LOCALS-WID,docon)
+        DW locals_wid_head
+
 
 ;C (CREATE-WID)  c-addr u wid --  )    create an empty definition to WID
 ;   DUP WID>NFA , 0 C,         link & `immed' field
@@ -355,10 +358,10 @@ CQUOTE1:
 ;\ Add the character to the end of the counted string.
 ;  TUCK COUNT + C!
 ;  1 SWAP C+!    ;
-    head(ADDCHAR,ADDCHAR,docolon)
-        DW TUCK,COUNT,PLUS,CSTORE
-        DW lit,1,SWOP,CPLUSSTORE
-        DW EXIT
+;    head(ADDCHAR,ADDCHAR,docolon)
+;        DW TUCK,COUNT,PLUS,CSTORE
+;        DW lit,1,SWOP,CPLUSSTORE
+;        DW EXIT
 
 ;: APPEND          ( c-addr u c-dest  -- )
 ;\ Add the string described by c-addr/u to the counted
@@ -367,12 +370,12 @@ CQUOTE1:
 ;  2 PICK C!         \ -- caddr u $dest lend ; update length
 ;  CHAR+ +           \ -- caddr u $d+1+lend ; dest buffer addr
 ;  SWAP MOVE   ;      \ -- ; copy string
-    head(APPEND,APPEND,docolon)
-        DW TWODUP,CFETCH,TUCK,PLUS
-        DW lit,2,PICK,CSTORE
-        DW CHARPLUS,PLUS
-        DW SWOP,MOVE
-        DW EXIT
+;    head(APPEND,APPEND,docolon)
+;        DW TWODUP,CFETCH,TUCK,PLUS
+;        DW lit,2,PICK,CSTORE
+;        DW CHARPLUS,PLUS
+;        DW SWOP,MOVE
+;        DW EXIT
 
 ; : D0<   NIP 32768 AND 0<> ;
     head(DZEROLESS,D0<,docolon)
@@ -555,17 +558,6 @@ nrfrom_loop:
 nrfrom_done:
         push hl
         exx
-        pop bc
-        next
-
-;C R'  n -- addr    get address of offset of R stack
-    head(RTICK,R',docode)
-        sla c           ; multiply by two
-        rl b
-        push ix         ; add offset to return stack pointer
-        pop hl
-        add hl,bc
-        push hl
         pop bc
         next
 
@@ -775,25 +767,28 @@ HOLDS2:
         dw TWODROP,EXIT
 
 
-;: SYNONYM ( "<spaces>newname" "<spaces>oldname" -- ) 
-;   CREATE IMMEDIATE
-;      HIDE ' , REVEAL
-;   DOES>
-;      @ STATE @ 0= OVER IMMED? OR
-;      IF EXECUTE ELSE COMPILE, THEN ;
-    head(SYNONYM,SYNONYM,docolon)
-        DW CREATE,IMMEDIATE
-        DW HIDE,TICK,COMMA,REVEAL
+dnl ; +USER defines next USER variables 
+PLUSUSERPTR:
+        call docon
+        DW plususer_ptr
+
+
+dnl ;Z +USER   define next user variable 'n'
+dnl ;   CREATE PLUSUSERPTR, DOES> (machine code fragment)
+    head(PLUSUSER,+USER,docolon)
+        DW CREATE,PLUSUSERPTR,FETCH
+        DW DUP,COMMA,CELLPLUS,PLUSUSERPTR,STORE
         DW XDOES
-
-        call dodoes
-        DW FETCH,STATE,FETCH,ZEROEQUAL,IMMEDQ,OR
-        DW qbranch,DOES_SYN1
-        DW EXECUTE,EXIT
-DOES_SYN1:
-        DW COMMAXT,EXIT
+        jp douser
 
 
+
+SECTION data
+
+plususer_ptr:
+        DS 2
+
+SECTION code_16k
 
 ; RC2014 EXTENDED STRINGS =======================
 
@@ -1160,6 +1155,9 @@ system_wordlist_head:
 environment_wordlist_head:
         ds 2
 
+locals_wid_head:
+        DEFS 2
+
 SECTION code_16k
 
 ;: WORDLIST ( -- wid )
@@ -1310,15 +1308,31 @@ FINDIN2:
 FINDIN3:
         DW EXIT
 
+
+;Z ?FIND-LOCALS    c-addr len      --  c-adddr len 0   if not found
+;                                      c-adddr len nt  if found
+;    LOCALS-WID  FIND-NAME-IN  ;
+QFIND_LOCALS:
+        call docolon
+        DW LOCALS_WID,FIND_NAME_IN
+        DW EXIT
+
 ;C FIND-NAME   c-addr len      -- 0   if not found
 ;C                                nt  if found
-;    ' FIND-NAME-IN WORDLISTS STACK.UNTIL
+;    ?FIND-LOCALS DUP 0= IF
+;       DROP
+;       ' FIND-NAME-IN WORDLISTS STACK.UNTIL
 ;                         ( c-addr len 0       if not found )
 ;                         ( c-addr len nfa     if found )
+;    THEN
 ;    NIP NIP ;
 FIND_NAME:
         call docolon
+        DW QFIND_LOCALS,DUP,ZEROEQUAL,qbranch,FINDNAME1
+        DW DROP
         DW lit,FIND_NAME_IN,WORDLISTS,STACKBOUNDS,MAP_UNTIL
+
+FINDNAME1:
         DW NIP,NIP
         DW EXIT
 
@@ -3394,9 +3408,11 @@ XINIT1:
 ;Z /16KROM    init enhanced features
 SLASH16KROM:
         call docolon
+        DW NINIT,PLUSUSERPTR,STORE
         DW U0,LINK,STORE
         DW lit,XWAKE,U0,STORE
         DW ALLONES,RAMTOPSTORE
+        DW ZERO,LOCALS_WID,STORE
         DW lit,default_xt_16k_start,lit,default_xt,lit,default_xt_16k_len,MOVE
         DW lit,system_lastword,SYSTEM_WORDLIST,STORE
         DW lit,vocab_lastword,VOCAB_WORDLIST,STORE

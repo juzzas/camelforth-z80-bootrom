@@ -1,10 +1,10 @@
 CR .( Loading locals.... )
 30 LOAD
-1 12 +THRU
 
+ONLY FORTH DEFINITIONS  ALSO SYSTEM
+1 14 +THRU
 
-
-
+ONLY FORTH DEFINITIONS
 
 
 
@@ -31,73 +31,97 @@ CR .( Loading locals.... )
 \ ( x -- )
 \ Assign the value x to the local value local.
 
-WORDLIST CONSTANT  LOCALS-WID
-LOCALS-WID >ORDER    LOCALS-WID  SET-CURRENT
+WORDLIST CONSTANT  LOCALS-PRIVATE
+LOCALS-PRIVATE >ORDER    LOCALS-PRIVATE  SET-CURRENT
 
 0 VALUE locals-dp
 0 VALUE locals#
-0 VALUE locals-wid
 0 VALUE real-dp
 0 VALUE real-current
-FALSE VALUE has-locals
++USER lvframe  0 lvframe !
+lvframe @ U.
+: has-locals  locals#  0<> ;
 
 : >tempdict
-   GET-CURRENT TO real-current  locals-wid SET-CURRENT
+   GET-CURRENT TO real-current  LOCALS-WID SET-CURRENT
    DP @  TO real-dp   locals-dp DP !  ;
 
 : >realdict
    real-current SET-CURRENT
    DP @  TO locals-dp   real-dp DP !  ;
 
-: tempdict  ( -- wid )   \ create temp dictionary space with wid
-   HERE 1024 +    ( wid )
-   0 OVER !
-   DUP CELL+   TO locals-dp  ;
-
-
-
 
 : ndrop   0 ?DO  DROP LOOP ;
-: dolocals
-     locals# IF ['] LIT COMPILE,  locals# ,
-     ['] N>R  COMPILE, THEN  ;
 
 
-: (lv) ( stk-offset -- addr ) 
-   TO-STATE @ IF !  FALSE TO-STATE ! ELSE @ THEN ;
-: lv, ['] R' COMPILE,  ['] @ COMPILE,   ['] (lv) COMPILE, ;
+: (dolocals,)  ( nlocals -- )
+   ['] LIT  COMPILE,  ,
+   ['] RP@  COMPILE,
+   ['] lvframe  COMPILE,
+   ['] @  COMPILE,
+   ['] >R  COMPILE,
+   ['] lvframe  COMPILE,
+   ['] !  COMPILE,
+   ['] N>R  COMPILE, ;
+
+: (endlocals,)
+   ['] NR>  COMPILE,
+   ['] ndrop  COMPILE,
+   ['] R>  COMPILE,
+   ['] lvframe  COMPILE,
+   ['] !  COMPILE,  ;
+
+: dolocals,
+   locals# ?DUP IF (dolocals,)  THEN ;
+
+: endlocals,
+   has-locals IF (endlocals,) THEN  ;
+
+
+: (lv)   ( stk-offset -- addr ) 
+   lvframe @ + TO-STATE @ 
+   IF !  FALSE TO-STATE ! ELSE @ THEN ;
+: lv,   ['] (lv) COMPILE, ;
 
 
 : LVALUE  ( offset c-addr u -- )
     CR ." LVALUE: "  .S
-   locals-wid (CREATE-WID) ,
+   LOCALS-WID (CREATE-WID) 2 +  2* NEGATE ,
     CR ." LVALUE end: "  .S
     DOES> ['] LIT COMPILE, @ , lv,  
-  \ DOES> @
  ;
 
 : ((LOCAL))
     CR ." ((LOCAL)): "  .S
    >tempdict
-    locals# 1+ -ROT  LVALUE  IMMEDIATE
+    locals# -ROT  LVALUE  IMMEDIATE
    >realdict
     locals# 1+  TO locals#  ;
 
 FORTH-WORDLIST SET-CURRENT
 
+: reset-locals
+   0 TO locals#
+   0 LOCALS-WID  !
+   0 TO locals-dp ;
+
+: /locals
+   reset-locals
+   HERE 1024 + TO locals-dp
+;
+
 : (LOCAL)   ( c-addr u -- )
     CR ." (LOCAL): "  .S
    locals-dp 0= IF
-      tempdict TO locals-wid
-      0 TO locals#
-      CR ." created locals-wid: " locals-wid U.
+      /locals
    THEN
    DUP IF
       ((LOCAL))
    ELSE
       2DROP
-      CR ." locals: " locals# . 
-      dolocals
+      CR ." locals: " locals# .
+      dolocals,
+      CR ." after locals: " .S
    THEN   ;
 
 
@@ -107,15 +131,10 @@ FORTH-WORDLIST SET-CURRENT
       [CHAR] | - OVER 1 - OR WHILE
       (LOCAL)
    REPEAT 2DROP   0 0 (LOCAL)
-   CR ." locals to-order:" locals-wid U.
-   GET-ORDER CR .S   ndrop
-   locals-wid >ORDER
-   GET-ORDER CR .S   ndrop
-   CR ." after locals to-order:" locals-wid U.
-   TRUE TO has-locals
+   ." end locals|"
 ; IMMEDIATE
 
-LOCALS-WID  SET-CURRENT
+LOCALS-PRIVATE  SET-CURRENT
 
 
 12345 CONSTANT undefined-value
@@ -129,6 +148,7 @@ LOCALS-WID  SET-CURRENT
      2DUP S" --" match-or-end? 0= WHILE
      2DUP S" :}" match-or-end? 0= WHILE
      ROT 1+ PARSE-NAME
+     locals# 1+ TO locals#
    AGAIN THEN THEN THEN ;
 
 : scan-locals
@@ -142,6 +162,7 @@ LOCALS-WID  SET-CURRENT
      2DUP S" :}" match-or-end? 0= WHILE
      ROT 1+ PARSE-NAME
      POSTPONE undefined-value
+     locals# 1+ TO locals#
    AGAIN THEN THEN ;
 
 : scan-end ( c-addr1 u1 -- c-addr2 u2 )
@@ -163,36 +184,45 @@ FORTH-WORDLIST SET-CURRENT
    scan-args scan-locals scan-end
    CR ." parsed: " .S
    2DROP define-locals
-   locals-wid >ORDER
-   TRUE TO has-locals
 ; IMMEDIATE
 
 CR .( got to this point: before ; )
 
 : ;   \ redefine ; to cope definitions with locals
-   has-locals IF 
-      GET-ORDER NIP 1- SET-ORDER
-      locals# IF  ['] NR>  COMPILE,  ['] ndrop COMPILE, THEN
-   THEN
-   0 TO locals#
-   0 TO locals-wid
-   FALSE TO has-locals
+   ." end define"
+   endlocals,
+   reset-locals
    POSTPONE ;
 ;  IMMEDIATE
 
-ONLY FORTH DEFINITIONS
+: EXIT   \ redefine EXIT to cope definitions with locals
+   endlocals,
+   POSTPONE EXIT
+;  IMMEDIATE
+
+: DOES>   \ redefine DOES> to cope definitions with locals
+   endlocals,
+   reset-locals
+   POSTPONE DOES>
+;  IMMEDIATE
+
+-1 SET-ORDER   FORTH-WORDLIST SET-CURRENT
 CR .( got to LOCTEST point )
+
 
 : LOCTEST
    LOCALS| a b |
-   a .
-   b .
+   ." a= "  a U.
+   ." b= "  b U.
+   10 TO b  ." new b: "   b U.
 ;
 
+CR .( got to after LOCTEST point )
 
 
-\ : TEST   {: a b | xx yy zz -- :}
-\  ." TEST" 
-\  a .
-\ ;
+: TEST   {: a b | xx -- :}
+   ." TEST: "
+   a . ." + "  b .    a b +  TO  xx  ." = "  xx .
+;
 
+CR .( got to after LOCTEST point )
