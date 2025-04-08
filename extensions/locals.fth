@@ -1,8 +1,8 @@
 CR .( Loading locals.... )
-30 LOAD
+
 
 ONLY FORTH DEFINITIONS  ALSO SYSTEM
-1 14 +THRU
+1 15 +THRU
 
 ONLY FORTH DEFINITIONS
 
@@ -14,22 +14,7 @@ ONLY FORTH DEFINITIONS
 
 
 
-\ Execution:
-\ ( c-addr u -- )
-\ When executed during compilation, (LOCAL) passes a message to
-\  the system that has one of two meanings. If u is non-zero,
-\  the message identifies a new local whose definition name is
-\  given by the string of characters identified by c-addr u. If
-\  u is zero, the message is "last local" and c-addr has no
-\  significance.
-
-\ local Execution:
-\ ( -- x )
-\ Push the local's value, x, onto the stack. 
-
-\ TO local Run-time:
-\ ( x -- )
-\ Assign the value x to the local value local.
+\ Locals word set                                    jps 1 / 14
 
 WORDLIST CONSTANT  LOCALS-PRIVATE
 LOCALS-PRIVATE >ORDER    LOCALS-PRIVATE  SET-CURRENT
@@ -38,8 +23,14 @@ LOCALS-PRIVATE >ORDER    LOCALS-PRIVATE  SET-CURRENT
 0 VALUE locals#
 0 VALUE real-dp
 0 VALUE real-current
+
 +USER lvframe  0 lvframe !
-lvframe @ U.
+
+
+
+
+
+\ Locals word set                                    jps 2 / 14
 : has-locals  locals#  0<> ;
 
 : >tempdict
@@ -54,22 +45,24 @@ lvframe @ U.
 : ndrop   0 ?DO  DROP LOOP ;
 
 
+
+\ Locals word set                                    jps 3 / 14
+
 : (dolocals,)  ( nlocals -- )
-   ['] LIT  COMPILE,  ,
-   ['] RP@  COMPILE,
-   ['] lvframe  COMPILE,
-   ['] @  COMPILE,
-   ['] >R  COMPILE,
-   ['] lvframe  COMPILE,
-   ['] !  COMPILE,
-   ['] N>R  COMPILE, ;
+   ['] LIT  COMPILE,  ,     ['] RP@  COMPILE,
+   ['] lvframe  COMPILE,    ['] @  COMPILE,
+   ['] >R  COMPILE,         ['] lvframe  COMPILE,
+   ['] !  COMPILE,          ['] N>R  COMPILE, ;
 
 : (endlocals,)
-   ['] NR>  COMPILE,
-   ['] ndrop  COMPILE,
-   ['] R>  COMPILE,
-   ['] lvframe  COMPILE,
+   ['] NR>  COMPILE,        ['] ndrop  COMPILE,
+   ['] R>  COMPILE,         ['] lvframe  COMPILE,
    ['] !  COMPILE,  ;
+
+
+
+
+\ Locals word set                                    jps 4 / 14
 
 : dolocals,
    locals# ?DUP IF (dolocals,)  THEN ;
@@ -84,21 +77,24 @@ lvframe @ U.
 : lv,   ['] (lv) COMPILE, ;
 
 
+
+\ Locals word set                                    jps 5 / 14
 : LVALUE  ( offset c-addr u -- )
-    CR ." LVALUE: "  .S
    LOCALS-WID (CREATE-WID) 2 +  2* NEGATE ,
-    CR ." LVALUE end: "  .S
-    DOES> ['] LIT COMPILE, @ , lv,  
+   DOES> ['] LIT COMPILE, @ , lv,  
  ;
 
 : ((LOCAL))
-    CR ." ((LOCAL)): "  .S
    >tempdict
     locals# -ROT  LVALUE  IMMEDIATE
    >realdict
     locals# 1+  TO locals#  ;
 
-FORTH-WORDLIST SET-CURRENT
+
+
+
+
+\ Locals word set                                    jps 6 / 14
 
 : reset-locals
    0 TO locals#
@@ -110,20 +106,27 @@ FORTH-WORDLIST SET-CURRENT
    HERE 1024 + TO locals-dp
 ;
 
+
+
+
+
+\ Locals word set                                    jps 7 / 14
+
+FORTH-WORDLIST SET-CURRENT
+
 : (LOCAL)   ( c-addr u -- )
-    CR ." (LOCAL): "  .S
-   locals-dp 0= IF
-      /locals
-   THEN
-   DUP IF
-      ((LOCAL))
-   ELSE
+   locals-dp 0= IF  /locals  THEN
+   DUP IF  ((LOCAL))  ELSE
       2DROP
-      CR ." locals: " locals# .
       dolocals,
-      CR ." after locals: " .S
    THEN   ;
 
+
+
+
+
+
+\ Locals word set                                    jps 8 / 14
 
 : LOCALS| ( "name...name |" -- )
    BEGIN
@@ -131,11 +134,16 @@ FORTH-WORDLIST SET-CURRENT
       [CHAR] | - OVER 1 - OR WHILE
       (LOCAL)
    REPEAT 2DROP   0 0 (LOCAL)
-   ." end locals|"
 ; IMMEDIATE
 
-LOCALS-PRIVATE  SET-CURRENT
 
+
+
+
+
+
+\ Locals word set                                    jps 9 / 14
+LOCALS-PRIVATE  SET-CURRENT
 
 12345 CONSTANT undefined-value
 : match-or-end? ( c-addr1 u1 c-addr2 u2 -- f )
@@ -150,7 +158,7 @@ LOCALS-PRIVATE  SET-CURRENT
      ROT 1+ PARSE-NAME
      locals# 1+ TO locals#
    AGAIN THEN THEN THEN ;
-
+\ Locals word set                                   jps 10 / 14
 : scan-locals
    \ n c-addr1 u1 -- c-addr1 u1 ... c-addrn un n c-addrn+1 un+1
    2DUP S" |" ROT MAX STRCMP  0= 0= IF
@@ -165,6 +173,8 @@ LOCALS-PRIVATE  SET-CURRENT
      locals# 1+ TO locals#
    AGAIN THEN THEN ;
 
+
+\ Locals word set                                   jps 11 / 14
 : scan-end ( c-addr1 u1 -- c-addr2 u2 )
    BEGIN
      2DUP S" :}" match-or-end? 0= WHILE
@@ -177,23 +187,26 @@ LOCALS-PRIVATE  SET-CURRENT
    LOOP
    0 0 (LOCAL) ;
 
+
+
+
+\ Locals word set                                   jps 12 / 14
 FORTH-WORDLIST SET-CURRENT
 
 : {: ( -- )
    0 PARSE-NAME
    scan-args scan-locals scan-end
-   CR ." parsed: " .S
    2DROP define-locals
 ; IMMEDIATE
 
-CR .( got to this point: before ; )
-
 : ;   \ redefine ; to cope definitions with locals
-   ." end define"
    endlocals,
    reset-locals
    POSTPONE ;
 ;  IMMEDIATE
+
+
+\ Locals word set                                   jps 13 / 14
 
 : EXIT   \ redefine EXIT to cope definitions with locals
    endlocals,
@@ -206,23 +219,16 @@ CR .( got to this point: before ; )
    POSTPONE DOES>
 ;  IMMEDIATE
 
+
+
+
+\ Locals word set                                   jps 14 / 14
 -1 SET-ORDER   FORTH-WORDLIST SET-CURRENT
-CR .( got to LOCTEST point )
 
 
-: LOCTEST
-   LOCALS| a b |
-   ." a= "  a U.
-   ." b= "  b U.
-   10 TO b  ." new b: "   b U.
-;
+GET-CURRENT    ENVIRONMENT-WORDLIST SET-CURRENT
+  TRUE CONSTANT LOCALS
+  TRUE CONSTANT LOCALS-EXT
+  16 CONSTANT #LOCALS
+SET-CURRENT
 
-CR .( got to after LOCTEST point )
-
-
-: TEST   {: a b | xx -- :}
-   ." TEST: "
-   a . ." + "  b .    a b +  TO  xx  ." = "  xx .
-;
-
-CR .( got to after LOCTEST point )
