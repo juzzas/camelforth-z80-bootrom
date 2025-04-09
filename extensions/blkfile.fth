@@ -154,15 +154,16 @@ flag.readable flag.writable +  CONSTANT R/W
 
 
    ( blkfile - extension to treat blocks as files       8 / n)
+1 VALUE line-index
+
 : tload-refill  ( -- flag )
     blkfile-buffer BLKFILE-BUFFER-SIZE SOURCE-ID 
        READLINE-BLKFILE 
     IF
+       line-index 1+ TO line-index
        blkfile-buffer SWAP  'SOURCE 2!
        0 >IN !  TRUE
     ELSE DROP  FALSE  THEN ;
-
-
 
 
 
@@ -189,6 +190,11 @@ flag.readable flag.writable +  CONSTANT R/W
 
 : TLOAD ( blk -- )
    SAVE-INPUT N>R
+   line-index >R
+   0 TO line-index
    ['] tload-refill 'REFILL !
-   (TLOAD)
+   ['] (TLOAD)  CATCH ?DUP IF
+       >R CR ." Line: " line-index .
+       R> THROW THEN
+   R> TO line-index 
    NR> RESTORE-INPUT THROW  ;

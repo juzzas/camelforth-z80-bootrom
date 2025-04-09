@@ -77,13 +77,13 @@ CR .( Loading file access words... )
    DROP         ;
 
 : INCLUDE ( i * x "name" -- j * x ) 
-   POSTPONE OPEN  TLOAD  ;
+   OPEN  TLOAD  ;
 
 : INCLUDED ( i * x c-addr u -- j * x ) 
    $open DROP TLOAD  ;
 
 : REQUIRE ( i * x "name" -- i * x )
-   POSTPONE OPEN  TLOAD  ;
+   OPEN  TLOAD  ;
 
 : REQUIRED ( i * x c-addr u -- i * x )
    $open DROP TLOAD  ;

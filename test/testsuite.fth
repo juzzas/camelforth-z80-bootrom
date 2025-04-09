@@ -29,12 +29,12 @@ CR .( Starting double tests... )         3144 TLOAD
 CR .( Starting exception tests... )      3162 TLOAD
 CR .( Starting facility tests... )       3168 TLOAD
 3300 ROOT!
-\ CR .( Starting file tests... )           3174 TLOAD
+CR .( Starting file tests... )           3174 TLOAD
 CR .( Starting locals tests... )       3186 TLOAD
 2048 CONSTANT heap-size
 heap-size BUFFER: heap
 heap heap-size INIT-HEAP
 CR .( Starting memory tests... )         3195 TLOAD
-CR .( Starting tools tests... )          3204 TLOAD
+\ CR .( Starting tools tests... )          3204 TLOAD
 CR .( Starting searchorder tests... )    3222 TLOAD
 CR .( Starting string tests... )         3231 TLOAD
