@@ -1,6 +1,7 @@
 INCLUDE tools/blocks.fth
+INCLUDE tools/blkfs.fth
 
-1000 GENERATE: build/cf-image.blk
+4000 GENERATE: build/cf-image.blk
 OPEN:  build/cf-image.blk
 0 BLOCKS: extensions/00system.fth
 30 BLOCKS: extensions/tools.fth
@@ -54,6 +55,17 @@ OPEN:  build/cf-image.blk
 +BLKFILE: test/forth2012-test-suite/src/toolstest.fth
 +BLKFILE: test/forth2012-test-suite/src/searchordertest.fth
 +BLKFILE: test/forth2012-test-suite/src/stringtest.fth
+
+3300 150 MKFS
+3300 ROOT!
+
+15 CREAT filetest.fth 
+   BLKFILE: test/forth2012-test-suite/src/filetest.fth
+3 CREAT required-helper1.fth 
+   BLKFILE: test/forth2012-test-suite/src/required-helper1.fth
+3 CREAT required-helper2.fth 
+   BLKFILE: test/forth2012-test-suite/src/required-helper1.fth
+
 
 3600 BLOCKS: test/hexload_test.fth
 +BLOCKS: test/hexload_test2.fth

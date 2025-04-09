@@ -23,15 +23,14 @@ CR .( Starting Forth 2012 test suite... )
 CR .( Loading test utilities... )        3072 TLOAD
 CR .( Loading error reporting... )       3081 TLOAD
 300 LOAD     \ load Forth 2012 extenstions
-\ CR .( Starting core ext tests... )       3087 TLOAD
+CR .( Starting core ext tests... )       3087 TLOAD
 \ CR .( Starting block tests... )          3117 TLOAD
-\ CR .( Starting double tests... )         3144 TLOAD
-\ CR .( Starting exception tests... )      3162 TLOAD
-\ CR .( Starting facility tests... )       3168 TLOAD
-2000 100 MKFS
-2000 ROOT!
-CR .( Starting file tests... )           3174 TLOAD
-\ CR .( Starting locals tests... )       3186 TLOAD
+CR .( Starting double tests... )         3144 TLOAD
+CR .( Starting exception tests... )      3162 TLOAD
+CR .( Starting facility tests... )       3168 TLOAD
+3300 ROOT!
+\ CR .( Starting file tests... )           3174 TLOAD
+CR .( Starting locals tests... )       3186 TLOAD
 2048 CONSTANT heap-size
 heap-size BUFFER: heap
 heap heap-size INIT-HEAP
