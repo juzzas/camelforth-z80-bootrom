@@ -16,19 +16,19 @@ ONLY FORTH DEFINITIONS
 
 \ Forth 2012 Core extensions for CamelForth BootROM       1 / n
 
-\ get the action of a deferred word
+: DEFER    ( "name" -- )      \  create a deferred word
+   CREATE ['] NOOP ,
+   DOES>
+      @ EXECUTE ;
+
+: DEFER!   >BODY ! ;
+: DEFER@   >BODY @ ;
+: IS       ( xt "name" -- )     \ define a deferred word
+   STATE @  IF  POSTPONE [']  POSTPONE DEFER!
+   ELSE  ' DEFER!  THEN ; IMMEDIATE
 : ACTION-OF  ( "name -- xt" )    
    STATE @  IF POSTPONE ['] POSTPONE DEFER@
    ELSE  ' DEFER@  THEN ; IMMEDIATE
-
-
-VARIABLE TO-STATE  FALSE TO-STATE !
-: TO TRUE TO-STATE ! ;
-: VALUE CREATE , 
-   DOES> TO-STATE @ IF !  FALSE TO-STATE ! ELSE @ THEN  ;
-
-
-
 
 \ Forth 2012 Core extensions for CamelForth BootROM       2 / n
 

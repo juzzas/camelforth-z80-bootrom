@@ -404,34 +404,34 @@ dnl         dw lit,0x1b,EMIT
 dnl         dw lit,'[',EMIT
 dnl         dw EXIT
 
-;C DEFER    ( "name" -- )      \  create a deferred word
-;   CREATE ['] NOOP ,
-;   DOES>
-;   @ EXECUTE ;
-    head(DEFER,DEFER,docolon)
-        DW CREATE,lit,-3,ALLOT
-        DW lit,dodefer,COMMACF
-        DW lit,NOOP,COMMAXT,EXIT
-
-;C DEFER!
-;    >BODY ! ;
-    head(DEFERSTORE,DEFER!,docolon)
-        DW TOBODY,STORE,EXIT
-
-;C DEFER@
-;    >BODY @ ;
-    head(DEFERFETCH,DEFER@,docolon)
-        DW TOBODY,FETCH,EXIT
-
-
-;C IS       ( xt "name" -- )     \ define a deferred word
-;   STATE @  IF  POSTPONE [']  POSTPONE DEFER!
-;   ELSE  ' DEFER!  THEN ; IMMEDIATE
-    immed(IS,IS,docolon)
-        DW STATE,FETCH,qbranch,IS1
-        DW BRACTICK,lit,DEFERSTORE,COMMAXT,EXIT
-IS1:
-        DW TICK,DEFERSTORE,EXIT
+dnl ;C DEFER    ( "name" -- )      \  create a deferred word
+dnl ;   CREATE ['] NOOP ,
+dnl ;   DOES>
+dnl ;   @ EXECUTE ;
+dnl     head(DEFER,DEFER,docolon)
+dnl         DW CREATE,lit,-3,ALLOT
+dnl         DW lit,dodefer,COMMACF
+dnl         DW lit,NOOP,COMMAXT,EXIT
+dnl 
+dnl ;C DEFER!
+dnl ;    >BODY ! ;
+dnl     head(DEFERSTORE,DEFER!,docolon)
+dnl         DW TOBODY,STORE,EXIT
+dnl 
+dnl ;C DEFER@
+dnl ;    >BODY @ ;
+dnl     head(DEFERFETCH,DEFER@,docolon)
+dnl         DW TOBODY,FETCH,EXIT
+dnl 
+dnl 
+dnl ;C IS       ( xt "name" -- )     \ define a deferred word
+dnl ;   STATE @  IF  POSTPONE [']  POSTPONE DEFER!
+dnl ;   ELSE  ' DEFER!  THEN ; IMMEDIATE
+dnl     immed(IS,IS,docolon)
+dnl         DW STATE,FETCH,qbranch,IS1
+dnl         DW BRACTICK,lit,DEFERSTORE,COMMAXT,EXIT
+dnl IS1:
+dnl         DW TICK,DEFERSTORE,EXIT
 
 ;C SLITERAL    c-addr u --    compile string literal
 ;    (SLITERAL)   ; IMMEDIATE
