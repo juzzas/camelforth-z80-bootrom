@@ -9,9 +9,8 @@ OPEN:  build/cf-image.blk
 90 BLOCKS: extensions/assembler.fth
 120 BLOCKS: extensions/multi.fth
 150 BLOCKS: extensions/blkfile.fth
-165 BLOCKS: extensions/blkfs.fth
-180 BLOCKS: extensions/asmz80.fth
-210 BLOCKS: extensions/locals.fth
+180 BLOCKS: extensions/blkfs.fth
+210 BLOCKS: extensions/asmz80.fth
 
 300 BLOCKS: extensions/forth2012.fth
 330 BLOCKS: extensions/string.fth
@@ -23,19 +22,20 @@ OPEN:  build/cf-image.blk
 510 BLOCKS: extensions/dyn-memory.fth
 540 BLOCKS: extensions/search.fth
 570 BLOCKS: extensions/file-access.fth
+600 BLOCKS: extensions/locals.fth
 
 
-600 BLOCKS: extensions/double.fth
+900 BLOCKS: extensions/double.fth
 +BLOCKS: extensions/fixed.fth
 +BLOCKS: extensions/random.fth
 +BLOCKS: extensions/leds.fth
 +BLOCKS: extensions/pagedram.fth
 +BLOCKS: extensions/ramdrive.fth
 
-900 BLOCKS: examples/mandelbrot.fth
-915 BLOCKS: examples/gamelife.fth
-930 BLOCKS: examples/2048.fth
-945 BLOCKS: examples/calendar.fth
+1200 BLOCKS: examples/mandelbrot.fth
+1215 BLOCKS: examples/gamelife.fth
+1230 BLOCKS: examples/2048.fth
+1245 BLOCKS: examples/calendar.fth
 
 3000 BLOCKS: test/testsuite.fth
 +BLOCKS: test/ttester.fth

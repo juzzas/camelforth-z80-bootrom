@@ -21,12 +21,6 @@ CR .( Loading file access words... )
     ['] (OPEN-FILE) CATCH  DUP IF 0 SWAP THEN ;
 
 
-: (CLOSE-FILE) ( fileid -- )
-   CLOSE-BLKFILE   ;
-: CLOSE-FILE    ( fileid -- ior )
-    ['] (CLOSE-FILE) CATCH  ;
-
-
 : (CREATE-FILE) ( c-addr u fam -- fileid )
    >R DEFAULT-FILESIZE -ROT $creat  R> ( blk fence fam )
    OPEN-BLKFILE   ;
@@ -44,49 +38,18 @@ CR .( Loading file access words... )
 : RESIZE-FILE ( ud fileid -- ior ) 
    2DROP DROP       -74 ;
 
-: READ-FILE ( c-addr u fileid -- u ior ) 
-   ['] READ-BLKFILE CATCH
-   DUP IF >R 0 R> THEN ;
-
-: READ-LINE ( c-addr u fileid -- u f ior ) 
-   ['] READLINE-BLKFILE CATCH
-   DUP  IF >R 0 0 R> THEN ;
-
-: WRITE-FILE ( c-addr u fileid -- ior ) 
-   ['] WRITE-BLKFILE  CATCH ;
-
-: WRITE-LINE ( c-addr u fileid -- ior ) 
-   ['] WRITELINE-BLKFILE CATCH ;
-
-: FILE-POSITION  ( fileid -- ud ior )
-   DROP        0 0  -65 ;
-
-: REPOSITION-FILE ( ud fileid -- ior )
-   DROP 2DROP      -73 ;
-
-: FILE-SIZE ( fileid -- ud ior )
-   DROP        0 0 -66 ;
-
-: FILE-STATUS ( c-addr u -- x ior )
-   2DROP       0   -67 ;
-
-: FLUSH-FILE ( fileid -- ior ) 
-   DROP FLUSH   0 ;
-
-: INCLUDE-FILE ( i * x fileid -- j * x )  
-   DROP         ;
 
 : INCLUDE ( i * x "name" -- j * x ) 
-   OPEN  TLOAD  ;
+   OPEN  INCLUDE-BLKFILE  ;
 
 : INCLUDED ( i * x c-addr u -- j * x ) 
-   $open DROP TLOAD  ;
+   $open DROP INCLUDE-BLKFILE  ;
 
 : REQUIRE ( i * x "name" -- i * x )
-   OPEN  TLOAD  ;
+   OPEN  INCLUDE-BLKFILE  ;
 
 : REQUIRED ( i * x c-addr u -- i * x )
-   $open DROP TLOAD  ;
+   $open DROP INCLUDE-BLKFILE  ;
 
 : (    \ multi-line comment
    BEGIN

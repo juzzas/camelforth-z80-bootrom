@@ -6,7 +6,7 @@ CR .( Loading blkfile... )
 
 
 ONLY FORTH DEFINITIONS   ALSO SYSTEM
-1 13 +THRU
+1 16 +THRU
 /BLKFILE  ONLY FORTH
 
 
@@ -16,7 +16,7 @@ ONLY FORTH DEFINITIONS   ALSO SYSTEM
 
    ( blkfile - extension to treat blocks as files       1 / n)
 \ blkfile structure
-: blkfile.flags  ( blkfile -- addr )      ;
+: blkfile.flags  ( blkfile -- addr )          ;
 : blkfile.origin  ( blkfile -- addr )    2 +  ;
 : blkfile.cur  ( blkfile -- addr )       4 +  ;
 : blkfile.offset  ( blkfile -- addr )    6 +  ;
@@ -30,24 +30,23 @@ ONLY FORTH DEFINITIONS   ALSO SYSTEM
 
 
 
-   ( blkfile - extension to treat blocks as files       1 / n)
+   ( blkfile - extension to treat blocks as files       2 / n)
 4 CONSTANT #BLKFILE
 256 CONSTANT BLKFILE-BUFFER-SIZE
 CREATE blkfiles BLKFILE-CONTEXT #BLKFILE * ALLOT
 CREATE blkfile-buffer BLKFILE-BUFFER-SIZE ALLOT
-$8000 CONSTANT flag.open
-$0001 CONSTANT flag.binary
-$0002 CONSTANT flag.readable
-$0004 CONSTANT flag.writable
+$8000 CONSTANT flag.open          $0001 CONSTANT flag.binary
+$0002 CONSTANT flag.readable      $0004 CONSTANT flag.writable
 
-flag.readable CONSTANT R/O
-flag.writable CONSTANT W/O
+flag.readable CONSTANT R/O        flag.writable CONSTANT W/O
 flag.readable flag.writable +  CONSTANT R/W
 : BIN   flag.binary + ;
 
 0 VALUE 'blkfile
 
-   ( blkfile - extension to treat blocks as files       2 / n)
+
+
+   ( blkfile - extension to treat blocks as files       3 / n)
 : i>blkfile  ( n -- blkfileid ) 
    BLKFILE-CONTEXT *  blkfiles + ;
 : /BLKFILE    \ initialise BLKFILEs
@@ -63,10 +62,9 @@ flag.readable flag.writable +  CONSTANT R/W
 
 
 
-   ( blkfile - extension to treat blocks as files       3 / n)
+   ( blkfile - extension to treat blocks as files       4 / n)
 : (find-free-blkfile-id)  ( -- blkfile-id | 0 )
-   blkfiles
-   #BLKFILE 0 DO
+   blkfiles    #BLKFILE 0 DO
       DUP blkfile.flags @  flag.open AND 
       0= IF   UNLOOP EXIT   THEN
       BLKFILE-CONTEXT +  LOOP
@@ -74,20 +72,14 @@ flag.readable flag.writable +  CONSTANT R/W
 
 : get-blkfile-id  ( flags -- blkfile-id | 0 ) 
    (find-free-blkfile-id)                ( flags blkfile-id|0 )
-   DUP IF
-      SWAP flag.open +  OVER
-      blkfile.flags  !
+   DUP IF   SWAP flag.open +  OVER    blkfile.flags  !
    ELSE  NIP  THEN  ;
 
 : free-blkfile-id ( blkfile-id -- )
    FALSE SWAP blkfile.flags ! ;
 
+   ( blkfile - extension to treat blocks as files       5 / n)
 
-
-
-
-
-   ( blkfile - extension to treat blocks as files       4 / n)
 : ?BLKFILE  ( blkfile-id -- )
    DUP 'blkfile  <> IF ( blkfile-id )
       'blkfile  ?DUP IF
@@ -102,8 +94,7 @@ flag.readable flag.writable +  CONSTANT R/W
 
 
 
-
-   ( blkfile - extension to treat blocks as files       5 / n)
+   ( blkfile - extension to treat blocks as files       6 / n)
 : OPEN-BLKFILE ( blk fence fam -- blkfileid )
    get-blkfile-id ?DUP IF    ( blk fence blkfile-id )
      TUCK  blkfile.fence !
@@ -113,52 +104,82 @@ flag.readable flag.writable +  CONSTANT R/W
      DUP ?BLKFILE
    ELSE   -69 THROW   THEN ;
 
-: CLOSE-BLKFILE ( blkfileid -- )
+: (CLOSE-FILE) ( blkfileid -- )
    DUP ?BLKFILE
    'blkfile  ?DUP IF END-BLKFILE BLKFILE!  0 TO 'blkfile  THEN
    free-blkfile-id ;
 
 
-
-
-   ( blkfile - extension to treat blocks as files       6 / n)
-
-: READ-BLKFILE ( c-addr u blkfileid -- u )
-   ?BLKFILE  GETCHARS ;
-
-: READLINE-BLKFILE ( c-addr u blkfileid -- u f ) 
-   ?BLKFILE GETLINE ;
-
-: WRITE-BLKFILE ( c-addr u blkfileid --  )
+   ( blkfile - extension to treat blocks as files       7 / n)
+: (WRITE-FILE) ( c-addr u blkfileid --  )
    ?BLKFILE  PUTCHARS  ;
 
-: WRITELINE-BLKFILE ( c-addr u blkfileid -- u f ) 
+: (WRITE-LINE) ( c-addr u blkfileid -- u f ) 
    ?BLKFILE PUTCHARS  13 PUTCH ;
 
+: (READ-FILE) ( c-addr u blkfileid -- u )
+   ?BLKFILE  GETCHARS ;
 
-
-   ( blkfile - extension to treat blocks as files       7 / n)
-: TLIST ( blk -- )
-   -1  R/O OPEN-BLKFILE   ( blkfile-id )
-   BEGIN
-     DUP blkfile-buffer BLKFILE-BUFFER-SIZE ROT
-          READLINE-BLKFILE 
-   WHILE
-     blkfile-buffer SWAP TYPE CR
-   REPEAT
-   DROP
-   CLOSE-BLKFILE   ;
-
+: (READ-LINE) ( c-addr u blkfileid -- u f ) 
+   ?BLKFILE GETLINE ;
 
 
 
 
    ( blkfile - extension to treat blocks as files       8 / n)
+: READ-FILE ( c-addr u fileid -- u ior ) 
+   ['] (READ-FILE) CATCH
+   DUP IF >R 0 R> THEN ;
+
+: READ-LINE ( c-addr u fileid -- u f ior ) 
+   ['] (READ-LINE) CATCH
+   DUP  IF >R 0 0 R> THEN ;
+
+: WRITE-FILE ( c-addr u fileid -- ior ) 
+   ['] (WRITE-FILE)  CATCH ;
+
+: WRITE-LINE ( c-addr u fileid -- ior ) 
+   ['] (WRITE-LINE) CATCH ;
+
+
+   ( blkfile - extension to treat blocks as files       9 / n)
+
+: CLOSE-FILE    ( fileid -- ior )
+    ['] (CLOSE-FILE) CATCH  ;
+
+
+
+
+
+
+
+
+
+
+
+
+   ( blkfile - extension to treat blocks as files      10 / n)
+: TLIST ( blk -- )
+   -1  R/O OPEN-BLKFILE   ( blkfile-id )
+   BEGIN
+     DUP blkfile-buffer BLKFILE-BUFFER-SIZE ROT
+          (READ-LINE)
+   WHILE
+     blkfile-buffer SWAP TYPE CR
+   REPEAT
+   DROP
+   (CLOSE-FILE)   ;
+
+
+
+
+
+   ( blkfile - extension to treat blocks as files      11 / n)
 1 VALUE line-index
 
 : tload-refill  ( -- flag )
     blkfile-buffer BLKFILE-BUFFER-SIZE SOURCE-ID 
-       READLINE-BLKFILE 
+       (READ-LINE)
     IF
        line-index 1+ TO line-index
        blkfile-buffer SWAP  'SOURCE 2!
@@ -169,9 +190,8 @@ flag.readable flag.writable +  CONSTANT R/W
 
 
 
-
-   ( blkfile - extension to treat blocks as files       9 / n)
-: (TLOAD) ( blk -- )
+   ( blkfile - extension to treat blocks as files      12 / n)
+: (INCLUDE-BLK) ( blk -- )
    -1  R/O  OPEN-BLKFILE  ( blkfile-id )
    'SOURCE-ID  !
    0 BLK !
@@ -180,21 +200,44 @@ flag.readable flag.writable +  CONSTANT R/W
        ( SOURCE TYPE  CR )
        INTERPRET
      ELSE  'SOURCE-ID @ 
-           CLOSE-BLKFILE  EXIT
+           (CLOSE-FILE)  EXIT
      THEN
    AGAIN  ;
 
 
 
-   ( blkfile - extension to treat blocks as files       10 / n)
+   ( blkfile - extension to treat blocks as files      13 / n)
 
-: TLOAD ( blk -- )
+: INCLUDE-BLKFILE ( blk -- )
    SAVE-INPUT N>R
    line-index >R
    0 TO line-index
    ['] tload-refill 'REFILL !
-   ['] (TLOAD)  CATCH ?DUP IF
+   ['] (INCLUDE-BLK)  CATCH ?DUP IF
        >R CR ." Line: " line-index .
        R> THROW THEN
    R> TO line-index 
    NR> RESTORE-INPUT THROW  ;
+
+
+
+
+   ( blkfile - extension to treat blocks as files       14 / n)
+: FILE-POSITION  ( fileid -- ud ior )
+   DROP        0 0  -65 ;
+
+: REPOSITION-FILE ( ud fileid -- ior )
+   DROP 2DROP      -73 ;
+
+: FILE-SIZE ( fileid -- ud ior )
+   DROP        0 0 -66 ;
+
+: FILE-STATUS ( c-addr u -- x ior )
+   2DROP       0   -67 ;
+
+: FLUSH-FILE ( fileid -- ior ) 
+   DROP FLUSH   0 ;
+
+: INCLUDE-FILE ( i * x fileid -- j * x )  
+   DROP         ;
+

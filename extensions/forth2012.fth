@@ -9,5 +9,5 @@ CR .( Loading Forth2012 extensions... )
 510 LOAD     \ load memory
 540 LOAD     \ search order
 570 LOAD     \ file access
-210 LOAD     \ load locals
+600 LOAD     \ load locals
 

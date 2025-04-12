@@ -2,7 +2,7 @@
 CR .( Starting Forth 2012 test suite... )
 
 150 LOAD     \ blkfile
-165 LOAD     \ blkfs
+180 LOAD     \ blkfs
 3006 LOAD     \ ttester
 1 2 +THRU
 
@@ -16,25 +16,25 @@ CR .( Starting Forth 2012 test suite... )
 
 \ Forth-2012 test suite   1 / 2
 
-\ CR .( Starting preliminary tests... )  3015 TLOAD
-\ CR .( Starting core tests... )         3027 TLOAD DECIMAL
-\ CR .( Starting coreplustests )         3057 TLOAD
+\ CR .( Starting preliminary tests... )  3015 INCLUDE-BLKFILE
+\ CR .( Starting core tests... )         3027 INCLUDE-BLKFILE
+\ CR .( Starting coreplustests )         3057 INCLUDE-BLKFILE
 30 LOAD      \ load Tools
-CR .( Loading test utilities... )        3072 TLOAD
-CR .( Loading error reporting... )       3081 TLOAD
+CR .( Loading test utilities... )        3072 INCLUDE-BLKFILE
+CR .( Loading error reporting... )       3081 INCLUDE-BLKFILE
 300 LOAD     \ load Forth 2012 extenstions
-CR .( Starting core ext tests... )       3087 TLOAD
-\ CR .( Starting block tests... )          3117 TLOAD
-CR .( Starting double tests... )         3144 TLOAD
-CR .( Starting exception tests... )      3162 TLOAD
-CR .( Starting facility tests... )       3168 TLOAD
+CR .( Starting core ext tests... )       3087 INCLUDE-BLKFILE
+\ CR .( Starting block tests... )          3117 INCLUDE-BLKFILE
+CR .( Starting double tests... )         3144 INCLUDE-BLKFILE
+CR .( Starting exception tests... )      3162 INCLUDE-BLKFILE
+CR .( Starting facility tests... )       3168 INCLUDE-BLKFILE
 3300 ROOT!
-CR .( Starting file tests... )           3174 TLOAD
-CR .( Starting locals tests... )       3186 TLOAD
+CR .( Starting file tests... )           3174 INCLUDE-BLKFILE
+CR .( Starting locals tests... )       3186 INCLUDE-BLKFILE
 2048 CONSTANT heap-size
 heap-size BUFFER: heap
 heap heap-size INIT-HEAP
-CR .( Starting memory tests... )         3195 TLOAD
-\ CR .( Starting tools tests... )          3204 TLOAD
-CR .( Starting searchorder tests... )    3222 TLOAD
-CR .( Starting string tests... )         3231 TLOAD
+CR .( Starting memory tests... )         3195 INCLUDE-BLKFILE
+\ CR .( Starting tools tests... )          3204 INCLUDE-BLKFILE
+CR .( Starting searchorder tests... )    3222 INCLUDE-BLKFILE
+CR .( Starting string tests... )         3231 INCLUDE-BLKFILE
