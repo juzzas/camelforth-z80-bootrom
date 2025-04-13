@@ -8,7 +8,7 @@ CR .( Loading blkfs "filesystem"... )
 
 
 ONLY FORTH DEFINITIONS
-1 14 +THRU
+1 16 +THRU
 
 
 
@@ -216,5 +216,30 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
    bffstype.dir_free (initbody)    DROP ;
 
 : MKDIR ( nblk "name" -- )   PARSE-NAME $mkdir ;
+
+   \ file-access wordset: OPEN-FILE CLOSE-FILE  CREATE-FILE
+: (OPEN-FILE) ( c-addr u fam -- fileid ) 
+    >R $open R>  OPEN-BLKFILE  ;
+: OPEN-FILE ( c-addr u fam -- fileid ior ) 
+    ['] (OPEN-FILE) CATCH  DUP IF 0 SWAP THEN ;
+
+30 VALUE DEFAULT-FILESIZE
+
+: (CREATE-FILE) ( c-addr u fam -- fileid )
+   >R DEFAULT-FILESIZE -ROT $creat  R> ( blk fence fam )
+   OPEN-BLKFILE   ;
+: CREATE-FILE ( c-addr u fam -- fileid ior )
+    ['] (CREATE-FILE) CATCH  DUP IF >R 0 R> THEN ;
+
+
+
+: DELETE-FILE ( c-addr u -- ior )
+   2DROP            -64  ;
+
+: RENAME-FILE ( c-addr1 u1 c-addr2 u2 -- ior )
+   2DROP 2DROP      -72 ;
+
+: RESIZE-FILE ( ud fileid -- ior ) 
+   2DROP DROP       -74 ;
 
 
