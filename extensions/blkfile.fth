@@ -224,16 +224,21 @@ flag.readable flag.writable +  CONSTANT R/W
 
    ( blkfile - extension to treat blocks as files       14 / n)
 : FILE-POSITION  ( fileid -- ud ior )
-   DROP        0 0  -65 ;
+   DUP ?BLKFILE
+   DUP blkfile.cur @   ( fileid curr  )
+   OVER blkfile.origin @ -  >R  ( fileid  ; r: #blks )
+   blkfile.offset @  S>D  
+   R>  1024 UM*  D+   0 ;
 
 : REPOSITION-FILE ( ud fileid -- ior )
-   DROP 2DROP      -73 ;
+   DUP ?BLKFILE   >R
+   1024 UM/MOD SWAP  ( #blks offset ; r: fileid )
+   R@  blkfile.offset  !
+   R@  blkfile.origin  @  +
+   R>  blkfile.cur  !    0 ;
 
 : FILE-SIZE ( fileid -- ud ior )
    DROP        0 0 -66 ;
-
-: FILE-STATUS ( c-addr u -- x ior )
-   2DROP       0   -67 ;
 
 : FLUSH-FILE ( fileid -- ior ) 
    DROP FLUSH   0 ;

@@ -242,4 +242,7 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 : RESIZE-FILE ( ud fileid -- ior ) 
    2DROP DROP       -74 ;
 
+: FILE-STATUS ( c-addr u -- x ior )
+   2DROP       0   -67 ;
+
 
