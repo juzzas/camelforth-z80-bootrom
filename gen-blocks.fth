@@ -36,6 +36,7 @@ OPEN:  build/cf-image.blk
 1215 BLOCKS: examples/gamelife.fth
 1230 BLOCKS: examples/2048.fth
 1245 BLOCKS: examples/calendar.fth
+1260 BLOCKS: examples/biorhythm.fth
 
 3000 BLOCKS: test/testsuite.fth
 +BLOCKS: test/ttester.fth
