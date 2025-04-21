@@ -66,7 +66,7 @@ VARIABLE SEED      42 SEED !
 : 2C!        DUP >R C! R> 1+ C! ;
 
 : D<>        D= 0= ;
-: >=         < INVERT ;
+: >=         < 0= ;
 : <=         1- < ;
 
 \ Drawing primitives:
@@ -314,7 +314,8 @@ CREATE brick-val 1 C, 2 C, 3 C, 3 C, 4 C, 5 C, 5 C,
     DUP [CHAR] a >= OVER [CHAR] z <= AND IF  BL -  THEN ;
 
 : interaction    \ --- flag
-    CASE    KEY to-upper
+    KEY to-upper
+    CASE
      left-key    OF  0 -1 move-brick DROP  ENDOF
      right-key    OF  0  1 move-brick DROP  ENDOF
      rot-key    OF  0 rotate-brick DROP  ENDOF
@@ -345,7 +346,7 @@ CREATE brick-val 1 C, 2 C, 3 C, 3 C, 4 C, 5 C, 5 C,
     DO  35 13 AT-XY
      delay @ MS KEY?
      IF interaction 0=
-    IF  UNLOOP EXIT  THEN
+      IF  UNLOOP EXIT  THEN
      THEN
     LOOP
     1 0 move-brick    0=
