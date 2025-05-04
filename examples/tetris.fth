@@ -1,10 +1,10 @@
 \ tt.pfe    Tetris for terminals, redone in ANSI-Forth.
-\   Written 05Apr94 by Dirk Uwe Zoller,
+\  Written 05Apr94 by Dirk Uwe Zoller,
 \   e-mail duz@roxi.rz.fht-mannheim.de.
-\   Look&feel stolen from Mike Taylor's "TETRIS FOR TERMINALS"
+\ Look&feel stolen from Mike Taylor's "TETRIS FOR TERMINALS"
 \
-\   Please copy and share this program, modify it for your system
-\   and improve it as you like. But don't remove this notice.
+\ Please copy and share this program, modify it for your system
+\ and improve it as you like. But don't remove this notice.
 \
 \   Thank you.
 \
@@ -18,14 +18,14 @@ DECIMAL
 \ Variables, constants
 
 BL BL 2CONSTANT empty        \ an empty position
-VARIABLE wiping            \ if true: wipe brick, else draw brick
+VARIABLE wiping         \ if true: wipe brick, else draw brick
 2 CONSTANT col0        \ position of the pit
 0 CONSTANT row0
 
 10 CONSTANT wide        \ size of pit in brick positions
 20 CONSTANT deep
 
-CHAR J   VALUE left-key        \ customize if you don't like them
+CHAR J   VALUE left-key     \ customize if you don't like them
 CHAR K   VALUE rot-key
 CHAR L   VALUE right-key
 BL       VALUE drop-key
@@ -55,7 +55,7 @@ VARIABLE SEED      42 SEED !
      (XORSHIFT)
      DUP SEED ! ;
 
-: RANDOM (    n -- n  generate random value between 0 and TOS )
+: RANDOM ( n -- n  generate random value between 0 and TOS )
      ( WARNING: Not evenly distributed but should be good )
      RND SWAP MOD ABS ;
 
@@ -71,12 +71,12 @@ VARIABLE SEED      42 SEED !
 
 \ Drawing primitives:
 
-: 2EMIT        EMIT EMIT ;
+: 2EMIT      EMIT EMIT ;
 
-: position    \ row col --- ; cursor to the position in the pit
+: position   \ row col --- ; cursor to the position in the pit
     2* col0 + SWAP row0 + AT-XY ;
 
-: stone        \ c1 c2 --- ; draw or undraw these two characters
+: stone      \ c1 c2 --- ; draw or undraw these two characters
     wiping @ IF  2DROP 2 SPACES  ELSE  2EMIT    THEN ;
 
 
@@ -105,11 +105,12 @@ def-pit pit
      I wide position [CHAR] | DUP stone
     LOOP    draw-bottom ;
 
-: bottom-msg    \ addr cnt --- ; output a message in the bottom of the pit
+: bottom-msg    \ addr cnt --- ; output a msg at pit bottom
     deep OVER 2/ wide SWAP - 2/ position TYPE ;
 
 : draw-line    \ line ---
-    DUP 0 position    wide 0 DO  DUP I pit 2C@ 2EMIT    LOOP    DROP ;
+    DUP 0 position    wide 0 DO  DUP I pit 2C@ 2EMIT
+                             LOOP    DROP ;
 
 : draw-pit    \ --- ; draw the contents of the pit
     deep 0 DO  I draw-line    LOOP ;
@@ -134,9 +135,7 @@ def-pit pit
     32 13 AT-XY ." -> "
     30 16 AT-XY ." Score:"
     30 17 AT-XY ." Pieces:"
-    30 18 AT-XY ." Levels:"
-     0 22 AT-XY ."    ==== This program was written 1994 in pure dpANS Forth by Dirk Uwe Zoller ===="
-     0 23 AT-XY ."    =================== Copy it, port it, play it, enjoy it! =====================" ;
+    30 18 AT-XY ." Levels:"  ;
 
 : update-score    \ --- ; display current score
     38 16 AT-XY score @ 3 .R
@@ -202,8 +201,8 @@ def-brick scratch  S"         "
                    S"         "
                    S"         "
 
-CREATE bricks    ' brick1 ,    ' brick2 ,    ' brick3 ,    ' brick4 ,
-    ' brick5 ,    ' brick6 ,    ' brick7 ,
+CREATE bricks   ' brick1 ,   ' brick2 ,   ' brick3 ,
+   ' brick4 ,   ' brick5 ,    ' brick6 ,    ' brick7 ,
 
 CREATE brick-val 1 C, 2 C, 3 C, 3 C, 4 C, 5 C, 5 C,
 
@@ -245,7 +244,7 @@ CREATE brick-val 1 C, 2 C, 3 C, 3 C, 4 C, 5 C, 5 C,
      THEN
     LOOP LOOP  2DROP ;
 
-: remove-brick    \ row col --- ; remove the brick from that position
+: remove-brick    \ row col --- ; remove the brick from posn.
     4 0 DO 4 0 DO
      J I brick 2C@  empty D<>
      IF    OVER J + OVER I + pit empty ROT 2C!  THEN

@@ -822,6 +822,39 @@ SECTION code_16k
         DW EXIT
 
 
+;Z <$    --        mini-assembler
+; : <$ 
+;    BASE @ >R HEX                \ base 16
+;    BEGIN   BL WORD   ?NUMBER
+;    WHILE   C,
+;    REPEAT      ( caddr )
+;    R>  BASE !       \ restore base
+;    DUP
+;    COUNT  S" $>" ROT MAX STRCMP  IF  -259 THROW  THEN
+;  ; IMMEDIATE
+    immed(MINIASM,``<$'',docolon)
+        DW BASE,FETCH,TOR,HEX
+MINIASM1:
+        DW BL,WORD,QNUMBER
+        DW qbranch,MINIASM2
+
+        DW CCOMMA,branch,MINIASM1
+
+MINIASM2:
+        DW RFROM,BASE,STORE
+        DW DUP,COUNT,XSQUOTE
+        db 2,"$>"
+        DW ROT,MAX,STRCMP
+
+        DW qbranch,MINIASM3
+        DW lit,-259,THROW
+
+MINIASM3:
+        DW EXIT
+
+
+
+
 dnl ; http://www.forth.org/svfig/Len/softstak.htm
 
 dnl ;     lifo+0 -> ptr to top of stack - 2

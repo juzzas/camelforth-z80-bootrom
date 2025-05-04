@@ -33,10 +33,12 @@ OPEN:  build/cf-image.blk
 +BLOCKS: extensions/ramdrive.fth
 
 1200 BLOCKS: examples/mandelbrot.fth
-1215 BLOCKS: examples/gamelife.fth
-1230 BLOCKS: examples/2048.fth
-1245 BLOCKS: examples/calendar.fth
-1260 BLOCKS: examples/biorhythm.fth
+1230 BLOCKS: examples/gamelife.fth
+1260 BLOCKS: examples/2048.fth
+1290 BLOCKS: examples/calendar.fth
+1320 BLOCKS: examples/biorhythm.fth
+1350 BLOCKS: examples/tetris.fth
+1380 BLOCKS: examples/banner.fth
 
 3000 BLOCKS: test/testsuite.fth
 +BLOCKS: test/ttester.fth

@@ -16,53 +16,54 @@ PREVIOUS DEFINITIONS
 
 \ Fetch byte from paged RAM   ( addr -- c )
 CODE PRC@
-    $F3 C,            \ DI
-    $D3 C, $38 C,     \ OUT $38,A
-    $0A C,            \ LD A,(BC)
-    $D3 C, $38 C,     \ OUT $38,A
-    $FB C,            \ EI
-    $06 C, $00 C,     \ LD B, 0
-    $4F C,            \ LD C, A
-    NEXT,
+   \ DI
+   \ OUT $38,A
+   \ LD A,(BC)
+   \ OUT $38,A
+   \ EI
+   \ LD B, 0
+   \ LD C, A
+
+   <$  F3  D3 38  0A  D3 38  FB  06 00  4F  $>
+   NEXT,
 ;CODE
-
-
 
 
 
 \ Store byte from paged RAM   ( c addr -- )
 CODE PRC!
-    $C5 C,            \ PUSH BC
-    $E1 C,            \ POP HL      ; addr 
-    $C1 C,            \ POP BC      ; c 
-    $F3 C,            \ DI
-    $D3 C, $38 C,     \ OUT $38,A   ; page ram
-    $71 C,            \ LD (HL),C
-    $D3 C, $38 C,     \ OUT $38,A   ; page rom
-    $FB C,            \ EI
-    $C1 C,            \ POP BC      ; next TOS
-    NEXT,
-;CODE
+   \ PUSH BC
+   \ POP HL      ; addr 
+   \ POP BC      ; c 
+   \ DI
+   \ OUT $38,A   ; page ram
+   \ LD (HL),C
+   \ OUT $38,A   ; page rom
+   \ EI
+   \ POP BC      ; next TOS
 
+   <$  C5  E1  C1  F3  D3 38  71  D3 38  FB  C1  $>
+   NEXT,
+;CODE
 
 
 \ Copy block from paged RAM  ( src dest u -- )
 CODE PRMOVE
-    $C5 C,            \ PUSH BC
-    $D9 C,            \ EXX
-    $C1 C,            \ POP BC   ; u
-    $D1 C,            \ POP DE   ; dest
-    $E1 C,            \ POP HL   ; src
-    $F3 C,            \ DI
-    $D3 C, $38 C,     \ OUT $38,A   ; page ram
-    HERE                   ( label )
-    $ED C, $A0 C,     \ LDI
-    $78 C,            \ LD A,B
-    $B1 C,            \ OR C
-    $C2 C, ,          \ JP NZ, label
-    $D3 C, $38 C,     \ OUT $38,A   ; page rom
-    $FB C,            \ EI
-    $D9 C,            \ EXX
-    $C1 C,            \ POP BC      ; next TOS
-    NEXT,
+   <$  C5     $>       \ PUSH BC
+   <$  D9     $>       \ EXX
+   <$  C1     $>       \ POP BC   ; u
+   <$  D1     $>       \ POP DE   ; dest
+   <$  E1     $>       \ POP HL   ; src
+   <$  F3     $>       \ DI
+   <$  D3 38  $>       \ OUT $38,A   ; page ram
+   HERE                   ( label )
+   <$  ED A0  $>       \ LDI
+   <$  78     $>       \ LD A,B
+   <$  B1     $>       \ OR C
+   <$  C2     $> ,     \ JP NZ, label
+   <$  D3 38  $>       \ OUT $38,A   ; page rom
+   <$  FB     $>       \ EI
+   <$  D9     $>       \ EXX
+   <$  C1     $>       \ POP BC      ; next TOS
+   NEXT,
 ;CODE

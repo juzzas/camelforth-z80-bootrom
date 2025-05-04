@@ -1,7 +1,7 @@
 \ CamelForth tools                                    jps  0 / 4
 CR .( Loading CamelForth tools definitions... )
-FORTH DEFINITIONS
-1 5 +THRU
+
+1 7 +THRU
 
 
 
@@ -15,6 +15,7 @@ FORTH DEFINITIONS
 
 
    \ CamelForth tools - environment                   jps  1 / 4
+ONLY FORTH DEFINITIONS
 
 \  WORDLIST CONSTANT ENVIRONMENT-WORDLIST
 GET-CURRENT    ENVIRONMENT-WORDLIST SET-CURRENT
@@ -32,6 +33,13 @@ SET-CURRENT
 
    \ CamelForth tools - environment                   jps  2 / 4
 : ?   ( addr -- ) @ U.  ;
+
+
+
+
+WORDLIST CONSTANT TOOLS-WID
+TOOLS-WID >ORDER
+GET-CURRENT    TOOLS-WID SET-CURRENT
 
 VARIABLE ^see
 VARIABLE see-xt  \ current xt for SEE
@@ -84,9 +92,11 @@ VARIABLE max-branch
     ENDCASE    CR
    ;
 
+SET-CURRENT
+
 : SEE  ( "<spaces>name" -- )
    BASE @ >R HEX
     '  (see)
    R> BASE ! ;
 
-
+ONLY FORTH DEFINITIONS

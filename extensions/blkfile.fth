@@ -15,26 +15,9 @@ ONLY FORTH DEFINITIONS   ALSO SYSTEM
 
 
    ( blkfile - extension to treat blocks as files       1 / n)
-\ blkfile structure
-: blkfile.flags  ( blkfile -- addr )          ;
-: blkfile.origin  ( blkfile -- addr )    2 +  ;
-: blkfile.cur  ( blkfile -- addr )       4 +  ;
-: blkfile.offset  ( blkfile -- addr )    6 +  ;
-: blkfile.fence  ( blkfile -- addr )     8 +  ;
-10 CONSTANT BLKFILE-CONTEXT
-
-
-
-
-
-
-
-
-   ( blkfile - extension to treat blocks as files       2 / n)
 4 CONSTANT #BLKFILE
-256 CONSTANT BLKFILE-BUFFER-SIZE
-CREATE blkfiles BLKFILE-CONTEXT #BLKFILE * ALLOT
-CREATE blkfile-buffer BLKFILE-BUFFER-SIZE ALLOT
+128 CONSTANT BLKFILE-BUFFER-SIZE
+
 $8000 CONSTANT flag.open          $0001 CONSTANT flag.binary
 $0002 CONSTANT flag.readable      $0004 CONSTANT flag.writable
 
@@ -46,12 +29,54 @@ flag.readable flag.writable +  CONSTANT R/W
 
 
 
+
+   ( blkfile - extension to treat blocks as files       2 / n)
+\ blkfile structure
+: blkfile.flags  ( blkfile -- addr )          ;
+: blkfile.origin  ( blkfile -- addr )    2 +  ;
+: blkfile.cur  ( blkfile -- addr )       4 +  ;
+: blkfile.offset  ( blkfile -- addr )    6 +  ;
+: blkfile.fence  ( blkfile -- addr )     8 +  ;
+: blkfile.buffer  ( blkfile -- addr )    10 +  ;
+12  CONSTANT BLKFILE-CONTEXT
+
+CREATE blkfiles   BLKFILE-CONTEXT #BLKFILE *   ALLOT
+
+
+
+
+
+   ( blkfile - extension to treat blocks as files       3 / n)
+128 CONSTANT buff%
+
+0 VALUE buffpool
+
+: (buffpool-allot)  ( -- ptr )
+    HERE 0  ,  buff% ALLOT ;
+
+: (buffpool-get) ( -- ptr )
+   buffpool >R
+   buffpool @ TO buffpool  R>  ;
+
+: (buffpool-free)  ( ptr -- )
+   DUP buffpool  !   TO buffpool  ;
+
+: buffpool-get   ( -- c-addr )
+   buffpool   IF   (buffpool-get)
+   ELSE   (buffpool-allot)   THEN    \ ptr to buffer item 
+   CELL+  ;
+
+: buffpool-free  ( c-addr -- )
+   CELL-  ( ptr )
+   (buffpool-free)  ;
+
+
    ( blkfile - extension to treat blocks as files       3 / n)
 : i>blkfile  ( n -- blkfileid ) 
    BLKFILE-CONTEXT *  blkfiles + ;
 : /BLKFILE    \ initialise BLKFILEs
    #BLKFILE 0 DO
-      0  I i>blkfile blkfile.flags !
+      I i>blkfile BLKFILE-CONTEXT  0 FILL
    LOOP  ;
 
 : BLKFILE!  ( blk offset blkfile-id -- )
@@ -100,6 +125,7 @@ flag.readable flag.writable +  CONSTANT R/W
      TUCK  blkfile.fence !
      SWAP   ( blkfile-id blk )
      OVER 2DUP  blkfile.cur !  blkfile.origin !  ( blkfile-id )
+     buffpool-get OVER blkfile.buffer !
      0 OVER blkfile.offset !
      DUP ?BLKFILE
    ELSE   -69 THROW   THEN ;
@@ -107,6 +133,7 @@ flag.readable flag.writable +  CONSTANT R/W
 : (CLOSE-FILE) ( blkfileid -- )
    DUP ?BLKFILE
    'blkfile  ?DUP IF END-BLKFILE BLKFILE!  0 TO 'blkfile  THEN
+   DUP blkfile.buffer @ buffpool-free
    free-blkfile-id ;
 
 
@@ -162,10 +189,10 @@ flag.readable flag.writable +  CONSTANT R/W
 : TLIST ( blk -- )
    -1  R/O OPEN-BLKFILE   ( blkfile-id )
    BEGIN
-     DUP blkfile-buffer BLKFILE-BUFFER-SIZE ROT
+     DUP DUP blkfile.buffer @  BLKFILE-BUFFER-SIZE ROT
           (READ-LINE)
-   WHILE
-     blkfile-buffer SWAP TYPE CR
+   WHILE       ( blkfile-id chrs )
+     OVER blkfile.buffer @  SWAP TYPE CR
    REPEAT
    DROP
    (CLOSE-FILE)   ;
@@ -178,11 +205,11 @@ flag.readable flag.writable +  CONSTANT R/W
 1 VALUE line-index
 
 : tload-refill  ( -- flag )
-    blkfile-buffer BLKFILE-BUFFER-SIZE SOURCE-ID 
-       (READ-LINE)
+    SOURCE-ID blkfile.buffer @   BLKFILE-BUFFER-SIZE 
+       SOURCE-ID  (READ-LINE)
     IF
        line-index 1+ TO line-index
-       blkfile-buffer SWAP  'SOURCE 2!
+       SOURCE-ID  blkfile.buffer @   SWAP  'SOURCE 2!
        0 >IN !  TRUE
     ELSE DROP  FALSE  THEN ;
 
