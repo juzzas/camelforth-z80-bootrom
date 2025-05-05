@@ -237,12 +237,15 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
    2DROP            -64  ;
 
 : RENAME-FILE ( c-addr1 u1 c-addr2 u2 -- ior )
-   2DROP 2DROP      -72 ;
+   2SWAP ($dirent) ?DUP IF
+      dir>name PLACE   0
+   ELSE
+   2DROP      -72 THEN ;
 
 : RESIZE-FILE ( ud fileid -- ior ) 
    2DROP DROP       -74 ;
 
 : FILE-STATUS ( c-addr u -- x ior )
-   2DROP       0   -67 ;
+   ($dirent)  DUP IF  0 ELSE  -67 THEN  ;
 
 
