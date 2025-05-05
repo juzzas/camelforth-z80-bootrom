@@ -234,11 +234,15 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 
 
 : DELETE-FILE ( c-addr u -- ior )
-   2DROP            -64  ;
+   ($dirent) ?DUP IF
+      bffstype.file_free SWAP dir>type !
+      UPDATE FLUSH   0
+   ELSE   -64   THEN  ;
 
 : RENAME-FILE ( c-addr1 u1 c-addr2 u2 -- ior )
    2SWAP ($dirent) ?DUP IF
       dir>name PLACE   0
+      UPDATE FLUSH
    ELSE
    2DROP      -72 THEN ;
 
