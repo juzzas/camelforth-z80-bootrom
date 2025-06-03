@@ -1999,7 +1999,7 @@ EXTERN cflash_identify
         dw qbranch,SLASHCFLASH1
         dw XSQUOTE
         db 9,"NO CFLASH"
-        dw TYPE
+        dw TYPE,CR
         dw ZERO
         dw EXIT
 
@@ -3457,9 +3457,10 @@ SLASH16KROM:
         DW XSQUOTE
         DB 7,"16K ROM"
         DW TYPE,CR
-        DW SLASHCFLASH
+        DW SLASHCFLASH,qbranch,SLASH16K_1
         DW CF_DRIVE_ID,ZERO,CF_SLICE_ID,SLASHSLICE
         DW CF_SLICE_ID,SELECT
+SLASH16K_1:
         dw EXIT
 
 default_xt_16k_start:
