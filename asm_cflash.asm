@@ -101,6 +101,9 @@ cflash_init:
     ; THAT ANY OTHER DEVICE WILL RETURN $00 FOR ALL REGISTERS.
     ; (code, and comment, borrowed from RomWBW)
 
+     ld bc,1000   ; delay 100ms
+     call asm_z80_delay_ms
+
 ;    ld  hl,500          ; 5 SECONDS
 ;pico_wait001:
 ;    ld  c,__IO_CF_IDE_DATA
