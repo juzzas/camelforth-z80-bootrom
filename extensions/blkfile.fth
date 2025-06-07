@@ -246,16 +246,16 @@ CREATE blkfiles   BLKFILE-CONTEXT #BLKFILE *   ALLOT
    R> TO line-index 
    NR> RESTORE-INPUT THROW  ;
 
-
-
+: blkofs>bytes  ( blk off -- ud )
+   S>D ROT 1024 UM* D+ ;
 
    ( blkfile - extension to treat blocks as files       14 / n)
 : FILE-POSITION  ( fileid -- ud ior )
    DUP ?BLKFILE
    DUP blkfile.cur @   ( fileid curr  )
-   OVER blkfile.origin @ -  >R  ( fileid  ; r: #blks )
-   blkfile.offset @  S>D  
-   R>  1024 UM*  D+   0 ;
+   OVER blkfile.origin @ -   ( fileid #blks )
+   SWAP blkfile.offset @
+   blkofs>bytes   0 ;
 
 : REPOSITION-FILE ( ud fileid -- ior )
    DUP ?BLKFILE   >R

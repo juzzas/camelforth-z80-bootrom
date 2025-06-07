@@ -217,21 +217,6 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 
 : MKDIR ( nblk "name" -- )   PARSE-NAME $mkdir ;
 
-   \ file-access wordset: OPEN-FILE CLOSE-FILE  CREATE-FILE
-: (OPEN-FILE) ( c-addr u fam -- fileid ) 
-    >R $open R>  OPEN-BLKFILE  ;
-: OPEN-FILE ( c-addr u fam -- fileid ior ) 
-    ['] (OPEN-FILE) CATCH  DUP IF 0 SWAP THEN ;
-
-30 VALUE DEFAULT-FILESIZE
-
-: (CREATE-FILE) ( c-addr u fam -- fileid )
-   >R DEFAULT-FILESIZE -ROT $creat  R> ( blk fence fam )
-   OPEN-BLKFILE   ;
-: CREATE-FILE ( c-addr u fam -- fileid ior )
-    ['] (CREATE-FILE) CATCH  DUP IF >R 0 R> THEN ;
-
-
 
 : DELETE-FILE ( c-addr u -- ior )
    ($dirent) ?DUP IF
