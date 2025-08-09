@@ -44,6 +44,14 @@ OPEN:  build/cf-image.blk
 1350 BLOCKS: examples/tetris.fth
 1380 BLOCKS: examples/banner.fth
 
+1500 BLOCKS: examples/tms/tms-ldr.fth
++BLOCKS: examples/tms/tms.fth
+1530 BLOCKS: examples/tms/tms-fonts.fth
++BLKFILE: examples/tms/font_8x8_msx_system.bin
++BLKFILE: examples/tms/font_8x8_zx_system.bin
++BLKFILE: examples/tms/font_8x8_sam_system.bin
++BLKFILE: examples/tms/font_8x8_vga_rom.bin
+
 3000 BLOCKS: test/testsuite.fth
 +BLOCKS: test/ttester.fth
 +BLKFILE: test/forth2012-test-suite/src/prelimtest.fth

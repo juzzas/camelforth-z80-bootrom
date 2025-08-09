@@ -1,0 +1,15 @@
+\ Loader for TMS9918 utilisation
+
+ONLY FORTH
+
+VOCABULARY TMS
+ALSO TMS   DEFINITIONS
+
+1 16 +THRU
+
+DECIMAL
+ONLY FORTH
+
+
+
+
