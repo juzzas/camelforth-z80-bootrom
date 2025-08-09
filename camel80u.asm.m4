@@ -59,7 +59,7 @@ XMEMDUMP:
          dw TYPESTRING,EXIT
 
 
-dnl ;Z MEMDUMP  ( addr u --    memory dump utility )
+dnl ;Z MEMDUMP   addr u --                  memory dump utility
 dnl ;     BASE @ >R HEX
 dnl ;     OVER +               ( addr addr+u )
 dnl ;     SWAP                 ( addr+u  addr )

@@ -1,3 +1,6 @@
 [submodule "forth2012-test-suite"]
 	path = test/forth2012-test-suite
 	url = https://github.com/gerryjackson/forth2012-test-suite.git
+[submodule "tools/ffl"]
+	path = tools/ffl
+	url = https://github.com/irdvo/ffl.git

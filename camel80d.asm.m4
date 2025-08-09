@@ -43,50 +43,50 @@ SECTION code
 ; Many of these are synonyms for other words,
 ; and so are defined as CODE words.
 
-;C NOOP        ( -- )        no operation
+;C NOOP         --                                 no operation
 ;    ;
     head(NOOP,NOOP,docode)
 noop:   next
 
 
 
-;C ALIGN    --                         align HERE
+;C ALIGN    --                                       align HERE
     head(ALIGN,ALIGN,docode)
         jr noop
 
-;C ALIGNED  addr -- a-addr       align given addr
+;C ALIGNED  addr -- a-addr                     align given addr
     head(ALIGNED,ALIGNED,docode)
         jr noop
 
-;Z CELL     -- n                 size of one cell
+;Z CELL     -- n                               size of one cell
     head(CELL,CELL,docon)
         dw 2
 
-;C CELL+    a-addr1 -- a-addr2      add cell size
+;C CELL+    a-addr1 -- a-addr2                    add cell size
 ;   2 + ;
     head(CELLPLUS,CELL+,docode)
         inc bc
         inc bc
         next
 
-;C CELLS    n1 -- n2            cells->adrs units
+;C CELLS    n1 -- n2                          cells->adrs units
     head(CELLS,CELLS,docode)
         jp TWOSTAR
 
-;C CHAR+    c-addr1 -- c-addr2   add char size
+;C CHAR+    c-addr1 -- c-addr2                    add char size
     head(CHARPLUS,CHAR+,docode)
         jp ONEPLUS
 
-;C CHARS    n1 -- n2            chars->adrs units
+;C CHARS    n1 -- n2                          chars->adrs units
     head(CHARS,CHARS,docode)
         jr noop
 
-;C >BODY    xt -- a-addr      adrs of param field
+;C >BODY    xt -- a-addr                    adrs of param field
 ;   3 + ;                     Z80 (3 byte CALL)
     head(TOBODY,>BODY,docolon)
         DW lit,3,PLUS,EXIT
 
-;X COMPILE,  xt --         append execution token
+;X COMPILE,  xt --                       append execution token
 ; I called this word ,XT before I discovered that
 ; it is defined in the ANSI standard as COMPILE,.
 ; On a DTC Forth this simply appends xt (like , )
@@ -94,7 +94,7 @@ noop:   next
     head(COMMAXT,``COMPILE,'',docode)
         jp COMMA
 
-;Z !CF    adrs cfa --   set code action of a word
+;Z !CF    adrs cfa --                 set code action of a word
 ;   0CD OVER C!         store 'CALL adrs' instr
 ;   1+ ! ;              Z80 VERSION
 ; Depending on the implementation this could
@@ -103,12 +103,12 @@ noop:   next
         DW lit,0CDH,OVER,CSTORE
         DW ONEPLUS,STORE,EXIT
 
-;Z ,CF    adrs --       append a code field
+;Z ,CF    adrs --                           append a code field
 ;   HERE !CF 3 ALLOT ;  Z80 VERSION (3 bytes)
     head(COMMACF,``,CF'',docolon)
         DW HERE,STORECF,lit,3,ALLOT,EXIT
 
-;Z !COLON   --      change code field to docolon
+;Z !COLON   --                     change code field to docolon
 ;   -3 ALLOT docolon-adrs ,CF ;
 ; This should be used immediately after CREATE.
 ; This is made a distinct word, because on an STC
@@ -117,7 +117,7 @@ noop:   next
         DW lit,-3,ALLOT
         DW lit,docolon,COMMACF,EXIT
 
-;Z ,EXIT    --      append hi-level EXIT action
+;Z ,EXIT    --                      append hi-level EXIT action
 ;   ['] EXIT ,XT ;
 ; This is made a distinct word, because on an STC
 ; Forth, it appends a RET instruction, not an xt.
@@ -128,21 +128,21 @@ noop:   next
 ; These words allow Forth control structure words
 ; to be defined portably.
 
-;Z ,BRANCH   xt --    append a branch instruction
+;Z ,BRANCH   xt --                  append a branch instruction
 ; xt is the branch operator to use, e.g. qbranch
 ; or (loop).  It does NOT append the destination
 ; address.  On the Z80 this is equivalent to ,XT.
     head(COMMABRANCH,``,BRANCH'',docode)
         jp COMMA
 
-;Z ,DEST   dest --        append a branch address
+;Z ,DEST   dest --                      append a branch address
 ; This appends the given destination address to
 ; the branch instruction.  On the Z80 this is ','
 ; ...other CPUs may use relative addressing.
     head(COMMADEST,``,DEST'',docode)
         jp COMMA
 
-;Z !DEST   dest adrs --    change a branch dest'n
+;Z !DEST   dest adrs --                  change a branch dest'n
 ; Changes the destination address found at 'adrs'
 ; to the given 'dest'.  On the Z80 this is '!'
 ; ...other CPUs may need relative addressing.

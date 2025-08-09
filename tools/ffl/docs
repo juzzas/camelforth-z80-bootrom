@@ -1,0 +1,5 @@
+#/bin/sh
+
+gforth ../examples/fsdocgen.fs ../html/                 ../examples/ *.fs
+gforth ../examples/fsdocgen.fs ../../../github/ffl/docs ../examples/ *.fs
+

@@ -20,4 +20,10 @@ $(TARGET):
 
 blk:
 	gforth ./gen-blocks.fth
+	rm -f camelforth.ide
+	../EmulatorKit/makedisk 4 camelforth.ide
 	dd if=build/cf-image.blk of=camelforth.ide bs=1024 seek=1 conv=notrunc
+
+doc:
+	gforth ./gen-docs.fth
+

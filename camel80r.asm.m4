@@ -37,7 +37,7 @@ SECTION code
 
 EXTERN jp_hl
 
-;Z CALL       a-addr --    call machine code at address
+;Z CALL       a-addr --            call machine code at address
     head(CALL,CALL,docode)
         ; protect against some stack abuse
         ld (forth_stack_save), sp
@@ -135,7 +135,7 @@ SECTION code
 
 
 ; RC2014 EXTENSION misc ======================
-;Z \   (  --     comment to end of line )
+;X \    --                               comment to end of line
 ;   SOURCE >IN ! DROP ;   IMMEDIATE
 dnl   head(BACKSLASH,``\'',docolon)
     ; macro doesn't like the \ character, so manually build this word
@@ -153,7 +153,7 @@ BACKSLASH1:
     DW SOURCE,TOIN,STORE,DROP
     DW EXIT
 
-;X (SLITERAL)    c-addr u --    compile string literal
+;X (SLITERAL)    c-addr u --             compile string literal
 ;    ['] (S")
 ;    HERE PLACE  HERE C@ 1+
 ;    ALIGNED ALLOT
@@ -164,7 +164,7 @@ XSLITERAL:
         DW ALIGNED,ALLOT,EXIT
 
 
-;Z DUMP  ( caddr len -- )
+;X DUMP   caddr len --                              dump memory
 ;   OVER + SWAP DO I C@ . LOOP ;
     head(DUMP,DUMP,docolon)
         DW OVER,PLUS,SWOP,xdo
@@ -172,7 +172,7 @@ DUMP1:
         DW II,CFETCH,DOT,xloop,DUMP1
         DW EXIT
 
-;Z AT-XY  ( x y -- move cursor to x,y )
+;X AT-XY   x y --                            move cursor to x,y
 ;    VT-ESC 1+ (.) TYPE ." ;" 1+ (.) TYPE ." H" ;
     head(AT_XY,AT-XY,docolon)
         dw lit,0x1b,EMIT
@@ -183,7 +183,7 @@ DUMP1:
         dw lit,'H',EMIT
         dw EXIT
 
-;Z PAGE  ( --  clear screen )
+;X PAGE   --                                       clear screen
 ;    VT-ESC ." 2J"
     head(PAGE,PAGE,docolon)
         dw XSQUOTE
@@ -195,7 +195,7 @@ DUMP1:
 
 ; HEXLOAD implementation ==========================
 
-;Z ?IHXCRC  ( c -- flag )    ( does the crc match? )
+;: ?IHXCRC  ( c -- flag )    ( does the crc match? )
 ;    IHXCRC @ NEGATE FF AND = ;
 QIHXCRC:
         call docolon
@@ -203,7 +203,7 @@ QIHXCRC:
         DW EXIT
 
 
-;Z (IHXBYTE)  ( tib-ptr -- c tib-ptr' )
+;: (IHXBYTE)  ( tib-ptr -- c tib-ptr' )
 XIHXBYTE:
         call readnibble ; read the first nibble
         rlca            ; shift it left by 4 bits
@@ -228,7 +228,7 @@ XIHXBYTE:
         ret
 
 
-;Z IHXBYTE  ( tib-ptr -- u tib-ptr )
+;: IHXBYTE  ( tib-ptr -- u tib-ptr )
 ;    (IHXBYTE)
 ;    OVER IHXCRC C+!  ;
 IHXBYTE:
@@ -238,7 +238,7 @@ IHXBYTE:
         DW EXIT
 
 
-;Z IHXWORD  ( tib-ptr -- u tib-ptr )
+;: IHXWORD  ( tib-ptr -- u tib-ptr )
 ;    IHXBYTE IHXBYTE       ( u1 u2 tib-ptr )
 ;    >R                    ( u1 u2 )
 ;    SWAP 8 LSHIFT +       ( u )
@@ -272,7 +272,7 @@ IHXRECSTORE1:
         DW xloop,IHXRECSTORE1
         DW EXIT
 
-;Z IHXCRC       -- a-addr  location for current HEXLOAD CRC
+;: IHXCRC       -- a-addr  location for current HEXLOAD CRC
 ;  ihxcrc_ptr CONSTANT IHXCRC
 IHXCRC:
         call docon
@@ -345,7 +345,7 @@ XIHEXQ4:
         DW ZERO,EXIT
 
 
-;Z IHEX?
+;: IHEX?
 ;    ['] (IHEXQ?) CATCH
 ;       0<> IF  FALSE  THEN   ;
 IHEXQ:
@@ -361,7 +361,7 @@ IHEXQ1:
 
 
 
-; (IHEX)                   ( src dest len -- runtime action )
+;: (IHEX)                   ( src dest len -- runtime action )
 ;     IHEX_START @ 0= IF OVER IHEX_START ! THEN
 ;     2DUP + IHEX_START @ - IHEX_LENGTH !
 ;     MOVE    ;
@@ -395,7 +395,7 @@ XSEMIHEXLOAD:
         DW IHEX_LENGTH,FETCH
         DW EXIT
 
-;: HEXLOAD
+;Z HEXLOAD  --                     start parsing intel hex dump
 ;    0 IHEX_START !
 ;    0 IHEX_LENGTH !   ;
     immed(HEXLOAD,HEXLOAD,docolon)
@@ -405,7 +405,7 @@ XSEMIHEXLOAD:
 HEXLOAD1:
         DW XHEXLOAD,EXIT
 
-;: ;HEXLOAD     ( -- ihex_start ihex_length )
+;Z ;HEXLOAD   -- ihex_start ihex_length        end of intel hex
 ;    IHEX_START @
 ;    IHEX_LENGTH @   ;
     head(SEMIHEXLOAD,;HEXLOAD,docolon)
