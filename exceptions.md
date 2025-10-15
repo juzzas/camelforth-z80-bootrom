@@ -93,3 +93,4 @@ Additional CamelForth exception values are in the rang -256 and -512, and are li
 -257 invalid SLICE
 -258 invalid RESTORE
 -259 mini-assembler expected $>
+-260 invalid HEXLOAD record

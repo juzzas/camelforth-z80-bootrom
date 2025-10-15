@@ -2237,10 +2237,14 @@ XBACKSLASH_BLK:
     DW C_L,NEGATE,AND,TOIN,STORE
     DW EXIT
 
-;: load-refill  ( -- flag )
-;    1 blk +!
-;    blk @ block b/buf to-source  0 >in !
-;    true  ;
+;: LOAD-REFILL  ( -- flag )
+;  BLK @  BLKLIMIT  U< IF
+;    1 BLK +!
+;    BLK @ BLOCK  B/BLK   'SOURCE 2!  0 >IN !
+;    TRUE  
+;  ELSE
+;    FALSE
+;  THEN   ;
 LOAD_REFILL:
         call docolon
         dw BLK,FETCH,BLKLIMIT,ULESS,qbranch,LOAD_REFILL1
@@ -2258,8 +2262,7 @@ LOAD_REFILL1:
 ;    DUP BLK !
 ;    BLOCK B/BLK 'SOURCE 2!  0 >IN !
 ;    INTERPRET
-;    NR> RESTORE-INPUT DROP 
-;    BLK @ BLOCK B/BLK 'SOURCE 2!   ;
+;    NR> RESTORE-INPUT DROP  ;
     head(LOAD,LOAD,docolon)
         dw SAVE_INPUT,NTOR
         dw DUP,BLK,STORE
@@ -2276,8 +2279,8 @@ LOAD_REFILL1:
         dw EXIT
 
 ;C THRU   n1 n2 --            load and evaluate blocks n1 to n2
-;   1+ swap
-;   ?do  i load  loop ;
+;   1+ SWAP
+;   ?DO  I LOAD  LOOP ;
 
     head(THRU,THRU,docolon)
         dw ONEPLUS,SWOP
@@ -2954,7 +2957,6 @@ RECOGNIZERS:
         DW REC_NUM
         DW REC_DNUM
         DW REC_CHAR
-        DW REC_IHEX
 RECOGNIZERS_END:
 
 
@@ -3288,52 +3290,6 @@ XREFILL16K4:
         head(SOURCE_ID,SOURCE-ID,docolon)
             dw TICKSOURCE_ID,FETCH,EXIT
 
-
-;  NONAME:    ( src dest len --     xt for rectype-ihex )
-REC_IHEX_XT:
-        call docolon
-        DW XIHEX
-        DW EXIT
-
-;  NONAME:    ( src dest len --     compile action for rectype-ihex )
-;     IHEX,  ;
-REC_IHEX_COMP:
-        call docolon
-        DW IHEXCOMMA
-        DW EXIT
-
-; RECTYPE: RECTYPE-IHEX ;
-dnl ;    head_system(RECTYPE_IHEX,RECTYPE-IHEX,docreate)
-RECTYPE_IHEX:
-        call docreate
-        DW REC_IHEX_XT
-        DW REC_IHEX_COMP
-        DW NOOP
-
-;: REC-IHEX ( addr len -- src dest n RECTYPE_IHEX   if ok, RECTYPE_NULL if not recognised )
-;    IHEX? DUP 1 = IF
-;       DROP
-;       RECTYPE_NOOP EXIT
-;    THEN
-;    DUP 0= IF
-;       DROP
-;       RECTYPE_NULL EXIT
-;    THEN
-;    DROP RECTYPE_IHEX  ;
-dnl ;    head_system(REC_IHEX,REC-IHEX,docolon)
-REC_IHEX:
-        call docolon
-        DW IHEXQ,DUP,lit,1,EQUAL,qbranch,REC_IHEX1
-        DW DROP
-        DW RECTYPE_NOOP,EXIT
-REC_IHEX1:
-        DW DUP,ZEROEQUAL,qbranch,REC_IHEX2
-        DW DROP
-        DW RECTYPE_NULL,EXIT
-REC_IHEX2:
-        DW DROP,RECTYPE_IHEX,EXIT
-
-
 ;X SAVE-INPUT   -- xn ... x1 n                 save input state
 ;   REFILL-VEC @ SOURCE-ID   BLK @ 'SOURCE 2@  >IN @   ;
     head(SAVE_INPUT,SAVE-INPUT,docolon)
@@ -3458,7 +3414,7 @@ SLASH16KROM:
         DW NINIT,PLUSUSERPTR,STORE
         DW U0,LINK,STORE
         DW lit,XWAKE,U0,STORE
-        DW ALLONES,RAMTOPSTORE
+        DW ZERO,RAMTOPSTORE
         DW ZERO,LOCALS_WID,STORE
         DW lit,default_xt_16k_start,lit,default_xt,lit,default_xt_16k_len,MOVE
         DW lit,system_lastword,SYSTEM_WORDLIST,STORE

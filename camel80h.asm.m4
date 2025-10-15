@@ -899,25 +899,6 @@ QNUM1:  DW TWODROP,NIP,RFROM,qbranch,QNUM2
 QNUM2:  DW TRUE
 QNUM3:  DW EXIT
 
-; INTERPRET_IHEX   ( src dest len flag  if flag = -1 -- )
-;                  (              flag  if flag = 1  -- )
-;       -1 = IF
-;           STATE @ 0= IF  (IHEX) ELSE IHEX, THEN
-;       ELSE
-;
-;       THEN
-INTERPRET_IHEX:
-        call docolon
-        DW TRUE,EQUAL,qbranch,INTERPIHEX2
-        DW STATE,FETCH,ZEROEQUAL,qbranch,INTERPIHEX1
-        DW XIHEX,EXIT
-INTERPIHEX1:
-        DW IHEXCOMMA,EXIT
-INTERPIHEX2:
-        DW EXIT
-
-
-
 ;Z INTERPRET    i*x  -- j*x         interpret buffer at 'SOURCE
 ; This is a common factor of EVALUATE and QUIT.
 ; ref. dpANS-6, 3.4 The Forth Text Interpreter
@@ -928,15 +909,9 @@ INTERPIHEX2:
 ;           1+ STATE @ 0= OR    `immed' or interp?
 ;           IF EXECUTE ELSE ,XT THEN
 ;       ELSE                    -- textadr
-;           DUP COUNT IHEX?   -- textadr  f
-;           ?DUP  IF        -- textadr 
-;               INTERPRET_IHEX  -- textadr
-;               DROP
-;           ELSE
-;               ?NUMBER
-;               IF POSTPONE LITERAL     converted ok
-;               ELSE COUNT TYPE 3F EMIT CR ABORT  err
-;               THEN
+;           ?NUMBER
+;           IF POSTPONE LITERAL     converted ok
+;           ELSE COUNT TYPE 3F EMIT CR ABORT  err
 ;           THEN
 ;       THEN
 ;   REPEAT DROP ;
@@ -952,10 +927,7 @@ INTER1: DW BL,WORD,DUP,CFETCH,qbranch,INTER9
         DW EXECUTE,branch,INTER3
 INTER2: DW COMMAXT
 INTER3: DW branch,INTER8
-INTER4: DW DUP,COUNT,IHEXQ
-        DW QDUP,qbranch,INTER4a
-        DW INTERPRET_IHEX,DROP,branch,INTER6
-INTER4a: DW QNUMBER,qbranch,INTER5
+INTER4: DW QNUMBER,qbranch,INTER5
         DW LITERAL,branch,INTER6
 INTER5: DW COUNT,TYPE,lit,3FH,EMIT,CR,QUIT
 INTER6:

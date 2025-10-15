@@ -278,8 +278,7 @@ IHXCRC:
         call docon
         dw ihxcrc_ptr
 
-;: IHEX? ( addr len -- src dest n -1   if ok, 0 if not recognised, 1 if end )
-;    DROP
+;: IHEX? ( addr -- src dest n -1   if ok, 0 if not recognised, 1 if end )
 ;    0 IHXCRC C!
 ;    DUP C@ [CHAR] : <> IF DROP 0  ( no colon ) EXIT  THEN
 ;
@@ -311,9 +310,8 @@ IHXCRC:
 ;    ELSE
 ;        0   ( flag not recognised )
 ;    THEN  ;
-XIHEXQ:
+IHEXQ:
         call docolon
-        DW DROP
         DW ZERO,IHXCRC,CSTORE
         DW DUP,CFETCH,lit,58,NOTEQUAL,qbranch,XIHEXQ1
         DW DROP,ZERO,EXIT
@@ -345,23 +343,7 @@ XIHEXQ4:
         DW ZERO,EXIT
 
 
-;: IHEX?
-;    ['] (IHEXQ?) CATCH
-;       0<> IF  FALSE  THEN   ;
-IHEXQ:
-        caLL docolon
-        DW IHEX_FLAG,FETCH,qbranch,IHEXQ0
-        DW lit,XIHEXQ,CATCH
-        DW qbranch,IHEXQ1
-IHEXQ0:
-        DW FALSE
-
-IHEXQ1:
-        DW EXIT
-
-
-
-;: (IHEX)                   ( src dest len -- runtime action )
+;: (IHEX)                   ( src dest len --    runtime action )
 ;     IHEX_START @ 0= IF OVER IHEX_START ! THEN
 ;     2DUP + IHEX_START @ - IHEX_LENGTH !
 ;     MOVE    ;
@@ -374,46 +356,42 @@ XIHEX1:
         DW MOVE
         DW EXIT
 
-;  NONAME:    ( src dest len --     compile action for ihex )
-IHEXCOMMA:
-        call docolon
-        DW SWOP,LITERAL,XSLITERAL
-        DW lit,ROT,COMMA
-        DW lit,SWOP,COMMA
-        DW lit,XIHEX,COMMA
-        DW EXIT
-
-XHEXLOAD:
-        call docolon
+;Z HEXLOAD   -- c-addr len            start parsing intel hex dump
+;    0 IHEX_START !
+;    0 IHEX_LENGTH !   
+;    BEGIN
+;       BEGIN
+;          BL WORD COUNT
+;       WHILE
+;          IHEX?  ( 0/1/-1 )
+;          DUP 0= IF   -260 THROW   THEN
+;          1-     ( now, false if end, otherwise: src dest n true )
+;          IF   (IHEX)   ELSE   EXIT   THEN
+;       REPEAT
+;       DROP  REFILL 0=
+;    UNTIL  ;
+    immed(HEXLOAD,HEXLOAD,docolon)
         DW ZERO,IHEX_START,STORE
         DW ZERO,IHEX_LENGTH,STORE
-        DW EXIT
+HEXLOAD1:
+        DW BL,WORD,COUNT,qbranch,HEXLOAD5
+HEXLOAD2:
+        DW IHEXQ
+        DW DUP,ZEROEQUAL,qbranch,HEXLOAD3
+        DW lit,-260,THROW
+HEXLOAD3:
+        DW ONEMINUS,qbranch,HEXLOAD6
+        DW XIHEX,lit,'#',EMIT,branch,HEXLOAD1
 
-XSEMIHEXLOAD:
-        call docolon
+HEXLOAD5:
+        DW DROP,REFILL,qbranch,HEXLOAD6
+        DW branch,HEXLOAD1
+
+HEXLOAD6:
         DW IHEX_START,FETCH
         DW IHEX_LENGTH,FETCH
         DW EXIT
 
-;Z HEXLOAD  --                     start parsing intel hex dump
-;    0 IHEX_START !
-;    0 IHEX_LENGTH !   ;
-    immed(HEXLOAD,HEXLOAD,docolon)
-        DW ALLONES,IHEX_FLAG,STORE
-        DW STATE,FETCH,qbranch,HEXLOAD1
-        DW lit,XHEXLOAD,COMMAXT,EXIT
-HEXLOAD1:
-        DW XHEXLOAD,EXIT
-
-;Z ;HEXLOAD   -- ihex_start ihex_length        end of intel hex
-;    IHEX_START @
-;    IHEX_LENGTH @   ;
-    head(SEMIHEXLOAD,;HEXLOAD,docolon)
-        DW ZERO,IHEX_FLAG,STORE
-        DW STATE,FETCH,qbranch,SEMIHEXLOAD1
-        DW lit,XSEMIHEXLOAD,COMMAXT,EXIT
-SEMIHEXLOAD1:
-        DW XSEMIHEXLOAD,EXIT
 
 IHEX_START:
         call docon
@@ -422,10 +400,6 @@ IHEX_START:
 IHEX_LENGTH:
         call docon
         DW ihex_length
-
-IHEX_FLAG:
-        call docon
-        DW ihex_flag
 
 SECTION data
 
