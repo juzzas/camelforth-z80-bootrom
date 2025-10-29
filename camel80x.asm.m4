@@ -2405,7 +2405,9 @@ blkfile_fence: DS 2
 blkfile_dirty: DS 1
 chars_count: DS 2
 
-current_blkfile_id: DS 0
+current_blkfile_id: DS 2
+
+blkf_rw_flag: DS 2
 
 SECTION code_16k
 
@@ -2720,21 +2722,36 @@ blkftooffsetplus1:
         DW TWORFROM,MINUS
         DW EXIT
 
-;: ((BLKF-GETCHARS))   ( c-addr u blkfile-id -- c-addr' u' )   get chars from blkfile stream
+BLKF_RW_FLAG:
+        call docon
+        DW blkf_rw_flag
+
+;: ((BLKF-DOCHARS))   ( c-addr u blkfile-id -- c-addr' u' )   get/put chars from blkfile stream
 ;   >R 2DUP R>              ( c-addr u c-addr u blkfile-id )
-;   DUP >R blkf>bufferidx   ( c-addr u c-addr u src   r: blkfile-id )
-;   -ROT                    ( c-addr u src c-addr u   r: blkfile-id )
-;   R@  bytes-to-read       ( c-addr u src c-addr bytes   r: blkfile-id )
-;   DUP >R                  ( c-addr u src c-addr bytes   r: blkfile-id bytes )
+;   DUP >R blkf>bufferidx   ( c-addr u c-addr u dest   r: blkfile-id )
+;   BLKF-RW-FLAG @ IF
+;      SWAP                    ( c-addr u c-addr dest u   r: blkfile-id )
+;   ELSE
+;      -ROT                    ( c-addr u src c-addr u   r: blkfile-id )
+;   THEN
+;   R@  bytes-to-read       ( c-addr u src dest bytes   r: blkfile-id )
+;   DUP >R                  ( c-addr u src dest bytes   r: blkfile-id bytes )
 ;   MOVE                    ( c-addr u                r: blkfile-id bytes )
 ;   R@  incr-index          ( c-addr' u'              r: blkfile-id bytes )
 ;   R> R> blkf>offset+  ;
-    head(XXBLKF_GETCHARS,((BLKF-GETCHARS)),docolon)
-;XXBLKF_GETCHARS:
+    head(XXBLKF_DOCHARS,((BLKF-DOCHARS)),docolon)
+;XXBLKF_DOCHARS:
 ;        call docolon
         DW TOR,TWODUP,RFROM
         DW DUP,TOR,BLKFTOBUFFERIDX
-        DW ROT,ROT
+        DW BLKF_RW_FLAG,FETCH,qbranch,XXBLKF_DOCHARS1
+        DW SWOP
+        DW branch,XXBLKF_DOCHARS2
+
+XXBLKF_DOCHARS1:
+        DW MINUSROT
+
+XXBLKF_DOCHARS2:
         DW RFETCH,BYTES_TO_READ
         DW DUP,TOR
         DW MOVE
@@ -2742,53 +2759,62 @@ blkftooffsetplus1:
         DW RFROM,RFROM,BLKFTOOFFSETPLUS
         DW EXIT
 
-;: (BLKF-GETCHARS)   ( c-addr u blkfile-id -- c-addr' u' )   get u chars from blkfile stream
+
+;: (BLKF-DOCHARS)   ( c-addr u blkfile-id -- c-addr' u' )   get/put u chars from blkfile stream
 ;   BEGIN
 ;   OVER WHILE
 ;      DUP >R                ( c-addr u blkfile-id  r: blkfile-id )
-;      ((BLKF-GETCHARS))     ( c-addr' u'  r: blkfile-id  )
+;      ((BLKF-DOCHARS))     ( c-addr' u'  r: blkfile-id  )
 ;      R>                    ( c-addr' u' blkfile-id  )
 ;   REPEAT   DROP   ;
-    head(XBLKF_GETCHARS,(BLKF-GETCHARS),docolon)
-; XBLKF_GETCHARS:
+    head(XBLKF_DOCHARS,(BLKF-DOCHARS),docolon)
+; XBLKF_DOCHARS:
 ;         call docolon
-XBLKF_GETCHARS1:
-        DW OVER,qbranch,XBLKF_GETCHARS2
+XBLKF_DOCHARS1:
+        DW OVER,qbranch,XBLKF_DOCHARS2
 
         DW DUP,TOR
-        DW XXBLKF_GETCHARS
+        DW XXBLKF_DOCHARS
         DW RFROM
-        DW branch,XBLKF_GETCHARS1
+        DW branch,XBLKF_DOCHARS1
 
-XBLKF_GETCHARS2:
+XBLKF_DOCHARS2:
         DW DROP
         DW EXIT
 
 
 
-;Z BLKF-GETCHARS   ( c-addr u blkfile-id -- u )   get u chars from blkfile stream
+;Z BLKF-DOCHARS   ( c-addr u blkfile-id f -- u )   put u chars to blkfile stream
+;   BLKF-RW-FLAG !
 ;   DUP  ?SET-BLKFILE
 ;   SLICE >R  DUP  BLKF.SLICE SELECT
 ;   OVER >R              ( c-addr u blkfile-id    r: slice-id u )
-;   (BLKF-GETCHARS)      ( c-addr' u'   r: slice-id u )
+;   (BLKF-DOCHARS)      ( c-addr' u'   r: slice-id u )
 ;   NIP  R>   SWAP -          \ return characters read
 ;   R> SELECT  ;
-    head(BLKF_GETCHARS,BLKF-GETCHARS,docolon)
+    head(BLKF_DOCHARS,BLKF-DOCHARS,docolon)
+        DW BLKF_RW_FLAG,STORE
         DW DUP,QSET_BLKFILE
         DW SLICE,TOR,DUP,BLKFDOTSLICE,SELECT
         DW OVER,TOR
-        DW XBLKF_GETCHARS
+        DW XBLKF_DOCHARS
         DW NIP,RFROM,SWOP,MINUS
         DW RFROM,SELECT
         DW EXIT
 
-;Z BLKF-PUTCHARS   ( c-addr u blkfile-id -- )   send u chars to blkfile stream
-;   DUP  ?SET-BLKFILE
-;   SLICE >R  DUP  BLKF.SLICE SELECT
-;   -ROT  BOUNDS
-;   ?DO I C@ OVER (BLKF-PUTCH) LOOP 
-;   DROP
-;   R> SELECT  ;
+;Z BLKF-PUTCHARS   ( c-addr u blkfile-id -- u )   put u chars to blkfile stream
+;    TRUE    BLKF-DOCHARS-DO ;
+    head(BLKF_PUTCHARS,BLKF-PUTCHARS,docolon)
+        DW TRUE
+        DW BLKF_DOCHARS
+        DW EXIT
+
+;Z BLKF-GETCHARS   ( c-addr u blkfile-id -- u )   get u chars to blkfile stream
+;    FALSE    BLKF-DOCHARS-DO ;
+    head(BLKF_GETCHARS,BLKF-GETCHARS,docolon)
+        DW FALSE
+        DW BLKF_DOCHARS
+        DW EXIT
 
 
 ; RC2014 EXTENSION (SCREENS) ====================
