@@ -1898,7 +1898,6 @@ DEFC DRIVECTX_SIZE = 8
 ;    LIMIT number of blocks (1 cell)
 
 DEFC SLICECTX_SIZE = 8
-DEFC SLICECTX_NUM = 8
 
 
 ;Z SLICE>DRIVE   slice-id -- a-addr'           addr of drive ID
@@ -1913,7 +1912,7 @@ DEFC SLICECTX_NUM = 8
     head_system(SLICETOLIMIT,SLICE>LIMIT,docode)
         jp ctx_plus_6
 
-;Z SLICEi%   -- u                size of SLICE context stucture
+;Z SLICE%   -- u                 size of SLICE context stucture
     head_system(SLICESIZE,SLICE%,docon)
         dw SLICECTX_SIZE
 
@@ -1966,6 +1965,16 @@ SLICE1:
     head_system(SELECT,SELECT,docolon)
         DW SLICE_ID,STORE,EXIT
 
+;Z SUBSLICE   blk len slice-id --     reduce slice to len blocks from blk
+;     DUP >R SLICE>LIMIT !        ( blk ; r: slice-id )
+;     R@  BLK2LBA          ( d ; r: slice-id )
+;     R> SLICE>OFFSET 2!  ;
+    head_system(SUBSLICE,SUBSLICE,docolon)
+       DW DUP,TOR,SLICETOLIMIT,STORE
+       DW RFETCH,BLK2LBA
+       DW RFROM,SLICETOOFFSET,TWOSTORE
+       DW EXIT
+
 
 ; SLICE/DRIVE helpers ==========================
 
@@ -1985,15 +1994,16 @@ BLKLIMIT:
         dw SLICE,SLICETOLIMIT,FETCH
         dw EXIT
 
-;: BLK2LBA   ( slice-id blk -- LBA-L LBA-H )
-;  S>D D2*   ( slice-id LBA-L LBA-H )
-;  ROT       ( LBA-L LBA-H  slice-id )
-;  SLICE>OFFSET 2@ D+ ;  ( LBA-L' LBA-H' )
+;: BLK2LBA   ( blk slice-id -- LBA-L LBA-H )
+;   SLICE>OFFSET  >R
+;   S>D D2*   ( LBA-L LBA-H )
+;   R>       ( LBA-L LBA-H  slice-to-offset )
+;   2@ D+ ;  ( LBA-L' LBA-H' )
 BLK2LBA:
         call docolon
+        DW SLICETOOFFSET,TOR
         dw STOD,DTWOSTAR
-        dw ROT
-        dw SLICETOOFFSET,TWOFETCH,DPLUS
+        dw RFROM,TWOFETCH,DPLUS
         dw EXIT
 
 
@@ -2080,7 +2090,7 @@ CFLASH_SLICE_CTX:
 SECTION code_16k
 
 
-;: BLOCK-READ  ( slice-id blk adrs -- )  Compact Flash read BLK and SLICE-ID
+;: BLOCK-READ  ( blk slice-id adrs -- )  Compact Flash read BLK and SLICE-ID
 ; Reads the block from the Compact Flash card into memory
 ; address found at 'adrs'. 'slice-id' and 'blk' are the disk
 ; and block numbers respectively
@@ -2099,7 +2109,7 @@ BLOCK_READ:
         dw SECTRDVEC,FETCH,EXECUTE,THROW
         dw EXIT
 
-;: BLOCK-WRITE  ( slice-id blk adrs -- )  Compact Flash write BLK and SLICE-ID
+;: BLOCK-WRITE  ( blk slice-id adrs -- )  Compact Flash write BLK and SLICE-ID
 ; Writes the block to the Compact Flash card from memory
 ; address found at 'adrs'. 'slice-id' and 'blk' are the disk
 ; and block numbers respectively
@@ -2115,20 +2125,20 @@ BLOCK_WRITE:
 ;: BLOCK-READWRITE    ( ctx f -- )  read or write block
 ;                              f = 0 read, f = -1 write
 ;     >R >R
-;     R@ BLKCTX>SLICE @
 ;     R@ BLKCTX>BLOCK @
+;     R@ BLKCTX>SLICE @
 ;     R@ BLKCTX>BUFFER @
-;     0 R@ BLKCTX>FLAGS !
-;     R> DROP  R>      ( slice-id blk adrs f )
+;     0 R> BLKCTX>FLAGS !
+;     R>      ( slice-id blk adrs f )
 ;     IF BLOCK-WRITE ELSE BLOCK-READ ;
 BLOCK_READWRITE:
         call docolon
         dw TOR,TOR
-        dw RFETCH,BLKCTXTOSLICE,FETCH
         dw RFETCH,BLKCTXTOBLOCK,FETCH
+        dw RFETCH,BLKCTXTOSLICE,FETCH
         dw RFETCH,BLKCTXTOBUFFER,FETCH
-        dw ZERO,RFETCH,BLKCTXTOFLAGS,STORE
-        dw RFROM,DROP,RFROM
+        dw ZERO,RFROM,BLKCTXTOFLAGS,STORE
+        dw RFROM
         dw qbranch,BLOCK_READWRITE1
         dw BLOCK_WRITE,branch,BLOCK_READWRITE2
 BLOCK_READWRITE1:
@@ -2162,7 +2172,7 @@ XBUFFER1:
         dw BLKCTXTOBUFFER,FETCH
         dw EXIT
 
-;C BLOCK  n -- addr                    load block, 0 if block 0
+;C BLOCK  n -- addr                    load block
 ;        (BUFFER)     ( ctx )
 ;        DUP BLKCTX>FLAGS @ 1 = IF  ( ctx )
 ;            DUP 0 BLOCK-READWRITE
@@ -2326,30 +2336,65 @@ dnl         DW EXIT
 
 ; BLKFILE implementation =====================================
 
-;VARIABLE   blkfile-ptr
+; BLKFCTX structure
+;   Each context struct is block file
+;    OFFSET  (1 cell)
+;    BLK  (1 cell)
+;    ORIGIN starting blk    (1 cell)
+;    SLICE  limit BLKF to slice-id (SLICE% bytes)
+
+DEFC BLKFCTX_SIZE = 6 + SLICECTX_SIZE
+
+
+;Z BLKF.OFFSET   blkfile-id -- a-addr'       addr of current blk
+    head_system(BLKFDOTOFFSET,BLKF.OFFSET,docode)
+        jp ctx_next
+
+;Z BLKF.BLK   blkfile-id -- a-addr'   addr of current offs.
+    head_system(BLKFDOTBLK,BLKF.BLK,docode)
+        jp ctx_plus_2
+
+;Z BLKF.ORIGIN    blkfile-id -- a-addr'       addr of origin blk
+    head_system(BLKFDOTORIGIN,BLKF.ORIGIN,docode)
+        jp ctx_plus_4
+
+;Z BLKF.SLICE    blkfile-id -- a-addr'       addr of slice
+    head_system(BLKFDOTSLICE,BLKF.SLICE,docode)
+        jp ctx_plus_6
+
+;Z BLKF%   -- u              size of BLKFILE context stucture
+    head_system(BLKFSIZE,BLKF%,docon)
+        dw BLKFCTX_SIZE
+
+;VARIABLE   blkfile-ptr    -- address of BLOCK buffer
 BLKFILE_PTR:
         call docon
         DW blkfile_ptr
 
-;VARIABLE   blkfile-curr
-BLKFILE_CURR:
+;VARIABLE   blkfile-curr   -- current blk number of file pointer
+BLKFILE_CURR:  
         call docon
         DW blkfile_curr
 
-;VARIABLE   blkfile-offset
+;VARIABLE   blkfile-offset  -- offset in current blk of file pointer
 BLKFILE_OFFSET:
         call docon
         DW blkfile_offset
 
-;VARIABLE   blkfile-fence
+;VARIABLE   blkfile-fence     -- do not go pass this blk number!
 BLKFILE_FENCE:
         call docon
         DW blkfile_fence
 
-;CVARIABLE   blkfile-dirty
+;CVARIABLE   blkfile-dirty    -- file needs flushing
 BLKFILE_DIRTY:
         call docon
         DW blkfile_dirty
+
+;VARIABLE    current-blkfile-id
+CURRENT_BLKFILE_ID:
+        call docon
+        DW current_blkfile_id
 
 SECTION data
 
@@ -2359,6 +2404,8 @@ blkfile_offset: DS 2
 blkfile_fence: DS 2
 blkfile_dirty: DS 1
 chars_count: DS 2
+
+current_blkfile_id: DS 0
 
 SECTION code_16k
 
@@ -2474,7 +2521,7 @@ PUTCHARS2:
         DW DROP
         DW EXIT
 
-;: (read-char) ( c -- )
+;: (read-char) ( -- c )
 ;   blkfile-ptr @  ( blk-ptr )
 ;   blkfile-offset @ + c@   ( c )
 ;   inc-offset ;
@@ -2548,8 +2595,8 @@ GETLINE2:
 
 
 ;Z BEGIN-BLKFILE ( blk offset fence -- )
-;   blkfile-offset !
 ;   blkfile-fence !
+;   blkfile-offset !
 ;   blkfile-curr !
 ;   clear-dirty  current-block ;
     head_system(BEGIN_BLKFILE,``BEGIN-BLKFILE'',docolon)
@@ -2570,6 +2617,178 @@ GETLINE2:
 END_BLKFILE1:
         DW BLKFILE_CURR,FETCH,BLKFILE_OFFSET,FETCH,EXIT
 
+
+;Z /BLKF   ( blk blkfile-id -- )
+;   2DUP BLKF.ORIGIN !        ( blkfile-id )
+;   SWAP OVER BLKF.BLK !      ( blkfile-id )
+;   0 OVER BLKF.OFFSET !      ( blkfile-id )
+;   SLICE OVER BLKF.SLICE SLICE% MOVE  ( blkfile-id )
+;   DROP ;
+    head_system(SLASHBLKF,``/BLKF'',docolon)
+        DW TWODUP,BLKFDOTORIGIN,STORE
+        DW SWOP,OVER,BLKFDOTBLK,STORE
+        DW ZERO,OVER,BLKFDOTOFFSET,STORE
+        DW SLICE,OVER,BLKFDOTSLICE,SLICESIZE,MOVE
+        DW DROP,EXIT
+
+;Z ?SET-BLKFILE  ( blkfile-id -- )
+;   current-blkfile-id @      ( blkf-id curr-blkf-id )
+;   ?DUP IF  OVER  <> IF
+;         is-dirty?   IF UPDATE clear-dirty THEN
+;      THEN
+;   THEN
+;   current-blkfile-id !  ;
+    head(QSET_BLKFILE,?SET-BLKFILE,docolon)
+;QSET_BLKFILE:
+;        call docolon
+        DW CURRENT_BLKFILE_ID,FETCH
+        DW QDUP,qbranch,QSET_BLKFILE1
+        DW OVER,NOTEQUAL,qbranch,QSET_BLKFILE1
+        DW IS_DIRTYQ,qbranch,QSET_BLKFILE1
+        DW UPDATE,CLEAR_DIRTY
+QSET_BLKFILE1:
+        DW CURRENT_BLKFILE_ID,STORE
+        DW EXIT
+
+;Z BLKF-FLUSH   ( -- )
+;   0 ?SET-BLKFILE
+;   FLUSH   ;
+    head(BLKF_FLUSH,BLKF-FLUSH,docolon)
+        DW ZERO,QSET_BLKFILE
+        DW FLUSH
+        DW EXIT
+
+;: bytes-to-read  ( u blkfile-id -- u' )   
+;   BLKF.OFFSET @  B/BLK  SWAP -    \ bytes left in blk
+;   2DUP U>   IF SWAP THEN DROP  ;  \ bytes to read -- get MIN
+    head(BYTES_TO_READ,bytes-to-read,docolon)
+;BYTES_TO_READ:
+;        call docolon
+        DW FETCH,B_BLK,SWOP,MINUS
+        DW TWODUP,UGREATER,qbranch,BYTES_TO_READ1
+        DW SWOP
+BYTES_TO_READ1:
+        DW DROP
+        DW EXIT
+
+;: blkf>bufferidx  ( blkfile-id -- c-addr )   -- get buffer index of blkfile
+;   DUP BLKF.BLK @ BLOCK
+;   SWAP BLKF.OFFSET @ +  ;
+    head(BLKFTOBUFFERIDX,blkf>bufferidx,docolon)
+;BLKFTOBUFFERIDX:
+;        call docolon
+        DW DUP,CELLPLUS,FETCH,BLOCK
+        DW SWOP,FETCH,PLUS
+        DW EXIT
+
+;: blkf>position@ ( blkfile -- d )
+;    DUP  BLKF.BLK @  1024 M*   ( blkfile-id d )
+;    ROT  BLKF.OFFSET @  M+  ;
+
+;: blkf>position!  ( d blkfile -- )
+;    >R 1024  FM/MOD   (  offset blk   r: blkfile-id )
+;    R@  BLKF.BLK !
+;    R>  BLKF.OFFSET !  ;
+
+;: blkf>offset+  ( n blkfile -- )
+;\                where n is assumed to be <= 1024
+;   TUCK BLKF.OFFSET @  +   ( blkfile-id offset' )
+;   DUP 1023 > IF   ( blkfile-id offset' )
+;      OVER BLKF.BLK   1 SWAP +!
+;      1023 AND
+;   THEN
+;   SWAP BLKF.OFFSET !    ;
+    head(BLKFTOOFFSETPLUS,blkf>offset+,docolon)
+;BLKFTOOFFSETPLUS:
+;        call docolon
+        DW TUCK,FETCH,PLUS
+        DW DUP,lit,1023,GREATER,qbranch,blkftooffsetplus1
+        DW OVER,CELLPLUS,lit,1,SWOP,PLUSSTORE
+        DW lit,1023,AND
+
+blkftooffsetplus1:
+        DW SWOP,STORE
+        DW EXIT
+
+;: incr-index  ( c-addr u n -- c-addr' u' )
+;   TUCK 2>R  +
+;   2R>  -   ;
+    head(INCR_INDEX,incr-index,docolon)
+;INCR_INDEX:
+;        call docolon
+        DW TUCK,TWOTOR,PLUS
+        DW TWORFROM,MINUS
+        DW EXIT
+
+;: ((BLKF-GETCHARS))   ( c-addr u blkfile-id -- c-addr' u' )   get chars from blkfile stream
+;   >R 2DUP R>              ( c-addr u c-addr u blkfile-id )
+;   DUP >R blkf>bufferidx   ( c-addr u c-addr u src   r: blkfile-id )
+;   -ROT                    ( c-addr u src c-addr u   r: blkfile-id )
+;   R@  bytes-to-read       ( c-addr u src c-addr bytes   r: blkfile-id )
+;   DUP >R                  ( c-addr u src c-addr bytes   r: blkfile-id bytes )
+;   MOVE                    ( c-addr u                r: blkfile-id bytes )
+;   R@  incr-index          ( c-addr' u'              r: blkfile-id bytes )
+;   R> R> blkf>offset+  ;
+    head(XXBLKF_GETCHARS,((BLKF-GETCHARS)),docolon)
+;XXBLKF_GETCHARS:
+;        call docolon
+        DW TOR,TWODUP,RFROM
+        DW DUP,TOR,BLKFTOBUFFERIDX
+        DW ROT,ROT
+        DW RFETCH,BYTES_TO_READ
+        DW DUP,TOR
+        DW MOVE
+        DW RFETCH,INCR_INDEX
+        DW RFROM,RFROM,BLKFTOOFFSETPLUS
+        DW EXIT
+
+;: (BLKF-GETCHARS)   ( c-addr u blkfile-id -- c-addr' u' )   get u chars from blkfile stream
+;   BEGIN
+;   OVER WHILE
+;      DUP >R                ( c-addr u blkfile-id  r: blkfile-id )
+;      ((BLKF-GETCHARS))     ( c-addr' u'  r: blkfile-id  )
+;      R>                    ( c-addr' u' blkfile-id  )
+;   REPEAT   DROP   ;
+    head(XBLKF_GETCHARS,(BLKF-GETCHARS),docolon)
+; XBLKF_GETCHARS:
+;         call docolon
+XBLKF_GETCHARS1:
+        DW OVER,qbranch,XBLKF_GETCHARS2
+
+        DW DUP,TOR
+        DW XXBLKF_GETCHARS
+        DW RFROM
+        DW branch,XBLKF_GETCHARS1
+
+XBLKF_GETCHARS2:
+        DW DROP
+        DW EXIT
+
+
+
+;Z BLKF-GETCHARS   ( c-addr u blkfile-id -- u )   get u chars from blkfile stream
+;   DUP  ?SET-BLKFILE
+;   SLICE >R  DUP  BLKF.SLICE SELECT
+;   OVER >R              ( c-addr u blkfile-id    r: slice-id u )
+;   (BLKF-GETCHARS)      ( c-addr' u'   r: slice-id u )
+;   NIP  R>   SWAP -          \ return characters read
+;   R> SELECT  ;
+    head(BLKF_GETCHARS,BLKF-GETCHARS,docolon)
+        DW DUP,QSET_BLKFILE
+        DW SLICE,TOR,DUP,BLKFDOTSLICE,SELECT
+        DW OVER,TOR
+        DW XBLKF_GETCHARS
+        DW NIP,RFROM,SWOP,MINUS
+        DW RFROM,SELECT
+        DW EXIT
+
+;Z BLKF-PUTCHARS   ( c-addr u blkfile-id -- )   send u chars to blkfile stream
+;   DUP  ?SET-BLKFILE
+;   SLICE >R  DUP  BLKF.SLICE SELECT
+;   -ROT  BOUNDS
+;   ?DO I C@ OVER (BLKF-PUTCH) LOOP 
+;   DROP
+;   R> SELECT  ;
 
 
 ; RC2014 EXTENSION (SCREENS) ====================
@@ -3430,6 +3649,7 @@ SLASH16KROM:
         DW SLASHCFLASH,qbranch,SLASH16K_1
         DW CF_DRIVE_ID,ZERO,CF_SLICE_ID,SLASHSLICE
         DW CF_SLICE_ID,SELECT
+        DW ZERO,CURRENT_BLKFILE_ID,STORE
 SLASH16K_1:
         dw EXIT
 

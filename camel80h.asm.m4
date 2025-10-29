@@ -224,7 +224,7 @@ DNEG1:  DW EXIT
         DW SWOP,ABS,SWOP,ABS,UMSTAR
         DW RFROM,QDNEGATE,EXIT
 
-;C SM/REM   d1 n1 -- n2 n3                 symmetric signed div
+;C SM/REM   d1 n1 -- n-rem n-quot.        symmetric signed div
 ;   2DUP XOR >R              sign of quotient
 ;   OVER >R                  sign of remainder
 ;   ABS >R DABS R> UM/MOD
@@ -237,7 +237,7 @@ DNEG1:  DW EXIT
         DW SWOP,RFROM,QNEGATE,SWOP,RFROM,QNEGATE
         DW EXIT
 
-;C FM/MOD   d1 n1 -- n2 n3                 floored signed div'n
+;C FM/MOD   d1 n1 -- n-rem n-quot.        floored signed div'n
 ;   DUP >R              divisor
 ;   2DUP XOR >R         sign of quotient
 ;   >R                  divisor

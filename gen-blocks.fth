@@ -69,10 +69,11 @@ OPEN:  build/cf-image.blk
 3 CREAT required-helper2.fth 
    BLKFILE: test/forth2012-test-suite/src/required-helper1.fth
 
+3600 BLOCKS: test/blkfile_tests.fth
+3615 BLKFILE: test/blkfile_test1.fth
 
-3600 BLOCKS: test/hexload_test.fth
+3900 BLOCKS: test/hexload_test.fth
 +BLOCKS: test/hexload_test2.fth
-+BLOCKS: test/blkfile_test1.fth
 +BLOCKS: test/multi_test.fth
 FLUSH
 BYE
