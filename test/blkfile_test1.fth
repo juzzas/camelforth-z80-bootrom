@@ -37,10 +37,18 @@ T{ read-2048 1027 + C@  -> '2' }T
 T{ read-2048 1028 + C@  -> 0 }T
 
 
-.( Testing BLKF-PUTCHAR ) CR
+.( Testing BLKF-PUTCHARS ) CR
 
-T{ 'H' blk-id BLKF-PUTCHAR  -> }T
-T{ 'I' blk-id BLKF-PUTCHAR  -> }T
+: str1   S" writing test" ;
+test-block WIPE FLUSH
 
+T{ test-block blk-id /BLKF -> }T
+T{ str1 blk-id BLKF-PUTCHARS  -> 12 }T
+
+BLKF-FLUSH
+test-block LIST
+
+T{ S" THIS IS A TEST PUT"  blk-id BLKF-PUTCHARS  -> 18 }T
+BLKF-FLUSH
 test-block LIST
 

@@ -2731,6 +2731,7 @@ BLKF_RW_FLAG:
 ;   DUP >R blkf>bufferidx   ( c-addr u c-addr u dest   r: blkfile-id )
 ;   BLKF-RW-FLAG @ IF
 ;      SWAP                    ( c-addr u c-addr dest u   r: blkfile-id )
+;      set-dirty
 ;   ELSE
 ;      -ROT                    ( c-addr u src c-addr u   r: blkfile-id )
 ;   THEN
@@ -2746,6 +2747,7 @@ BLKF_RW_FLAG:
         DW DUP,TOR,BLKFTOBUFFERIDX
         DW BLKF_RW_FLAG,FETCH,qbranch,XXBLKF_DOCHARS1
         DW SWOP
+        DW SET_DIRTY
         DW branch,XXBLKF_DOCHARS2
 
 XXBLKF_DOCHARS1:
