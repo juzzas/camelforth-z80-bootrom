@@ -1,6 +1,6 @@
 .( Testing clearing blkf context )   CR
 
-CREATE blk-id   BLKF% ALLOT
+T{ CREATE blk-id  BLKF% ALLOT -> }T
 T{ test-block blk-id /BLKF -> }T
 T{ blk-id BLKF.BLK @  -> test-block }T
 T{ blk-id BLKF.OFFSET @  -> 0 }T
@@ -38,7 +38,7 @@ T{ read-2048 1028 + C@  -> 0 }T
 
 
 .( Testing BLKF-PUTCHARS ) CR
-
+.( Should say "writing test" on top line of screen ) test-block U. CR
 : str1   S" writing test" ;
 test-block WIPE FLUSH
 
@@ -48,6 +48,7 @@ T{ str1 blk-id BLKF-PUTCHARS  -> 12 }T
 BLKF-FLUSH
 test-block LIST
 
+.( Should say "writing testTHIS IS A TEST PUT" on top line of screen ) test-block U. CR
 T{ S" THIS IS A TEST PUT"  blk-id BLKF-PUTCHARS  -> 18 }T
 BLKF-FLUSH
 test-block LIST

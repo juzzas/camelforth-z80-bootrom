@@ -16,7 +16,7 @@ CR .( Loading file access words... )
 
    \ file-access wordset: OPEN-FILE CLOSE-FILE  CREATE-FILE
 : (OPEN-FILE) ( c-addr u fam -- fileid ) 
-    >R $open R>  OPEN-BLKFILE  ;
+    >R $open R>  OPEN-FENCE-BLKFILE  ;
 : OPEN-FILE ( c-addr u fam -- fileid ior ) 
     ['] (OPEN-FILE) CATCH  DUP IF >R 0 R> THEN ;
 
@@ -24,7 +24,7 @@ CR .( Loading file access words... )
 
 : (CREATE-FILE) ( c-addr u fam -- fileid )
    >R DEFAULT-FILESIZE -ROT $creat  R> ( blk fence fam )
-   OPEN-BLKFILE   ;
+   OPEN-FENCE-BLKFILE   ;
 : CREATE-FILE ( c-addr u fam -- fileid ior )
     ['] (CREATE-FILE) CATCH  DUP IF >R 0 R> THEN ;
 

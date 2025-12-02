@@ -193,6 +193,30 @@ DUMP1:
         dw EXIT
 
 
+;Z C+!  c c-addr --                    add c to value at c-addr
+    head(CPLUSSTORE,C+!,docode)
+        ld a,(bc)
+        pop hl
+        add a,l
+        ld (bc),a
+        pop bc
+        next
+
+;Z -ROT    x1 x2 x3  -- x3 x1 x2              per stack diagram
+    head(MINUSROT,-ROT,docode)
+        push bc         ; x3 is in bc
+        exx
+        pop de          ; x3
+        pop bc          ; x2
+        pop hl          ; x1
+        push de
+        push hl
+        push bc
+        exx
+        pop bc
+        next
+
+
 ; HEXLOAD implementation ==========================
 
 ;: ?IHXCRC  ( c -- flag )    ( does the crc match? )

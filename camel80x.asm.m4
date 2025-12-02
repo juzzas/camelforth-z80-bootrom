@@ -276,28 +276,6 @@ MAPUNTIL2:
 MAPUNTIL3:
         DW DROP,FALSE,EXIT
 
-;Z C+!  c c-addr --                    add c to value at c-addr
-    head(CPLUSSTORE,C+!,docode)
-        ld a,(bc)
-        pop hl
-        add a,l
-        ld (bc),a
-        pop bc
-        next
-
-;Z -ROT    x1 x2 x3  -- x3 x1 x2              per stack diagram
-    head(MINUSROT,-ROT,docode)
-        push bc         ; x3 is in bc
-        exx
-        pop de          ; x3
-        pop bc          ; x2
-        pop hl          ; x1
-        push de
-        push hl
-        push bc
-        exx
-        pop bc
-        next
 
 ;Z >SPADC    addr u -- c-addr'    allocate string PAD for c str
 ;\  allocate an SPAD and copy counted string to it
@@ -359,7 +337,7 @@ CQUOTE1:
 ;\ Add the character to the end of the counted string.
 ;  TUCK COUNT + C!
 ;  1 SWAP C+!    ;
-;    head(ADDCHAR,ADDCHAR,docolon)
+dnl    head(ADDCHAR,ADDCHAR,docolon)
 ;        DW TUCK,COUNT,PLUS,CSTORE
 ;        DW lit,1,SWOP,CPLUSSTORE
 ;        DW EXIT
@@ -371,7 +349,7 @@ CQUOTE1:
 ;  2 PICK C!         \ -- caddr u $dest lend ; update length
 ;  CHAR+ +           \ -- caddr u $d+1+lend ; dest buffer addr
 ;  SWAP MOVE   ;      \ -- ; copy string
-;    head(APPEND,APPEND,docolon)
+dnl    head(APPEND,APPEND,docolon)
 ;        DW TWODUP,CFETCH,TUCK,PLUS
 ;        DW lit,2,PICK,CSTORE
 ;        DW CHARPLUS,PLUS
@@ -822,35 +800,35 @@ SECTION code_16k
         DW EXIT
 
 
-;Z <$    --               compile following hex values until $>
-; : <$ 
-;    BASE @ >R HEX                \ base 16
-;    BEGIN   BL WORD   ?NUMBER
-;    WHILE   C,
-;    REPEAT      ( caddr )
-;    R>  BASE !       \ restore base
-;    DUP
-;    COUNT  S" $>" ROT MAX STRCMP  IF  -259 THROW  THEN
-;  ; IMMEDIATE
-    immed(MINIASM,``<$'',docolon)
-        DW BASE,FETCH,TOR,HEX
-MINIASM1:
-        DW BL,WORD,QNUMBER
-        DW qbranch,MINIASM2
-
-        DW CCOMMA,branch,MINIASM1
-
-MINIASM2:
-        DW RFROM,BASE,STORE
-        DW DUP,COUNT,XSQUOTE
-        db 2,"$>"
-        DW ROT,MAX,STRCMP
-
-        DW qbranch,MINIASM3
-        DW lit,-259,THROW
-
-MINIASM3:
-        DW EXIT
+dnl ;Z <$    --               compile following hex values until $>
+dnl ; : <$ 
+dnl ;    BASE @ >R HEX                \ base 16
+dnl ;    BEGIN   BL WORD   ?NUMBER
+dnl ;    WHILE   C,
+dnl ;    REPEAT      ( caddr )
+dnl ;    R>  BASE !       \ restore base
+dnl ;    DUP
+dnl ;    COUNT  S" $>" ROT MAX STRCMP  IF  -259 THROW  THEN
+dnl ;  ; IMMEDIATE
+dnl     immed(MINIASM,``<$'',docolon)
+dnl         DW BASE,FETCH,TOR,HEX
+dnl MINIASM1:
+dnl         DW BL,WORD,QNUMBER
+dnl         DW qbranch,MINIASM2
+dnl 
+dnl         DW CCOMMA,branch,MINIASM1
+dnl 
+dnl MINIASM2:
+dnl         DW RFROM,BASE,STORE
+dnl         DW DUP,COUNT,XSQUOTE
+dnl         db 2,"$>"
+dnl         DW ROT,MAX,STRCMP
+dnl 
+dnl         DW qbranch,MINIASM3
+dnl         DW lit,-259,THROW
+dnl 
+dnl MINIASM3:
+dnl         DW EXIT
 
 
 
@@ -858,7 +836,7 @@ MINIASM3:
 dnl ; http://www.forth.org/svfig/Len/softstak.htm
 
 dnl ;     lifo+0 -> ptr to top of stack - 2
-dnl ;     lifo+2 -> S0: bottom of stack
+dnl ;     lifo+3 -> S0: bottom of stack
 dnl ;     lifo+2+n -> bottom of stack
 
 dnl ; note: on empty stack, S0 and SP point to beyond end of area.
@@ -1611,6 +1589,47 @@ ESAC2:
         DW ESAC,EXIT
 
 
+;X BEGIN-STRUCTURE                       ( -- addr 0 ; -- size )
+;   CREATE   HERE 0 0 ,                ( mark stack, lay dummy )
+;   DOES> @  ;                              ( -- record length )
+    head(BEGIN_STRUCTURE,BEGIN-STRUCTURE,docolon)
+        DW CREATE,HERE,ZERO,ZERO,COMMA
+
+        DW XDOES
+        call dodoes
+        DW FETCH
+        DW EXIT
+
+
+;X +FIELD ( # n -- #'  define a field with offset # and size n )
+;   CREATE OVER , +
+;   DOES> @ + ;  ( addr1 -- addr2 ; calculate address of field )
+    head(PLUSFIELD,+FIELD,docolon)
+        DW CREATE,OVER,COMMA,PLUS
+
+        DW XDOES
+        call dodoes
+        DW FETCH,PLUS
+        DW EXIT
+
+
+;X FIELD: 
+;   ALIGNED 1 CELLS +FIELD ;
+    head(FIELDCOLON,FIELD:,docolon)
+        DW CELL,PLUSFIELD
+        DW EXIT
+
+
+;X CFIELD: 1 CHARS +FIELD ;
+    head(CFIELDCOLON,CFIELD:,docolon)
+        DW lit,1,PLUSFIELD
+        DW EXIT
+
+;X END-STRUCTURE
+;   SWAP ! ;
+    head(END_STRUCTURE,END-STRUCTURE,docolon)
+        DW SWOP,STORE
+        DW EXIT
 
 ; BLOCK implementation ==========================
 
@@ -2366,31 +2385,6 @@ DEFC BLKFCTX_SIZE = 6 + SLICECTX_SIZE
     head_system(BLKFSIZE,BLKF%,docon)
         dw BLKFCTX_SIZE
 
-;VARIABLE   blkfile-ptr    -- address of BLOCK buffer
-BLKFILE_PTR:
-        call docon
-        DW blkfile_ptr
-
-;VARIABLE   blkfile-curr   -- current blk number of file pointer
-BLKFILE_CURR:  
-        call docon
-        DW blkfile_curr
-
-;VARIABLE   blkfile-offset  -- offset in current blk of file pointer
-BLKFILE_OFFSET:
-        call docon
-        DW blkfile_offset
-
-;VARIABLE   blkfile-fence     -- do not go pass this blk number!
-BLKFILE_FENCE:
-        call docon
-        DW blkfile_fence
-
-;CVARIABLE   blkfile-dirty    -- file needs flushing
-BLKFILE_DIRTY:
-        call docon
-        DW blkfile_dirty
-
 ;VARIABLE    current-blkfile-id
 CURRENT_BLKFILE_ID:
         call docon
@@ -2398,230 +2392,14 @@ CURRENT_BLKFILE_ID:
 
 SECTION data
 
-blkfile_ptr: DS 2
-blkfile_curr: DS 2
-blkfile_offset: DS 2
-blkfile_fence: DS 2
-blkfile_dirty: DS 1
-chars_count: DS 2
-
 current_blkfile_id: DS 2
 
 blkf_rw_flag: DS 2
 
 SECTION code_16k
 
-;: set-dirty  ( -- )
-;   -1 blkfile-dirty C!  ;
-SET_DIRTY:
-    xor a
-    dec a
-do_set_dirty:
-    ld hl,blkfile_dirty
-    ld (hl),a
-    next
-
-;: clear-dirty  ( -- )
-;   0 blkfile-dirty C!  ;
-CLEAR_DIRTY:
-    xor a
-    jp do_set_dirty
-
-;: is-dirty?  ( -- )
-;   blkfile-dirty C@ 0<> ;
-IS_DIRTYQ:
-    push bc
-    ld hl,blkfile_dirty
-    ld b,(hl)
-    ld c,b
-    next
-
-
-;: current-block ( -- )
-;   is-dirty? IF UPDATE clear-dirty THEN
-;   blkfile-curr @ BLOCK blkfile-ptr ! ;
-CURRENT_BLOCK:
-    call docolon
-    DW IS_DIRTYQ,qbranch,CURRBLK1
-    DW UPDATE,CLEAR_DIRTY
-CURRBLK1:
-    DW BLKFILE_CURR,FETCH,BLOCK,BLKFILE_PTR,STORE
-    DW EXIT
-
-;: inc-block  ( -- ) 
-;   1 blkfile-curr +!   (  )
-;   blkfile-curr @ blkfile-fence @ U< IF
-;      0 blkfile-offset ! (  )
-;      current-block 
-;   ELSE  -39 THROW THEN  ;
-INC_BLOCK:
-    call docolon
-    DW lit,1,BLKFILE_CURR,PLUSSTORE
-    DW BLKFILE_CURR,FETCH,BLKFILE_FENCE,FETCH,ULESS,qbranch,INC_BLOCK1
-    DW ZERO,BLKFILE_OFFSET,STORE
-    DW CURRENT_BLOCK
-    DW EXIT
-
-INC_BLOCK1:
-    DW lit,-39,THROW
-
-;: inc-offset  ( -- )
-;   1 blkfile-offset +! ( )
-;   blkfile-offset @ 1023 > IF
-;      inc-block
-;   THEN   ;
-INC_OFFSET:
-    call docolon
-    DW lit,1,BLKFILE_OFFSET,PLUSSTORE
-    DW BLKFILE_OFFSET,FETCH,lit,1023,GREATER
-    DW qbranch,INCOFFSET1
-    DW INC_BLOCK
-
-INCOFFSET1:
-    DW EXIT
-
-;: (write-char) ( c -- )
-;   blkfile-ptr @  ( c blk-ptr )
-;   blkfile-offset @ + c!   ( )
-;   set-dirty
-;   inc-offset ;
-XWRITE_CHAR:
-    call docolon
-    DW BLKFILE_PTR,FETCH
-    DW BLKFILE_OFFSET,FETCH,PLUS,CSTORE
-    DW SET_DIRTY
-    DW INC_OFFSET
-    DW EXIT
-
-;Z PUTCH ( c )
-;   current-block
-;   (write-char) ;
-    head_system(PUTCH,PUTCH,docolon)
-        DW CURRENT_BLOCK
-        DW XWRITE_CHAR
-        DW EXIT
-
-;Z PUTCHARS ( c-addr u -- )
-;   ?DUP IF
-;     current-block  ( c-addr u )
-;     0 DO   ( c-addr )
-;       DUP I + C@  ( c-addr c )
-;       (write-char) ( c-addr )
-;     LOOP
-;   THEN DROP ;
-    head_system(PUTCHARS,PUTCHARS,docolon)
-        DW QDUP,qbranch,PUTCHARS2
-
-        DW CURRENT_BLOCK
-        DW ZERO,xdo
-PUTCHARS1:
-        DW DUP,II,PLUS,CFETCH
-        DW XWRITE_CHAR
-        DW xloop,PUTCHARS1
-
-PUTCHARS2:
-        DW DROP
-        DW EXIT
-
-;: (read-char) ( -- c )
-;   blkfile-ptr @  ( blk-ptr )
-;   blkfile-offset @ + c@   ( c )
-;   inc-offset ;
-XREAD_CHAR:
-        call docolon
-        DW BLKFILE_PTR,FETCH
-        DW BLKFILE_OFFSET,FETCH,PLUS,CFETCH
-        DW INC_OFFSET
-        DW EXIT
-
-;Z GETCH ( -- c )
-;   CURRENT-BLOCK
-;   (read-char)  ;
-    head_system(GETCH,GETCH,docolon)
-        DW CURRENT_BLOCK
-        DW XREAD_CHAR
-        DW EXIT
-
-;Z GETCHARS ( c-addr u -- u )
-;   DUP >R  ?DUP  IF
-;     current-block  ( c-addr u )
-;     0 DO   ( c-addr )
-;       (read-char)  ( c-addr c )
-;       OVER I + C!  ( c-addr )
-;     LOOP
-;   THEN  DROP R> ;
-    head_system(GETCHARS,GETCHARS,docolon)
-        DW DUP,TOR,QDUP,qbranch,GETCHARS2
-
-        DW CURRENT_BLOCK
-        DW ZERO,xdo
-GETCHARS1:
-        DW XREAD_CHAR
-        DW OVER,II,PLUS,CSTORE
-        DW xloop,GETCHARS1
-
-GETCHARS2:
-        DW DROP,RFROM
-        DW EXIT
-
-;Z GETLINE ( c-addr u -- u f ) 
-;   SWAP  0 chars-count !   ( u c-addr )
-;   BEGIN
-;     OVER chars-count @ <> WHILE
-;     GETCH
-;       DUP 13 = IF DROP 2DROP chars-count @ TRUE EXIT  THEN
-;       DUP 26 = IF DROP 2DROP chars-count @ FALSE  EXIT  THEN
-;       OVER C! 1+   ( u c-addr' )
-;       1 chars-count +!
-;   REPEAT
-;   DROP 0 FALSE ( u f )  ;
-    head_system(GETLINE,GETLINE,docolon)
-        DW SWOP,ZERO,lit,chars_count,STORE
-GETLINE1:
-        DW OVER,lit,chars_count,FETCH,NOTEQUAL,qbranch,GETLINE2
-        DW GETCH
-        DW DUP,lit,13,EQUAL,qbranch,GETLINE3
-        DW DROP,TWODROP,lit,chars_count,FETCH,TRUE,EXIT
-
-GETLINE3:
-        DW DUP,lit,26,EQUAL,qbranch,GETLINE4
-        DW DROP,TWODROP,lit,chars_count,FETCH,FALSE,EXIT
-
-GETLINE4:
-        DW OVER,CSTORE,ONEPLUS
-        DW lit,1,lit,chars_count,PLUSSTORE
-        DW branch,GETLINE1
-
-GETLINE2:
-        DW DROP,FALSE,EXIT
-
-
-;Z BEGIN-BLKFILE ( blk offset fence -- )
-;   blkfile-fence !
-;   blkfile-offset !
-;   blkfile-curr !
-;   clear-dirty  current-block ;
-    head_system(BEGIN_BLKFILE,``BEGIN-BLKFILE'',docolon)
-        DW BLKFILE_FENCE,STORE
-        DW BLKFILE_OFFSET,STORE
-        DW BLKFILE_CURR,STORE
-        DW CLEAR_DIRTY
-        DW CURRENT_BLOCK
-        DW EXIT
-
-;Z END-BLKFILE ( -- blk' offset' )
-;   is-dirty? IF UPDATE clear-dirty THEN
-;   FLUSH ;
-    head_system(END_BLKFILE,``END-BLKFILE'',docolon)
-        DW IS_DIRTYQ,qbranch,END_BLKFILE1
-        DW UPDATE,CLEAR_DIRTY
-
-END_BLKFILE1:
-        DW BLKFILE_CURR,FETCH,BLKFILE_OFFSET,FETCH,EXIT
-
-
 ;Z /BLKF   ( blk blkfile-id -- )
-;   2DUP BLKF.ORIGIN !        ( blkfile-id )
+;   2DUP BLKF.ORIGIN !        ( blk blkfile-id )
 ;   SWAP OVER BLKF.BLK !      ( blkfile-id )
 ;   0 OVER BLKF.OFFSET !      ( blkfile-id )
 ;   SLICE OVER BLKF.SLICE SLICE% MOVE  ( blkfile-id )
@@ -2636,36 +2414,31 @@ END_BLKFILE1:
 ;Z ?SET-BLKFILE  ( blkfile-id -- )
 ;   current-blkfile-id @      ( blkf-id curr-blkf-id )
 ;   ?DUP IF  OVER  <> IF
-;         is-dirty?   IF UPDATE clear-dirty THEN
+;         FLUSH
 ;      THEN
 ;   THEN
 ;   current-blkfile-id !  ;
-    head(QSET_BLKFILE,?SET-BLKFILE,docolon)
-;QSET_BLKFILE:
-;        call docolon
+QSET_BLKFILE:
+        call docolon
         DW CURRENT_BLKFILE_ID,FETCH
         DW QDUP,qbranch,QSET_BLKFILE1
         DW OVER,NOTEQUAL,qbranch,QSET_BLKFILE1
-        DW IS_DIRTYQ,qbranch,QSET_BLKFILE1
-        DW UPDATE,CLEAR_DIRTY
+        DW FLUSH
 QSET_BLKFILE1:
         DW CURRENT_BLKFILE_ID,STORE
         DW EXIT
 
 ;Z BLKF-FLUSH   ( -- )
-;   0 ?SET-BLKFILE
-;   FLUSH   ;
-    head(BLKF_FLUSH,BLKF-FLUSH,docolon)
+;   0 ?SET-BLKFILE    ;
+    head_system(BLKF_FLUSH,BLKF-FLUSH,docolon)
         DW ZERO,QSET_BLKFILE
-        DW FLUSH
         DW EXIT
 
 ;: bytes-to-read  ( u blkfile-id -- u' )   
 ;   BLKF.OFFSET @  B/BLK  SWAP -    \ bytes left in blk
 ;   2DUP U>   IF SWAP THEN DROP  ;  \ bytes to read -- get MIN
-    head(BYTES_TO_READ,bytes-to-read,docolon)
-;BYTES_TO_READ:
-;        call docolon
+BYTES_TO_READ:
+        call docolon
         DW FETCH,B_BLK,SWOP,MINUS
         DW TWODUP,UGREATER,qbranch,BYTES_TO_READ1
         DW SWOP
@@ -2673,24 +2446,35 @@ BYTES_TO_READ1:
         DW DROP
         DW EXIT
 
-;: blkf>bufferidx  ( blkfile-id -- c-addr )   -- get buffer index of blkfile
+;Z BLKF>BUFFERIDX  ( blkfile-id -- c-addr )   -- get buffer index of blkfile
+;   SLICE >R DUP BLK.SLICE  SELECT
 ;   DUP BLKF.BLK @ BLOCK
-;   SWAP BLKF.OFFSET @ +  ;
-    head(BLKFTOBUFFERIDX,blkf>bufferidx,docolon)
-;BLKFTOBUFFERIDX:
-;        call docolon
+;   SWAP BLKF.OFFSET @ + 
+;   R> SELECT    ;
+    head_system(BLKFTOBUFFERIDX,BLKF>BUFFERIDX,docolon)
+        DW SLICE,TOR,DUP,BLKFDOTSLICE,SELECT
         DW DUP,CELLPLUS,FETCH,BLOCK
         DW SWOP,FETCH,PLUS
+        DW RFROM,SELECT
         DW EXIT
 
-;: blkf>position@ ( blkfile -- d )
+;Z BLKF>POSITION@ ( blkfile -- d )
 ;    DUP  BLKF.BLK @  1024 M*   ( blkfile-id d )
 ;    ROT  BLKF.OFFSET @  M+  ;
+    head_system(BLKFTOPOSITIONFETCH,BLKF>POSITION@,docolon)
+        DW DUP,CELLPLUS,FETCH,B_BLK,MSTAR
+        DW ROT,FETCH,MPLUS
+        DW EXIT
 
-;: blkf>position!  ( d blkfile -- )
+;Z BLKF>POSITION!  ( d blkfile -- )
 ;    >R 1024  FM/MOD   (  offset blk   r: blkfile-id )
 ;    R@  BLKF.BLK !
 ;    R>  BLKF.OFFSET !  ;
+    head_system(BLKFTOPOSITIONSTOR,BLKF>POSITION!,docolon)
+        DW TOR,B_BLK,FMSLASHMOD
+        DW RFETCH,CELLPLUS,STORE
+        DW RFROM,STORE
+        DW EXIT
 
 ;: blkf>offset+  ( n blkfile -- )
 ;\                where n is assumed to be <= 1024
@@ -2700,9 +2484,8 @@ BYTES_TO_READ1:
 ;      1023 AND
 ;   THEN
 ;   SWAP BLKF.OFFSET !    ;
-    head(BLKFTOOFFSETPLUS,blkf>offset+,docolon)
-;BLKFTOOFFSETPLUS:
-;        call docolon
+BLKFTOOFFSETPLUS:
+        call docolon
         DW TUCK,FETCH,PLUS
         DW DUP,lit,1023,GREATER,qbranch,blkftooffsetplus1
         DW OVER,CELLPLUS,lit,1,SWOP,PLUSSTORE
@@ -2715,9 +2498,8 @@ blkftooffsetplus1:
 ;: incr-index  ( c-addr u n -- c-addr' u' )
 ;   TUCK 2>R  +
 ;   2R>  -   ;
-    head(INCR_INDEX,incr-index,docolon)
-;INCR_INDEX:
-;        call docolon
+INCR_INDEX:
+        call docolon
         DW TUCK,TWOTOR,PLUS
         DW TWORFROM,MINUS
         DW EXIT
@@ -2740,18 +2522,17 @@ BLKF_RW_FLAG:
 ;   MOVE                    ( c-addr u                r: blkfile-id bytes )
 ;   R@  incr-index          ( c-addr' u'              r: blkfile-id bytes )
 ;   R> R> blkf>offset+  ;
-    head(XXBLKF_DOCHARS,((BLKF-DOCHARS)),docolon)
-;XXBLKF_DOCHARS:
-;        call docolon
+XXBLKF_DOCHARS:
+        call docolon
         DW TOR,TWODUP,RFROM
         DW DUP,TOR,BLKFTOBUFFERIDX
         DW BLKF_RW_FLAG,FETCH,qbranch,XXBLKF_DOCHARS1
         DW SWOP
-        DW SET_DIRTY
+        DW UPDATE
         DW branch,XXBLKF_DOCHARS2
 
 XXBLKF_DOCHARS1:
-        DW MINUSROT
+        DW ROT,ROT
 
 XXBLKF_DOCHARS2:
         DW RFETCH,BYTES_TO_READ
@@ -2769,9 +2550,8 @@ XXBLKF_DOCHARS2:
 ;      ((BLKF-DOCHARS))     ( c-addr' u'  r: blkfile-id  )
 ;      R>                    ( c-addr' u' blkfile-id  )
 ;   REPEAT   DROP   ;
-    head(XBLKF_DOCHARS,(BLKF-DOCHARS),docolon)
-; XBLKF_DOCHARS:
-;         call docolon
+XBLKF_DOCHARS:
+         call docolon
 XBLKF_DOCHARS1:
         DW OVER,qbranch,XBLKF_DOCHARS2
 
@@ -2794,7 +2574,8 @@ XBLKF_DOCHARS2:
 ;   (BLKF-DOCHARS)      ( c-addr' u'   r: slice-id u )
 ;   NIP  R>   SWAP -          \ return characters read
 ;   R> SELECT  ;
-    head(BLKF_DOCHARS,BLKF-DOCHARS,docolon)
+BLKF_DOCHARS:
+        call docolon
         DW BLKF_RW_FLAG,STORE
         DW DUP,QSET_BLKFILE
         DW SLICE,TOR,DUP,BLKFDOTSLICE,SELECT
@@ -2806,14 +2587,14 @@ XBLKF_DOCHARS2:
 
 ;Z BLKF-PUTCHARS   ( c-addr u blkfile-id -- u )   put u chars to blkfile stream
 ;    TRUE    BLKF-DOCHARS-DO ;
-    head(BLKF_PUTCHARS,BLKF-PUTCHARS,docolon)
+    head_system(BLKF_PUTCHARS,BLKF-PUTCHARS,docolon)
         DW TRUE
         DW BLKF_DOCHARS
         DW EXIT
 
 ;Z BLKF-GETCHARS   ( c-addr u blkfile-id -- u )   get u chars to blkfile stream
 ;    FALSE    BLKF-DOCHARS-DO ;
-    head(BLKF_GETCHARS,BLKF-GETCHARS,docolon)
+    head_system(BLKF_GETCHARS,BLKF-GETCHARS,docolon)
         DW FALSE
         DW BLKF_DOCHARS
         DW EXIT
@@ -2937,7 +2718,9 @@ SNAPSHOTDOTORDER:
 ;        DUP SNAPSHOT.USER U0 SWAP 128 MOVE
 ;        DUP SNAPSHOT.ORDER SAVE-ORDER
 ;        DROP   ;
-    head_system(TOSNAPSHOT,>SNAPSHOT,docolon)
+dnl    head_system(TOSNAPSHOT,>SNAPSHOT,docolon)
+TOSNAPSHOT:
+        call docolon
         dw DUP,NUMSNAPSHOT,ERASE
         dw DUP,SNAPSHOTDOTUSER,U0,SWOP,lit,128,MOVE
         dw DUP,SNAPSHOTDOTORDER,SAVE_ORDER
@@ -2961,7 +2744,9 @@ defc SNAPSHOT_RST_LEN = 128-24
 ;        DUP SNAPSHOT.ORDER RESTORE-ORDER
 ;        DUP SNAPSHOT.USER 8 + @ DP !
 ;        DROP   ;
-    head_system(SNAPSHOTFROM,SNAPSHOT>,docolon)
+dnl    head_system(SNAPSHOTFROM,SNAPSHOT>,docolon)
+SNAPSHOTFROM:
+        call docolon
         dw SAVE_INPUT,NTOR
         dw DUP,SNAPSHOTDOTUSER,U0,lit,128,MOVE
         dw NRFROM,RESTORE_INPUT,DROP
@@ -2980,7 +2765,7 @@ defc SNAPSHOT_RST_LEN = 128-24
 ;    HERE 32 + DUP R> >SNAPSHOT  ( temp copy ; save snapshot pointer )
 ;    CREATE
 ;        R> HERE #SNAPSHOT MOVE
-;        #SNAPSHOT CHARS ALLOC
+;        #SNAPSHOT CHARS ALLOT
 ;    DOES>
 ;       SNAPSHOT> ;
     head(MARKER,MARKER,docolon)
@@ -2995,25 +2780,31 @@ defc SNAPSHOT_RST_LEN = 128-24
         dw EXIT
 
 ;Z BSAVE   c-addr u blk --            save memory range to disk
-;     0 -1 BEGIN-BLKFILE
-;     PUTCHARS
-;     END-BLKFILE 2DROP   ;
+;     internal-blkfid TUCK /BLKF
+;     BLKF-PUTCHARS
+;     BLKF-FLUSH  ;
     head(BSAVE,BSAVE,docolon)
-        dw ZERO,ALLONES,BEGIN_BLKFILE
-        dw PUTCHARS
-        dw END_BLKFILE,TWODROP
+        dw lit,internal_blkfid,TUCK,SLASHBLKF
+        dw BLKF_PUTCHARS
+        dw BLKF_FLUSH
         dw EXIT
 
 
 ;Z BLOAD   c-addr u blk --          load memory range from disk
-;     0 -1 BEGIN-BLKFILE
-;     GETCHARS DROP
-;     END-BLKFILE  2DROP;
+;     internal-blkfid TUCK /BLKF
+;     BLKF-GETCHARS ;
     head(BLOAD,BLOAD,docolon)
-        dw ZERO,ALLONES,BEGIN_BLKFILE
-        dw GETCHARS,DROP
-        dw END_BLKFILE,TWODROP
+        dw lit,internal_blkfid,TUCK,SLASHBLKF
+        dw BLKF_PUTCHARS
         dw EXIT
+
+SECTION data
+
+internal_blkfid:
+        DEFS BLKFCTX_SIZE
+
+SECTION code_16k
+
 
 
 defc BLK_HEADER_SIZE = 256
@@ -3043,30 +2834,24 @@ XSAVEHDR:
         dw EXIT
 
 ;Z SAVE   blk --                    save internal state to disk
-;    DUP WIPE
-;    DUP >R                      ( blk ; blk )
-;    enddict   DP @ enddict -    ( blk c-addr u ; blk )
-;    ROT BUFFER                  ( c-addr u buffer -- ; blk )
-;    (SAVEHDR)                   ( c-addr u ; blk )
-;
-;    R> BLK_HEADER_SIZE
-;    -1 BEGIN-BLKFILE
-;    PUTCHARS
-;    END-BLKFILE  2DROP
-;    FLUSH  ;
+;    internal-blkfid /BLKF
+;    enddict   DP @ enddict -    ( c-addr u  )
+;    internal-blkfid BLKF>BUFFERIDX DUP B/BLK ERASE   ( c-addr u buffer )
+;    (SAVEHDR)                   ( c-addr u )
+;    UPDATE
+;    BLK_HEADER_SIZE internal-blkfid BLKF.OFFSET !
+;    internal-blkfid BLKF-PUTCHARS  DROP
+;    BLKF-FLUSH  ;
     head(SAVE,SAVE,docolon)
-        dw DUP,WIPE
-        dw DUP,TOR
-        dw lit,enddict,DP,FETCH,lit,enddict,MINUS  ;  ( block c-addr u )
-        dw ROT,BUFFER                              ;  ( c-addr u buffer )
-        dw XSAVEHDR
-
-        dw RFROM,lit,BLK_HEADER_SIZE
-        dw ALLONES,BEGIN_BLKFILE
-        dw PUTCHARS
-        dw END_BLKFILE,TWODROP
-        dw FLUSH
+        dw lit,internal_blkfid,SLASHBLKF
+        dw lit,enddict,DP,FETCH,lit,enddict,MINUS
+        dw lit,internal_blkfid,BLKFTOBUFFERIDX,DUP,B_BLK,ERASE
+        dw XSAVEHDR,UPDATE
+        dw lit,BLK_HEADER_SIZE,lit,internal_blkfid,STORE
+        dw lit,internal_blkfid,BLKF_PUTCHARS,DROP
+        dw BLKF_FLUSH
         dw EXIT
+
 
 ;Z RESTORE   blk --            restore internal state from disk
 ;\ if ENTRY has been set with an xt, then it is automatically
@@ -3079,10 +2864,10 @@ XSAVEHDR:
 ;
 ;      enddict SWAP               ( enddict u=data_size ; blk )
 ;
-;      R>  BLK_HEADER_SIZE     ( enddict u blk hdr_size )
-;      -1 BEGIN-BLKFILE           ( enddict u )
-;      GETCHARS,DROP           (  )
-;      END-BLKFILE 2DROP
+;      R> internal-blkfid /BLKF
+;      BLK_HEADER_SIZE internal-blkfid BLKF.OFFSET !
+;      internal-blkfid BLKF-GETCHARS  DROP
+;
 ;      ENTRY @ EXECUTE
 ;   ELSE -258 THROW THEN   ;
     head(RESTORE,RESTORE,docolon)
@@ -3095,10 +2880,9 @@ XSAVEHDR:
 
         dw lit,enddict,SWOP
 
-        dw RFROM,lit,BLK_HEADER_SIZE
-        dw ALLONES,BEGIN_BLKFILE
-        dw GETCHARS,DROP
-        dw END_BLKFILE,TWODROP
+        dw RFROM,lit,internal_blkfid,SLASHBLKF
+        dw lit,BLK_HEADER_SIZE,lit,internal_blkfid,STORE
+        dw lit,internal_blkfid,BLKF_GETCHARS,DROP
         dw ENTRY,FETCH,EXECUTE
         dw EXIT
 
@@ -3162,11 +2946,11 @@ RECTYPE_NULL:
 
 ; ' NOOP ' NOOP ' NOOP  RECTYPE: RECTYPE-NOOP
 dnl ;    head_system(RECTYPE_NOOP,RECTYPE-NOOP,docreate)
-RECTYPE_NOOP:
-        call docreate
-        dw NOOP
-        dw NOOP
-        dw NOOP
+dnl RECTYPE_NOOP:
+dnl         call docreate
+dnl         dw NOOP
+dnl         dw NOOP
+dnl         dw NOOP
 
 ;: (recognize) ( addr len XT -- addr len 0 | i*x RECTYPE-TOKEN -1 )
 ;   ROT ROT 2DUP 2>R ROT EXECUTE 2R> ROT
