@@ -6,7 +6,7 @@ CR .( Loading blkfile... )
 
 
 ONLY FORTH DEFINITIONS   ALSO SYSTEM
-1 16 +THRU
+1 17 +THRU
 ONLY FORTH
 
 
@@ -15,30 +15,30 @@ ONLY FORTH
 
 
    ( blkfile - extension to treat blocks as files       1 / n)
+WORDLIST CONSTANT blkfile-private-wid
+blkfile-private-wid >ORDER   blkfile-private-wid SET-CURRENT
 4 CONSTANT #BLKFILE
-
 $0001 CONSTANT flag.binary
 $0002 CONSTANT flag.readable      $0004 CONSTANT flag.writable
 
+FORTH-WORDLIST SET-CURRENT
 flag.readable CONSTANT R/O        flag.writable CONSTANT W/O
 flag.readable flag.writable +  CONSTANT R/W
 : BIN   flag.binary + ;
 
+blkfile-private-wid SET-CURRENT
 128 CONSTANT buff%
 0 VALUE 'blkfile
 0 VALUE blkfidpool
 
-
-
    ( blkfile - extension to treat blocks as files       2 / n)
 \ blkfile structure
+blkfile-private-wid SET-CURRENT
 BEGIN-STRUCTURE BLKFILE-CONTEXT%
  BLKF% +FIELD  blkfile.blkfid 
  FIELD:        blkfile.flags
  buff% +FIELD  blkfile.buffer
 END-STRUCTURE
-
-
 
 
 
@@ -63,6 +63,7 @@ END-STRUCTURE
    (blkfidpool-free)  ;
 
    ( blkfile - extension to treat blocks as files       6 / n)
+FORTH-WORDLIST SET-CURRENT
 : OPEN-BLKFILE ( blk fam -- blkfileid )
    blkfidpool-get ?DUP IF    ( blk fam blkfile-id )
      TUCK  blkfile.flags !     ( blk blkfile-id )
@@ -70,19 +71,18 @@ END-STRUCTURE
    ELSE   -69 THROW   THEN ;
 
 : OPEN-LIMIT-BLKFILE ( blk nblks fam -- blkfileid )
-   >R OVER R> 
-   OPEN-BLKFILE     ( blk nblks  blkfile-id )
+   0 SWAP OPEN-BLKFILE     ( blk nblks  blkfile-id )
    DUP >R
-   ?DUP IF  BLKF.SLICE SUBSLICE   ELSE  2DROP  THEN
+   ?DUP IF  BLKF.SLICE SUBSLICE  ELSE  2DROP  THEN
    R>  ;
+
 : OPEN-FENCE-BLKFILE  ( blkstart blkend fam -- blkfileid )
    >R OVER  -  R>  OPEN-LIMIT-BLKFILE   ;
-
    ( blkfile - extension to treat blocks as files       6 / n)
+blkfile-private-wid SET-CURRENT
 : (CLOSE-FILE) ( blkfileid -- )
    BLKF-FLUSH
    blkfidpool-free  ;
-
 
 CREATE eol$ 1 C, 13 C,
 
@@ -127,24 +127,27 @@ CREATE eol$ 1 C, 13 C,
 
 
    ( blkfile - extension to treat blocks as files       8 / n)
+FORTH-WORDLIST SET-CURRENT
 : READ-FILE ( c-addr u fileid -- u ior ) 
    ['] (READ-FILE) CATCH
-   DUP IF >R 0 R> THEN ;
+   DUP IF >R 2DROP DROP 0 R> THEN ;
 
 : READ-LINE ( c-addr u fileid -- u f ior ) 
    ['] (READ-LINE) CATCH
-   DUP  IF >R 0 0 R> THEN ;
+   DUP  IF >R 2DROP DROP 0 0 R> THEN ;
 
 : WRITE-FILE ( c-addr u fileid -- ior ) 
-   ['] (WRITE-FILE)  CATCH ;
+   ['] (WRITE-FILE)  CATCH
+   DUP IF NIP NIP NIP THEN ;
 
 : WRITE-LINE ( c-addr u fileid -- ior ) 
-   ['] (WRITE-LINE) CATCH ;
-
+   ['] (WRITE-LINE) CATCH 
+   DUP IF NIP NIP NIP THEN ;
 
    ( blkfile - extension to treat blocks as files       9 / n)
 : CLOSE-FILE    ( fileid -- ior )
-    ['] (CLOSE-FILE) CATCH  ;
+   ['] (CLOSE-FILE) CATCH
+   DUP IF NIP THEN ;
 
 
 
@@ -175,6 +178,7 @@ CREATE eol$ 1 C, 13 C,
 
 
    ( blkfile - extension to treat blocks as files      11 / n)
+blkfile-private-wid SET-CURRENT
 1 VALUE line-index
 
 : tload-refill  ( -- flag )
@@ -185,7 +189,6 @@ CREATE eol$ 1 C, 13 C,
        SOURCE-ID  blkfile.buffer   SWAP  'SOURCE 2!
        0 >IN !  TRUE
     ELSE DROP  FALSE  THEN ;
-
 
 
 
@@ -207,6 +210,7 @@ CREATE eol$ 1 C, 13 C,
 
 
    ( blkfile - extension to treat blocks as files      13 / n)
+FORTH-WORDLIST SET-CURRENT
 : INCLUDE-BLKFILE ( blk -- )
    SAVE-INPUT N>R
    line-index >R
@@ -218,11 +222,11 @@ CREATE eol$ 1 C, 13 C,
    R> TO line-index 
    NR> RESTORE-INPUT THROW  ;
 
+blkfile-private-wid SET-CURRENT
 : blkofs>bytes  ( blk off -- ud )
    S>D ROT 1024 UM* D+ ;
-
-
    ( blkfile - extension to treat blocks as files       14 / n)
+FORTH-WORDLIST SET-CURRENT
 : FILE-POSITION  ( fileid -- ud ior )
    BLKF>POSITION@  0 ;
 
@@ -235,6 +239,28 @@ CREATE eol$ 1 C, 13 C,
 : FLUSH-FILE ( fileid -- ior ) 
    DROP FLUSH   0 ;
 
-: INCLUDE-FILE ( i * x fileid -- j * x )  
-   DROP         ;
+
+
+   ( blkfile - extension to treat blocks as files       15 / n)
+: .BLKF  ( blkfid -- )
+   ." BLKF:" DUP U. CR
+   ."  OFFSET : "  DUP BLKF.OFFSET @ U. CR
+   ."  BLK    : "  DUP BLKF.BLK    @ U. CR
+   ."  ORIGIN : "  DUP BLKF.ORIGIN @ U. CR
+   ."  SLICE  : "      BLKF.SLICE    U. CR  ;
+
+: .BLKFILE  ( blkfid -- )
+   DUP .BLKF
+   ." BLKFILE:" DUP U. CR
+   ."  FLAGS  : "  DUP blkfile.flags  @ U. CR
+   ."  BUFFER : "      blkfile.buffer   U. CR  ;
+
+
+
+   ( blkfile - extension to treat blocks as files       15 / n)
+: .SLICE   ( sliceid -- )
+   ." SLICE:" DUP U. CR
+   ."  DRIVE  : "  DUP SLICE.DRIVE   @ U. CR
+   ."  OFFSET : "  DUP SLICE.OFFSET 2@ D. CR
+   ."  LIMIT  : "      SLICE.LIMIT   @ U. CR   ;
 

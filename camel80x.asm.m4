@@ -1885,15 +1885,15 @@ DEFC DRIVECTX_SIZE = 8
 
 
 ;Z DRIVE>READ   drive-id -- a-addr'         address of  READ xt
-    head_system(DRIVETOREAD,DRIVE>READ,docode)
+    head_system(DRIVETOREAD,DRIVE.READ,docode)
         jp ctx_next
 
 ;Z DRIVE>WRITE   drive-id -- a-addr'        address of WRITE xt
-    head_system(DRIVETOWRITE,DRIVE>WRITE,docode)
+    head_system(DRIVETOWRITE,DRIVE.WRITE,docode)
         jp ctx_plus_2
 
 ;Z DRIVE>CAPACITY   drive-id -- a-addr'     addr of CAPACITY xt
-    head_system(DRIVETOCAPACITY,DRIVE>CAPACITY,docode)
+    head_system(DRIVETOCAPACITY,DRIVE.CAPACITY,docode)
         jp ctx_plus_4
 
 ;Z DRIVE%    -- u                        size of DRIVE stucture
@@ -1920,15 +1920,15 @@ DEFC SLICECTX_SIZE = 8
 
 
 ;Z SLICE>DRIVE   slice-id -- a-addr'           addr of drive ID
-    head_system(SLICETODRIVE,SLICE>DRIVE,docode)
+    head_system(SLICETODRIVE,SLICE.DRIVE,docode)
         jp ctx_next
 
 ;Z SLICE>OFFSET   slice-id -- a-addr'        addr of LBA OFFSET
-    head_system(SLICETOOFFSET,SLICE>OFFSET,docode)
+    head_system(SLICETOOFFSET,SLICE.OFFSET,docode)
         jp ctx_plus_2
 
 ;Z SLICE>LIMIT    slice-id -- a-addr'             addr of LIMIT
-    head_system(SLICETOLIMIT,SLICE>LIMIT,docode)
+    head_system(SLICETOLIMIT,SLICE.LIMIT,docode)
         jp ctx_plus_6
 
 ;Z SLICE%   -- u                 size of SLICE context stucture
