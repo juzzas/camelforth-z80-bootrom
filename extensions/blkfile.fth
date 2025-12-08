@@ -6,7 +6,7 @@ CR .( Loading blkfile... )
 
 
 ONLY FORTH DEFINITIONS   ALSO SYSTEM
-1 17 +THRU
+1 18 +THRU
 ONLY FORTH
 
 
@@ -30,7 +30,6 @@ blkfile-private-wid SET-CURRENT
 128 CONSTANT buff%
 0 VALUE 'blkfile
 0 VALUE blkfidpool
-
    ( blkfile - extension to treat blocks as files       2 / n)
 \ blkfile structure
 blkfile-private-wid SET-CURRENT
@@ -39,6 +38,7 @@ BEGIN-STRUCTURE BLKFILE-CONTEXT%
  FIELD:        blkfile.flags
  buff% +FIELD  blkfile.buffer
 END-STRUCTURE
+
 
 
 
@@ -106,7 +106,7 @@ CREATE eol$ 1 C, 13 C,
          26 OVER =  IF  DROP FALSE LEAVE  THEN 
       THEN
       DROP  1+
-   LOOP  ;
+   LOOP   ;
 
 
 
@@ -136,6 +136,13 @@ FORTH-WORDLIST SET-CURRENT
    ['] (READ-LINE) CATCH
    DUP  IF >R 2DROP DROP 0 0 R> THEN ;
 
+
+
+
+
+
+
+   ( blkfile - extension to treat blocks as files       8 / n)
 : WRITE-FILE ( c-addr u fileid -- ior ) 
    ['] (WRITE-FILE)  CATCH
    DUP IF NIP NIP NIP THEN ;
@@ -144,11 +151,17 @@ FORTH-WORDLIST SET-CURRENT
    ['] (WRITE-LINE) CATCH 
    DUP IF NIP NIP NIP THEN ;
 
+
+
+
+
+
+
+
    ( blkfile - extension to treat blocks as files       9 / n)
 : CLOSE-FILE    ( fileid -- ior )
    ['] (CLOSE-FILE) CATCH
    DUP IF NIP THEN ;
-
 
 
 

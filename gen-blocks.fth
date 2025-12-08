@@ -71,6 +71,8 @@ OPEN:  build/cf-image.blk
 
 3600 BLOCKS: test/blkfile_tests.fth
 3615 BLKFILE: test/blkfile_test1.fth
+3630 BLKFILE: test/blkfile_test2.fth
+3645 BLKFILE: test/ipsum.txt
 
 3900 BLOCKS: test/hexload_test.fth
 +BLOCKS: test/hexload_test2.fth
