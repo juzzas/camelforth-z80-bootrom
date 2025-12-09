@@ -90,7 +90,7 @@ test-block LIST
 
 .( Testing OPEN-BLKFILE READ-LINE short buffers )  CR
 read-buffer 128 0 FILL
-T{ ipsum-file R/O OPEN-FENCE-BLKFILE TO fid1 -> }T
+T{ ipsum-file R/O OPEN-BLKFILE TO fid1 -> }T
 T{ fid1 0 = -> FALSE }T
 T{ read-buffer 3 fid1 READ-LINE  .S  -> 3 -1 0 }T
 T{ fid1 FILE-POSITION  .S  -> 4 S>D 0 }T

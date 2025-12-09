@@ -99,22 +99,18 @@ CREATE eol$ 1 C, 13 C,
    BLKF-GETCHARS  ;
 
 : scan-eol   ( c-addr u -- u' f )
-   0 -ROT
-   BOUNDS   ?DO  
-      I C@  DUP  32 <  IF
-         13 OVER =  IF  DROP TRUE  LEAVE  THEN 
-         26 OVER =  IF  DROP FALSE LEAVE  THEN 
-      THEN
-      DROP  1+
-   LOOP   ;
+   OVER C@ 26 =  IF   2DROP  0 FALSE  EXIT THEN
+   2DUP  26  SCAN    ( c-addr u c-addr' u' )
+      NIP -
+   2DUP  13  SCAN    ( c-addr u c-addr' u' )
+      NIP  -
+   NIP TRUE   ;
 
-
-
-   ( blkfile - extension to treat blocks as files       7 / n)
 : adjust-fpos  ( n  blkfileid -- )
    DUP >R  BLKF>POSITION@  ( n d    r: blkfileid )
    ROT M+  R>  BLKF>POSITION!  ;
 
+   ( blkfile - extension to treat blocks as files       7 / n)
 : ((READ-LINE))   ( c-addr u blkfileid -- u' f )
    2>R DUP 2R>      ( c-addr c-addr u blkfileid )
    BLKF-GETCHARS   scan-eol    ( u' f )     ;
@@ -122,9 +118,9 @@ CREATE eol$ 1 C, 13 C,
 : (READ-LINE)   ( c-addr u blkfileid -- u f )
    DUP >R   OVER >R
    ((READ-LINE))    ( u' f   r: blkfileid  u )
-   OVER     ( u' f u'    r: blkfileid  u )
-   R>  -   OVER   IF  1+  THEN  R>   adjust-fpos  ;
-
+   OVER    ( u' f u'    r: blkfileid  u )
+   R> 2DUP   ( u' f u' u  u' u    r: blkfileid )
+   -  -ROT   <>  IF  1+  THEN  R>   adjust-fpos  ;
 
    ( blkfile - extension to treat blocks as files       8 / n)
 FORTH-WORDLIST SET-CURRENT
