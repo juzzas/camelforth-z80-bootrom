@@ -98,29 +98,33 @@ CREATE eol$ 1 C, 13 C,
 : (READ-FILE) ( c-addr u blkfileid -- u )
    BLKF-GETCHARS  ;
 
-: scan-eol   ( c-addr u -- u' f )
-   OVER C@ 26 =  IF   2DROP  0 FALSE  EXIT THEN
+: scan-eof   ( c-addr u -- c-addr u' ; trim to eof )
    2DUP  26  SCAN    ( c-addr u c-addr' u' )
-      NIP -
+      NIP -  ;
+: scan-eol   ( c-addr u -- c-addr u' f )
    2DUP  13  SCAN    ( c-addr u c-addr' u' )
-      NIP  -
-   NIP TRUE   ;
-
+      DUP 0<> >R   NIP -  R>   ;
+: eof?   ( c-addr -- f )
+   C@ 26 =   ;
 : adjust-fpos  ( n  blkfileid -- )
    DUP >R  BLKF>POSITION@  ( n d    r: blkfileid )
    ROT M+  R>  BLKF>POSITION!  ;
 
    ( blkfile - extension to treat blocks as files       7 / n)
-: ((READ-LINE))   ( c-addr u blkfileid -- u' f )
-   2>R DUP 2R>      ( c-addr c-addr u blkfileid )
-   BLKF-GETCHARS   scan-eol    ( u' f )     ;
-
 : (READ-LINE)   ( c-addr u blkfileid -- u f )
    DUP >R   OVER >R
-   ((READ-LINE))    ( u' f   r: blkfileid  u )
+   2>R DUP 2R>      ( c-addr c-addr u blkfileid )
+                              ( r: blkfileid  u )
+   BLKF-GETCHARS   ( c-addr u'  r: blkfileid  u )
+   OVER eof? IF  
+      R> NEGATE  R> adjust-fpos  2DROP 0 FALSE EXIT  THEN
+   scan-eof   ( c-addr u"   r: blkfileid  u )
+   scan-eol   ( c-addr u"' f   r: blkfileid  u )
+   ROT DROP  
+
    OVER    ( u' f u'    r: blkfileid  u )
-   R> 2DUP   ( u' f u' u  u' u    r: blkfileid )
-   -  -ROT   <>  IF  1+  THEN  R>   adjust-fpos  ;
+   R> -   SWAP  IF  1+ THEN
+   R>  adjust-fpos   TRUE  ;
 
    ( blkfile - extension to treat blocks as files       8 / n)
 FORTH-WORDLIST SET-CURRENT

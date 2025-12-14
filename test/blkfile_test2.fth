@@ -61,13 +61,13 @@ T{ fid1 FILE-POSITION -> 91 S>D 0 }T
 T{ read-buffer 128 fid1 READ-LINE -> 75 -1 0 }T
 T{ fid1 FILE-POSITION -> 167 S>D 0 }T
 T{ read-buffer 128 fid1 READ-LINE -> 66 -1 0 }T
-T{ fid1 FILE-POSITION -> 234 S>D 0 }T
+T{ fid1 FILE-POSITION .S -> 234 S>D 0 }T
 T{ read-buffer 128 fid1 READ-LINE -> 0   0 0 }T
-T{ fid1 FILE-POSITION -> 234 S>D 0 }T
+T{ fid1 FILE-POSITION .S -> 234 S>D 0 }T
 T{ read-buffer 128 fid1 READ-LINE -> 0   0 0 }T
-T{ fid1 FILE-POSITION -> 234 S>D 0 }T
+T{ fid1 FILE-POSITION .S -> 234 S>D 0 }T
 T{ 6 S>D fid1 REPOSITION-FILE -> 0 }T
-T{ fid1 FILE-POSITION -> 6 S>D 0 }T
+T{ fid1 FILE-POSITION .S -> 6 S>D 0 }T
 T{ read-buffer 128 fid1 READ-LINE -> 5  -1 0 }T
 read-buffer 128 MEMDUMP
 fid1 .BLKFILE
@@ -93,9 +93,12 @@ read-buffer 128 0 FILL
 T{ ipsum-file R/O OPEN-BLKFILE TO fid1 -> }T
 T{ fid1 0 = -> FALSE }T
 T{ read-buffer 3 fid1 READ-LINE  .S  -> 3 -1 0 }T
-T{ fid1 FILE-POSITION  .S  -> 4 S>D 0 }T
+T{ fid1 FILE-POSITION  .S  -> 3 S>D 0 }T
+fid1 .BLKFILE
+fid1 BLKF.SLICE  .SLICE
+read-buffer 32 MEMDUMP
 T{ read-buffer 0 fid1 READ-LINE  .S  -> 0  -1 0 }T
-T{ fid1 FILE-POSITION  .S  -> 4 S>D 0 }T
+T{ fid1 FILE-POSITION  .S  -> 3 S>D 0 }T
 fid1 .BLKFILE
 fid1 BLKF.SLICE  .SLICE
 T{ fid1 CLOSE-FILE -> 0 }T
