@@ -1,4 +1,4 @@
-( blkfile - extension to treat blocks as files          0 / n)
+( blkfile - extension to treat blocks as files         0 / n )
 
 CR .( Loading blkfile... )
 
@@ -7,14 +7,14 @@ CR .( Loading blkfile... )
 
 ONLY FORTH DEFINITIONS   ALSO SYSTEM
 1 18 +THRU
-ONLY FORTH
+ONLY FORTH DEFINITIONS
 
 
 
 
 
 
-   ( blkfile - extension to treat blocks as files       1 / n)
+   ( blkfile - extension to treat blocks as files      1 / n )
 WORDLIST CONSTANT blkfile-private-wid
 blkfile-private-wid >ORDER   blkfile-private-wid SET-CURRENT
 4 CONSTANT #BLKFILE
@@ -30,23 +30,23 @@ blkfile-private-wid SET-CURRENT
 128 CONSTANT buff%
 0 VALUE 'blkfile
 0 VALUE blkfidpool
-   ( blkfile - extension to treat blocks as files       2 / n)
+   ( blkfile - extension to treat blocks as files      2 / n )
 \ blkfile structure
 blkfile-private-wid SET-CURRENT
+32 CONSTANT blkfile.name%
 BEGIN-STRUCTURE BLKFILE-CONTEXT%
- BLKF% +FIELD  blkfile.blkfid 
- FIELD:        blkfile.flags
- buff% +FIELD  blkfile.buffer
+   BLKF% +FIELD           blkfile.blkfid 
+   FIELD:                 blkfile.flags
+   blkfile.name% +FIELD   blkfile.name
+   2 CELLS +FIELD         blkfile.filesize
+   buff% +FIELD           blkfile.buffer
 END-STRUCTURE
 
 
 
 
 
-
-
-
-   ( blkfile - extension to treat blocks as files       3 / n)
+   ( blkfile - extension to treat blocks as files      3 / n )
 : (blkfidpool-allot)  ( -- ptr )
     HERE 0  ,  BLKFILE-CONTEXT% ALLOT ;
 : (blkfidpool-get) ( -- ptr )
@@ -57,12 +57,12 @@ END-STRUCTURE
 : blkfidpool-get   ( -- c-addr )
    blkfidpool   IF   (blkfidpool-get)
    ELSE   (blkfidpool-allot)   THEN    \ ptr to buffer item 
-   CELL+  ;
+   CELL+  DUP  BLKFILE-CONTEXT% 0 FILL  ;
 : blkfidpool-free  ( c-addr -- )
    CELL-  ( ptr )
    (blkfidpool-free)  ;
 
-   ( blkfile - extension to treat blocks as files       6 / n)
+   ( blkfile - extension to treat blocks as files      4 / n )
 FORTH-WORDLIST SET-CURRENT
 : OPEN-BLKFILE ( blk fam -- blkfileid )
    blkfidpool-get ?DUP IF    ( blk fam blkfile-id )
@@ -78,23 +78,39 @@ FORTH-WORDLIST SET-CURRENT
 
 : OPEN-FENCE-BLKFILE  ( blkstart blkend fam -- blkfileid )
    >R OVER  -  R>  OPEN-LIMIT-BLKFILE   ;
-   ( blkfile - extension to treat blocks as files       6 / n)
+   ( blkfile - extension to treat blocks as files      5 / n )
+: adjust-fpos  ( n  blkfileid -- )
+   DUP >R  BLKF>POSITION@  ( n d    r: blkfileid )
+   ROT M+  R>  BLKF>POSITION!  ;
+
+: update-filesize  ( blkfileid -- )
+   DUP >R  BLKF>POSITION@ 
+   R@  blkfile.filesize 2@   DMAX
+   R>  blkfile.filesize 2!  ;
+
+
+
+
+
+
+
+   ( blkfile - extension to treat blocks as files      6 / n )
 blkfile-private-wid SET-CURRENT
-: (CLOSE-FILE) ( blkfileid -- )
+: (CLOSE-BLKFILE) ( blkfileid -- )
    BLKF-FLUSH
    blkfidpool-free  ;
 
-CREATE eol$ 1 C, 13 C,
-
 : (WRITE-FILE) ( c-addr u blkfileid --  )
-   BLKF-PUTCHARS DROP ;
+   DUP >R
+   BLKF-PUTCHARS DROP 
+   R> update-filesize  ;
 
+CREATE eol$ 1 C, 13 C,
 : (WRITE-LINE) ( c-addr u blkfileid -- )
    DUP >R BLKF-PUTCHARS  DROP
-   eol$ COUNT R> BLKF-PUTCHARS  DROP  ;
-
-
-   ( blkfile - extension to treat blocks as files       7 / n)
+   eol$ COUNT R@ BLKF-PUTCHARS  DROP  
+   R> update-filesize  ;
+   ( blkfile - extension to treat blocks as files      7 / n )
 : (READ-FILE) ( c-addr u blkfileid -- u )
    BLKF-GETCHARS  ;
 
@@ -106,11 +122,11 @@ CREATE eol$ 1 C, 13 C,
       DUP 0<> >R   NIP -  R>   ;
 : eof?   ( c-addr -- f )
    C@ 26 =   ;
-: adjust-fpos  ( n  blkfileid -- )
-   DUP >R  BLKF>POSITION@  ( n d    r: blkfileid )
-   ROT M+  R>  BLKF>POSITION!  ;
 
-   ( blkfile - extension to treat blocks as files       7 / n)
+
+
+
+   ( blkfile - extension to treat blocks as files      8 / n )
 : (READ-LINE)   ( c-addr u blkfileid -- u f )
    DUP >R   OVER >R
    2>R DUP 2R>      ( c-addr c-addr u blkfileid )
@@ -126,7 +142,7 @@ CREATE eol$ 1 C, 13 C,
    R> -   SWAP  IF  1+ THEN
    R>  adjust-fpos   TRUE  ;
 
-   ( blkfile - extension to treat blocks as files       8 / n)
+   ( blkfile - extension to treat blocks as files      9 / n )
 FORTH-WORDLIST SET-CURRENT
 : READ-FILE ( c-addr u fileid -- u ior ) 
    ['] (READ-FILE) CATCH
@@ -142,7 +158,7 @@ FORTH-WORDLIST SET-CURRENT
 
 
 
-   ( blkfile - extension to treat blocks as files       8 / n)
+   ( blkfile - extension to treat blocks as files     10 / n )
 : WRITE-FILE ( c-addr u fileid -- ior ) 
    ['] (WRITE-FILE)  CATCH
    DUP IF NIP NIP NIP THEN ;
@@ -158,9 +174,9 @@ FORTH-WORDLIST SET-CURRENT
 
 
 
-   ( blkfile - extension to treat blocks as files       9 / n)
-: CLOSE-FILE    ( fileid -- ior )
-   ['] (CLOSE-FILE) CATCH
+   ( blkfile - extension to treat blocks as files     11 / n )
+: CLOSE-BLKFILE    ( fileid -- ior )
+   ['] (CLOSE-BLKFILE) CATCH
    DUP IF NIP THEN ;
 
 
@@ -174,7 +190,7 @@ FORTH-WORDLIST SET-CURRENT
 
 
 
-   ( blkfile - extension to treat blocks as files      10 / n)
+   ( blkfile - extension to treat blocks as files     12 / n )
 : TLIST ( blk -- )
    R/O OPEN-BLKFILE   ( blkfile-id )
    BEGIN
@@ -183,14 +199,14 @@ FORTH-WORDLIST SET-CURRENT
    WHILE       ( blkfile-id chrs )
      OVER blkfile.buffer  SWAP TYPE CR
    REPEAT
-   DROP (CLOSE-FILE)    ;
+   DROP (CLOSE-BLKFILE)    ;
 
 
 
 
 
 
-   ( blkfile - extension to treat blocks as files      11 / n)
+   ( blkfile - extension to treat blocks as files     13 / n )
 blkfile-private-wid SET-CURRENT
 1 VALUE line-index
 
@@ -206,7 +222,7 @@ blkfile-private-wid SET-CURRENT
 
 
 
-   ( blkfile - extension to treat blocks as files      12 / n)
+   ( blkfile - extension to treat blocks as files     14 / n )
 : (INCLUDE-BLK) ( blk -- )
    R/O  OPEN-BLKFILE  ( blkfile-id )
    'SOURCE-ID  !
@@ -216,13 +232,13 @@ blkfile-private-wid SET-CURRENT
        ( SOURCE TYPE  CR )  \ debug print of line
        INTERPRET
      ELSE  'SOURCE-ID @ 
-           (CLOSE-FILE)  EXIT
+           (CLOSE-BLKFILE)  EXIT
      THEN
    AGAIN  ;
 
 
 
-   ( blkfile - extension to treat blocks as files      13 / n)
+   ( blkfile - extension to treat blocks as files     15 / n )
 FORTH-WORDLIST SET-CURRENT
 : INCLUDE-BLKFILE ( blk -- )
    SAVE-INPUT N>R
@@ -238,7 +254,7 @@ FORTH-WORDLIST SET-CURRENT
 blkfile-private-wid SET-CURRENT
 : blkofs>bytes  ( blk off -- ud )
    S>D ROT 1024 UM* D+ ;
-   ( blkfile - extension to treat blocks as files       14 / n)
+   ( blkfile - extension to treat blocks as files     16 / n )
 FORTH-WORDLIST SET-CURRENT
 : FILE-POSITION  ( fileid -- ud ior )
    BLKF>POSITION@  0 ;
@@ -247,14 +263,15 @@ FORTH-WORDLIST SET-CURRENT
    BLKF>POSITION!  0 ;
 
 : FILE-SIZE ( fileid -- ud ior )
-   DROP        0 0 -66 ;
+   blkfile.filesize 2@  0 ;
 
 : FLUSH-FILE ( fileid -- ior ) 
    DROP FLUSH   0 ;
 
 
 
-   ( blkfile - extension to treat blocks as files       15 / n)
+   ( blkfile - extension to treat blocks as files     17 / n )
+SYSTEM-WORDLIST SET-CURRENT
 : .BLKF  ( blkfid -- )
    ." BLKF:" DUP U. CR
    ."  OFFSET : "  DUP BLKF.OFFSET @ U. CR
@@ -264,13 +281,12 @@ FORTH-WORDLIST SET-CURRENT
 
 : .BLKFILE  ( blkfid -- )
    DUP .BLKF
-   ." BLKFILE:" DUP U. CR
-   ."  FLAGS  : "  DUP blkfile.flags  @ U. CR
-   ."  BUFFER : "      blkfile.buffer   U. CR  ;
-
-
-
-   ( blkfile - extension to treat blocks as files       15 / n)
+   ." BLKFILE:"       DUP U. CR
+   ."  FLAGS  : "     DUP blkfile.flags     @   U. CR
+   ."  NAME : "       DUP blkfile.name      COUNT TYPE CR
+   ."  FILESIZE : "   DUP blkfile.filesize  2@  D. CR
+   ."  BUFFER : "         blkfile.buffer        U. CR  ;
+   ( blkfile - extension to treat blocks as files     18 / n )
 : .SLICE   ( sliceid -- )
    ." SLICE:" DUP U. CR
    ."  DRIVE  : "  DUP SLICE.DRIVE   @ U. CR

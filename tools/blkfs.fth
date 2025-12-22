@@ -18,8 +18,12 @@ VARIABLE cwd   0 cwd !     VARIABLE root  0 root !
 \ Z80 16bit word storage  ( little endian )
 : T!  ( n addr -- )  >R  256 /MOD   ( lo hi )
    R@ 1+ C!    R> C!  ;
-: T@  ( addr -- )   DUP C@   SWAP 1+ C@  ( lo hi )
+: T@  ( addr -- n )   DUP C@   SWAP 1+ C@  ( lo hi )
    256 * + ;
+: T2!  ( d addr -- ) >R 65536 /MOD  
+   R@ 2 +  T!   R>  T!  ;
+: T2@  ( addr -- d )  DUP T@  SWAP 2 +  T@
+    65536 * + ;
 
   \ blkfilefs
 : (magic) ( ptr -- )   FSMAGIC SWAP   meta>magic T!   UPDATE ;
@@ -42,7 +46,8 @@ VARIABLE cwd   0 cwd !     VARIABLE root  0 root !
 : dir>base  ( dirent -- addr )  #NAMECHARS +  ;
 : dir>fence ( dirent -- addr )  #NAMECHARS + 2 + ;
 : dir>type  ( dirent -- addr )  #NAMECHARS + 4 + ;
-#NAMECHARS 6 +  CONSTANT BLKFILEDIR-CONTEXT
+: dir>filesize  ( dirent -- addr )  #NAMECHARS + 6 + ;
+#NAMECHARS 10 +  CONSTANT BLKFILEDIR-CONTEXT
 
 BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 : (cwd@) ( -- blk )   cwd @ DUP 0= ABORT" No CWD" ;
@@ -110,6 +115,7 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
    2R> ROT  >R        ( nblk nblk blkptr c-addr u  R: metaptr )
    ROT   (slot)      ( nblk nblk  c-addr u dirptr  R: metaptr )
    DUP >R     ( nblk nblk  c-addr u dirptr  R: metaptr dirptr )
+   -1  R@  dir>filesize T2!
    dir>name PLACE  R>           ( nblk nblk dirent R: metaptr )
    R@ meta>here T@   -ROT   SWAP R> (blkallot)
                                       ( nblk nblk here dirent )
@@ -209,3 +215,12 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 : MKDIR ( nblk "name" -- )   PARSE-NAME $mkdir ;
 
 
+: ($filesize) ( c-addr u -- d )
+   ($dirent) ?DUP IF
+      dir>filesize T2@
+   ELSE   -66 THROW   THEN  ;
+
+: ($filesize!) ( d c-addr u -- )
+   ($dirent) ?DUP IF
+      dir>filesize T2!
+   ELSE   -64   THEN  ;

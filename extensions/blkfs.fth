@@ -9,13 +9,13 @@ CR .( Loading blkfs "filesystem"... )
 
 ONLY FORTH DEFINITIONS
 1 16 +THRU
-
+ONLY FORTH DEFINITIONS
 
 
 
 
 \ blkfilefs
-
+blkfile-private-wid >ORDER   blkfile-private-wid SET-CURRENT
 $FEED CONSTANT FSMAGIC   32 CONSTANT #NAMECHARS
 \ blkfilefs structure
 : meta>magic  ( blkfilefs -- addr )        ;
@@ -45,14 +45,17 @@ VARIABLE cwd   0 cwd !     VARIABLE root  0 root !
    SWAP 1+ OVER meta>here !   (magic) ;
 : (initbody) ( #blk blk type -- blk )   -ROT TUCK TUCK + SWAP 
    1+ ?DO   OVER I SWAP (initfree)   LOOP NIP ;
+FORTH-WORDLIST SET-CURRENT
 : MKFS ( base #blk -- )   2DUP SWAP bffstype.dir (inithead)
    SWAP bffstype.dir_free (initbody)   DROP ;
+blkfile-private-wid SET-CURRENT
   \ blkfilefs
 : dir>name  ( dirent -- addr )  ;
 : dir>base  ( dirent -- addr )  #NAMECHARS +  ;
 : dir>fence ( dirent -- addr )  #NAMECHARS + 2 + ;
 : dir>type  ( dirent -- addr )  #NAMECHARS + 4 + ;
-#NAMECHARS 6 +  CONSTANT BLKFILEDIR-CONTEXT
+: dir>filesize  ( dirent -- addr )  #NAMECHARS + 6 + ;
+#NAMECHARS 10 +  CONSTANT BLKFILEDIR-CONTEXT
 
 BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 : (cwd@) ( -- blk )   cwd @ DUP 0= ABORT" No CWD" ;
@@ -80,7 +83,7 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 : found? ( blk -- blk )   DUP 0= IF -38 THROW THEN ;
   \ blkfilefs
 : $cd ( c-addr u -- )   ($lookup) found?   cwd! ;
-
+FORTH-WORDLIST SET-CURRENT
 : CD ( "name" -- )   PARSE-NAME $cd ;
 : CD/ ( -- )   root @ DUP 0= ABORT" No root"   cwd! ;
 : ROOT!   DUP cwd!   root ! ;
@@ -95,6 +98,7 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 
 
   \ blkfilefs
+blkfile-private-wid SET-CURRENT
 : (slot) ( blkptr -- dirptr )   #DIRFILES 0 DO
       DUP dir>base @ 0= IF   UNLOOP EXIT   THEN
    BLKFILEDIR-CONTEXT  + LOOP   1 ABORT" Dir full" ;
@@ -136,6 +140,7 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
    bffstype.file R> dir>type ! UPDATE
    -ROT TUCK  (initfile) SWAP ;
 
+FORTH-WORDLIST SET-CURRENT
 : CREAT   PARSE-NAME $creat DROP ;
 
 
@@ -143,6 +148,7 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 
 
   \ blkfilefs
+blkfile-private-wid SET-CURRENT
 : (.type) ( u -- )  
    DUP bffstype.dir = IF ."  Dir   " DROP EXIT THEN
    DUP bffstype.file = IF ." File   " DROP EXIT THEN
@@ -164,13 +170,14 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
    SWAP >R ( dirent meta R: blkno )
    DUP meta>type @ (.type)   R@ 6 U.R   SPACE
    DUP meta>here @ R@ - 4 U.R   ." /"
-   meta>fence @ R> - 4 U.R    2 SPACES
+   meta>fence @ R> - 4 U.R    10 SPACES
    dir>name COUNT TYPE  CR ;
 
 : .fileentry ( dirent blkno -- )
    >R ( dirent R: blkno )
    DUP dir>type @ (.type)   R@ 6 U.R  6 SPACES
    DUP dir>fence @ R> - 4 U.R   2 SPACES
+   DUP dir>filesize 2@   8 D.R   2 SPACES
    dir>name COUNT TYPE  CR ;
 
 
@@ -184,14 +191,16 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
       >R .entry R>
    ENDCASE   ;
 
-: .head ( -- )   CR ." Type     Start   Length  Name" CR ;
+: .head ( -- )   CR ." Type     Start   Length  "
+                    ." Filesize  Name" CR ;
 : .ls ( -- )   .head   0   ['] (.ls)   entriesDo ;
 
+FORTH-WORDLIST SET-CURRENT
 : LS   .ls ;
-
 
   \ blkfilefs
 \ Return "open" file
+blkfile-private-wid SET-CURRENT
 : ($open) ( type c-addr u -- blk fence )
    ($dirent) found? ( type dirent )
    DUP dir>type @ ROT -
@@ -199,7 +208,7 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
    DUP dir>base @   SWAP   dir>fence @  ;
 : $open ( c-addr u -- blk fence )
    bffstype.file -ROT ($open) ;
-
+FORTH-WORDLIST SET-CURRENT
 : OPEN# ( "name" -- lo-blk hi-blk )
    PARSE-NAME $open   1- ;
 : OPEN% ( "name" -- blk nblks )   PARSE-NAME $open OVER - ;
@@ -208,16 +217,31 @@ BASESIZ BLKFILEDIR-CONTEXT /   CONSTANT #DIRFILES
 
   \ blkfilefs
 \ Create directory
+blkfile-private-wid SET-CURRENT
 : (initdir) ( nblk block -- )   bffstype.dir (inithead) ;
 : $mkdir ( nblk c-addr u -- )   ($mkent)
    >R 2DUP + R@ dir>fence !  
    bffstype.dir R> dir>type ! UPDATE
    2DUP (initdir)
    bffstype.dir_free (initbody)    DROP ;
-
+FORTH-WORDLIST SET-CURRENT
 : MKDIR ( nblk "name" -- )   PARSE-NAME $mkdir ;
 
 
+
+\ File size
+blkfile-private-wid SET-CURRENT
+: ($filesize) ( c-addr u -- d )
+   ($dirent) ?DUP IF
+      dir>filesize 2@
+   ELSE   -66 THROW   THEN  ;
+
+: ($filesize!) ( d c-addr u -- )
+   ($dirent) ?DUP IF
+      dir>filesize 2!
+   ELSE   -64   THEN  ;
+
+FORTH-WORDLIST SET-CURRENT
 : DELETE-FILE ( c-addr u -- ior )
    ($dirent) ?DUP IF
       bffstype.file_free SWAP dir>type !
