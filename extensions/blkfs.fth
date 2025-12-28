@@ -137,6 +137,7 @@ blkfile-private-wid SET-CURRENT
 : $creat ( nblk c-addr u -- block fence ) 
    ($mkent)  ( nblk blk dirent )
    >R 2DUP +   ( nblk blk fence )   DUP R@ dir>fence !  
+   -1 S>D R@ dir>filesize 2!
    bffstype.file R> dir>type ! UPDATE
    -ROT TUCK  (initfile) SWAP ;
 
@@ -182,7 +183,7 @@ blkfile-private-wid SET-CURRENT
 
 
   \ blkfilefs
-: (.ls) ( 0 dirent -- )   
+: (.ls) ( 0 dirent -- )
    NIP   DUP dir>base @   ( dirent blk )
    OVER dir>type @
    CASE
@@ -238,8 +239,8 @@ blkfile-private-wid SET-CURRENT
 
 : ($filesize!) ( d c-addr u -- )
    ($dirent) ?DUP IF
-      dir>filesize 2!
-   ELSE   -64   THEN  ;
+      dir>filesize 2!  UPDATE
+   ELSE   -64 THROW  THEN  ;
 
 FORTH-WORDLIST SET-CURRENT
 : DELETE-FILE ( c-addr u -- ior )
@@ -254,9 +255,6 @@ FORTH-WORDLIST SET-CURRENT
       UPDATE FLUSH
    ELSE
    2DROP      -72 THEN ;
-
-: RESIZE-FILE ( ud fileid -- ior ) 
-   2DROP DROP       -74 ;
 
 : FILE-STATUS ( c-addr u -- x ior )
    ($dirent)  DUP IF  0 ELSE  -67 THEN  ;

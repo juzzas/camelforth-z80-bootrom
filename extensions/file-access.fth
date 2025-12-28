@@ -18,26 +18,33 @@ ONLY FORTH DEFINITIONS
 blkfile-private-wid >ORDER   blkfile-private-wid SET-CURRENT
 : (OPEN-FILE) ( c-addr u fam -- fileid ) 
     >R 2DUP $open R>  OPEN-FENCE-BLKFILE   ( c-addr u blkfid )
-    >R 2DUP R@  blkfile.name PLACE
-    ($filesize)  R>  blkfile.filesize 2!
+    DUP IF 
+        >R 2DUP R@  blkfile.name PLACE
+        ($filesize)  R@  blkfile.filesize 2!    R> 
+    ELSE  NIP NIP  THEN
 ;
 
 FORTH-WORDLIST SET-CURRENT
 : OPEN-FILE ( c-addr u fam -- fileid ior ) 
-    ['] (OPEN-FILE) CATCH  DUP IF >R 0 R> THEN ;
+    ['] (OPEN-FILE) CATCH  DUP IF NIP NIP NIP  >R 0 R> THEN ;
 
-30 VALUE DEFAULT-FILESIZE
+30 VALUE DEFAULT-FILESIZE    \ default max. filesize in blocks
 
 
 
 blkfile-private-wid SET-CURRENT
 : (CREATE-FILE)  ( c-addr u fam -- fileid )
-   >R DEFAULT-FILESIZE -ROT $creat  R> ( blk fence fam )
-   OPEN-FENCE-BLKFILE   ;
+   >R 2DUP DEFAULT-FILESIZE -ROT $creat  R> ( blk fence fam )
+   OPEN-FENCE-BLKFILE     ( c-addr u blkfid )
+   DUP IF 
+      DUP >R  blkfile.name PLACE
+      0 0  R@  blkfile.filesize 2!  R>
+   ELSE  NIP NIP  THEN
+;
 
 FORTH-WORDLIST SET-CURRENT
 : CREATE-FILE ( c-addr u fam -- fileid ior )
-    ['] (CREATE-FILE) CATCH  DUP IF >R 0 R> THEN ;
+    ['] (CREATE-FILE) CATCH  DUP IF NIP NIP NIP >R 0 R> THEN ;
 
 
 
@@ -48,9 +55,9 @@ FORTH-WORDLIST SET-CURRENT
 
    \ file-access wordset: CLOSE-FILE
 : (CLOSE-FILE)  ( fileid -- )
-   DUP >R blkfile.filesize 2@  
-   R@ blkfile.name COUNT ($filesize!)
-   R> (CLOSE-BLKFILE) ;
+   DUP >R blkfile.filesize 2@
+   R@ blkfile.name COUNT .S CR  ($filesize!)
+   R> (CLOSE-BLKFILE)  ;
 
 : CLOSE-FILE  ( fileid -- ior )
    ['] (CLOSE-FILE) CATCH

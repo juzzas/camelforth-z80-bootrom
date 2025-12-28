@@ -6,7 +6,7 @@ CR .( Loading blkfile... )
 
 
 ONLY FORTH DEFINITIONS   ALSO SYSTEM
-1 18 +THRU
+1 19 +THRU
 ONLY FORTH DEFINITIONS
 
 
@@ -67,6 +67,7 @@ FORTH-WORDLIST SET-CURRENT
 : OPEN-BLKFILE ( blk fam -- blkfileid )
    blkfidpool-get ?DUP IF    ( blk fam blkfile-id )
      TUCK  blkfile.flags !     ( blk blkfile-id )
+     DUP -1 S>D ROT blkfile.filesize 2!     ( blk blkfile-id )
      TUCK /BLKF 
    ELSE   -69 THROW   THEN ;
 
@@ -111,36 +112,57 @@ CREATE eol$ 1 C, 13 C,
    eol$ COUNT R@ BLKF-PUTCHARS  DROP  
    R> update-filesize  ;
    ( blkfile - extension to treat blocks as files      7 / n )
-: (READ-FILE) ( c-addr u blkfileid -- u )
-   BLKF-GETCHARS  ;
 
 : scan-eof   ( c-addr u -- c-addr u' ; trim to eof )
    2DUP  26  SCAN    ( c-addr u c-addr' u' )
       NIP -  ;
-: scan-eol   ( c-addr u -- c-addr u' f )
+: scan-eol   ( c-addr u -- c-addr u' f ; true if eol found )
    2DUP  13  SCAN    ( c-addr u c-addr' u' )
       DUP 0<> >R   NIP -  R>   ;
 : eof?   ( c-addr -- f )
    C@ 26 =   ;
 
+: binary?  ( blkfileid -- f )
+   blkfile.flags flag.binary AND 0<>  ;
 
+: readable?  ( blkfileid -- f )
+   blkfile.flags flag.readable AND 0<>  ;
 
+: readable?  ( blkfileid -- f )
+   blkfile.flags flag.writable AND 0<>  ;
+
+: ?calc-to-eof  ( u blkfileid --  u' )
+   DUP blkfile.filesize 2@
+   ROT BLKF>POSITION@  D-
+   IF   DROP ELSE UMIN  THEN  ;
+
+: at-eof?  ( blkfileid -- f )
+   DUP blkfile.filesize 2@
+   ROT BLKF>POSITION@  D=  ;
 
    ( blkfile - extension to treat blocks as files      8 / n )
-: (READ-LINE)   ( c-addr u blkfileid -- u f )
-   DUP >R   OVER >R
-   2>R DUP 2R>      ( c-addr c-addr u blkfileid )
-                              ( r: blkfileid  u )
-   BLKF-GETCHARS   ( c-addr u'  r: blkfileid  u )
-   OVER eof? IF  
-      R> NEGATE  R> adjust-fpos  2DROP 0 FALSE EXIT  THEN
-   scan-eof   ( c-addr u"   r: blkfileid  u )
-   scan-eol   ( c-addr u"' f   r: blkfileid  u )
-   ROT DROP  
+: (READ-FILE) ( c-addr u blkfileid -- u )
+   DUP >R ?calc-to-eof R>   BLKF-GETCHARS  ;
 
-   OVER    ( u' f u'    r: blkfileid  u )
-   R> -   SWAP  IF  1+ THEN
-   R>  adjust-fpos   TRUE  ;
+: (READ-LINE)   ( c-addr u blkfileid -- u f )
+   DUP >R ?calc-to-eof R>
+   DUP at-eof? IF  DROP 2DROP 0 FALSE EXIT  THEN
+
+   DUP DUP >R  BLKF>POSITION@  2>R
+                      ( c-addr u blkfid  r: blkfid filepos )
+   2>R DUP 2R>   ( c-addr c-addr u blkfid  r: blkfid filepos )
+   BLKF-GETCHARS   ( c-addr c-addr u'  r: blkfid filepos )
+
+   OVER eof? IF  
+      2R> R>  BLKF>POSITION!   2DROP 0 FALSE EXIT  THEN
+
+   scan-eof   ( c-addr u"   r: blkfid filepos )
+   scan-eol   ( c-addr u"' f   r: blkfid filepos )
+   ROT DROP   ( u"' f  r: blkfid filepos )
+
+   OVER SWAP IF   1+   THEN
+       2R> ROT M+  R> BLKF>POSITION! 
+   TRUE  ;
 
    ( blkfile - extension to treat blocks as files      9 / n )
 FORTH-WORDLIST SET-CURRENT
@@ -178,10 +200,6 @@ FORTH-WORDLIST SET-CURRENT
 : CLOSE-BLKFILE    ( fileid -- ior )
    ['] (CLOSE-BLKFILE) CATCH
    DUP IF NIP THEN ;
-
-
-
-
 
 
 
@@ -257,18 +275,19 @@ blkfile-private-wid SET-CURRENT
    ( blkfile - extension to treat blocks as files     16 / n )
 FORTH-WORDLIST SET-CURRENT
 : FILE-POSITION  ( fileid -- ud ior )
-   BLKF>POSITION@  0 ;
+   BLKF>POSITION@   0 ;
 
 : REPOSITION-FILE ( ud fileid -- ior )
-   BLKF>POSITION!  0 ;
+   BLKF>POSITION!   0 ;
 
 : FILE-SIZE ( fileid -- ud ior )
-   blkfile.filesize 2@  0 ;
+   blkfile.filesize 2@   0 ;
 
-: FLUSH-FILE ( fileid -- ior ) 
+: RESIZE-FILE ( ud fileid -- ior )
+   blkfile.filesize 2!   0 ;
+
+: FLUSH-FILE ( fileid -- ior )
    DROP FLUSH   0 ;
-
-
 
    ( blkfile - extension to treat blocks as files     17 / n )
 SYSTEM-WORDLIST SET-CURRENT
