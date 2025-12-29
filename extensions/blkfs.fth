@@ -90,8 +90,8 @@ FORTH-WORDLIST SET-CURRENT
 
 
 
-
-
+: (file?)   ( dirent -- f )
+   dir>type @ bffstype.file  =  ;
 
 
 
@@ -245,9 +245,11 @@ blkfile-private-wid SET-CURRENT
 FORTH-WORDLIST SET-CURRENT
 : DELETE-FILE ( c-addr u -- ior )
    ($dirent) ?DUP IF
-      bffstype.file_free SWAP dir>type !
-      UPDATE FLUSH   0
-   ELSE   -64   THEN  ;
+      DUP (file?) IF 
+         bffstype.file_free SWAP dir>type !
+          UPDATE FLUSH   0   EXIT
+      THEN   DROP
+   THEN      -64  ;
 
 : RENAME-FILE ( c-addr1 u1 c-addr2 u2 -- ior )
    2SWAP ($dirent) ?DUP IF
