@@ -4,7 +4,7 @@
 CR .( Loading file access words... )
 
 ONLY FORTH DEFINITIONS
-1 6 +THRU
+1 7 +THRU
 ONLY FORTH DEFINITIONS
 
 
@@ -77,14 +77,16 @@ WORDLIST CONSTANT INCLUDED-WID
     INCLUDED-WID (CREATE-WID) ;
 
 : name-not-included? ( c-addr u -- f )
-    INCLUDED-WID SEARCH-WORDLIST 0= ;
+    INCLUDED-WID SEARCH-WORDLIST
+    DUP IF NIP  ( remove xt )  THEN    0= ;
 
 FORTH-WORDLIST SET-CURRENT
 : INCLUDED ( i * x c-addr u -- j * x ) 
+   .S  2DUP ." included: " TYPE
    2DUP name-not-included?  IF
        2DUP add-included-name
-   THEN
-   $open DROP  ( blk )    INCLUDE-BLKFILE  ;
+   THEN   .S
+   $open DROP  ( blk )  CR .S   INCLUDE-BLKFILE  ;
 
 : INCLUDE ( i * x "name" -- j * x ) 
    PARSE-NAME INCLUDED ;

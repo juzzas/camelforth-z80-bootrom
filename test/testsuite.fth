@@ -23,7 +23,7 @@ CR .( Starting Forth 2012 test suite... )
 CR .( Loading test utilities... )        3072 INCLUDE-BLKFILE
 CR .( Loading error reporting... )       3081 INCLUDE-BLKFILE
 300 LOAD     \ load Forth 2012 extenstions
-\ CR .( Starting core ext tests... )       3087 INCLUDE-BLKFILE
+CR .( Starting core ext tests... )       3087 INCLUDE-BLKFILE
 \ CR .( Starting block tests... )          3117 INCLUDE-BLKFILE
 \ CR .( Starting double tests... )         3144 INCLUDE-BLKFILE
 \ CR .( Starting exception tests... )      3162 INCLUDE-BLKFILE
