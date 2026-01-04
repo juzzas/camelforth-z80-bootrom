@@ -6,7 +6,7 @@ CR .( Loading blkfile... )
 
 
 ONLY FORTH DEFINITIONS   ALSO SYSTEM
-1 19 +THRU
+1 22 +THRU
 ONLY FORTH DEFINITIONS
 
 
@@ -39,6 +39,7 @@ BEGIN-STRUCTURE BLKFILE-CONTEXT%
    FIELD:                 blkfile.flags
    blkfile.name% +FIELD   blkfile.name
    2 CELLS +FIELD         blkfile.filesize
+   2 CELLS +FIELD         blkfile.bufferpos
    buff% +FIELD           blkfile.buffer
 END-STRUCTURE
 
@@ -227,8 +228,55 @@ FORTH-WORDLIST SET-CURRENT
    ( blkfile - extension to treat blocks as files     13 / n )
 blkfile-private-wid SET-CURRENT
 1 VALUE line-index
+16 STACK: inputs-stack
 
+2VARIABLE input-position   0 0 input-position 2!
+
+: source-file?  ( source-id -- f )
+   ?DUP IF  -1 <>  ELSE  FALSE  THEN ;
+
+FORTH-WORDLIST SET-CURRENT
+: SAVE-INPUT 
+   'REFILL @   BLK @  SLICE-ID @   'SOURCE 2@  >IN @   6
+   inputs-stack STACK-SET
+
+   SOURCE-ID  source-file? IF
+      input-position 2@
+      inputs-stack >S   inputs-stack >S
+   THEN
+
+   SOURCE-ID inputs-stack >S
+   inputs-stack STACK-GET  ;
+
+
+: RESTORE-INPUT
+   inputs-stack STACK-SET
+
+   inputs-stack S>  DUP  >R  ( r: source-id )
+   source-file? IF
+      inputs-stack S>  inputs-stack S>
+      2DUP input-position 2!
+      R@ BLKF>POSITION!
+      R@ blkfile.buffer buff% R@ (READ-LINE) 2DROP
+   THEN
+
+   inputs-stack STACK-GET
+   6 = IF 
+      >IN !  'SOURCE 2!  SLICE-ID !   BLK !   'REFILL !
+      R> 'SOURCE-ID !
+      BLK @  ?DUP IF
+         BLOCK B/BLK 'SOURCE 2!
+      THEN
+      FALSE
+   ELSE
+      R>  DROP
+      TRUE
+   THEN  ;
+
+blkfile-private-wid SET-CURRENT
 : tload-refill  ( -- flag )
+    SOURCE-ID BLKF>POSITION@
+          input-position 2!
     SOURCE-ID blkfile.buffer   buff%
        SOURCE-ID  (READ-LINE)
     IF

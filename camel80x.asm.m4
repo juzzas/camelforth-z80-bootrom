@@ -864,23 +864,23 @@ dnl ;      CELLS CELL+ CELL+   ( bytes )
 dnl ;      HERE OVER ALLOT      ( bytes addr )
 dnl ;      SWAP /STACK
 dnl ;   DOES>  ;
-dnl     head_system(STACK,STACK:,docolon)
-dnl         DW CREATE
-dnl         DW CELLS,CELLPLUS,CELLPLUS
-dnl         DW HERE,OVER,ALLOT
-dnl         DW SWOP,SLASHSTACK
-dnl         DW XDOES
-dnl         call dodoes
-dnl         dw EXIT
+    head_system(STACK,STACK:,docolon)
+        DW CREATE
+        DW CELLS,CELLPLUS,CELLPLUS
+        DW HERE,OVER,ALLOT
+        DW SWOP,SLASHSTACK
+        DW XDOES
+        call dodoes
+        dw EXIT
 
 ; Push number onto STACK
 ; : >S ( n lifo -- )
 ;      SWAP OVER @ ( lifo n tos )
 ;      CELL- !     ( lifo )
 ;      CELL NEGATE SWAP +! ;
-dnl     head_system(TOSTACK,>S,docolon)
-TOSTACK:
-        call docolon
+     head_system(TOSTACK,>S,docolon)
+;TOSTACK:
+;        call docolon
         DW SWOP,OVER,FETCH
         DW CELLMINUS,STORE
         DW CELL,NEGATE,SWOP,PLUSSTORE
@@ -891,9 +891,9 @@ TOSTACK:
 ;      DUP @ @        ( lifo x )
 ;      SWAP           ( x lifo  )
 ;      CELL SWAP +!  ;  ( x )
-dnl    head_system(STACKFROM,S>,docolon)
-STACKFROM:
-        call docolon
+    head_system(STACKFROM,S>,docolon)
+;STACKFROM:
+;        call docolon
         DW DUP,FETCH,FETCH
         DW SWOP
         DW CELL,SWOP,PLUSSTORE
@@ -921,10 +921,10 @@ STACKSTORE:
 ; : SDROP ( lifo -- )
 ;      S> DROP ;
 dnl    head_system(STACKDROP,SDROP,docolon)
-STACKDROP:
-        call docolon
-        DW STACKFROM,DROP
-        DW EXIT
+;STACKDROP:
+;        call docolon
+;        DW STACKFROM,DROP
+;        DW EXIT
 
 ; Duplicate the value at the top of the STACK
 ; : SDUP ( lifo -- )
@@ -958,10 +958,10 @@ dnl         DW STACKBOUNDS,EQUAL
 dnl         DW EXIT
 
 ; Create parameters for a ?DO loop that will scan every item currently in STACK. The intended use is:
-;      ( lifo )   STACK-BOUNDS ?DO -- CELL +LOOP
+;      ( lifo )   SBOUNDS ?DO -- CELL +LOOP
 ; : STACK-BOUNDS ( lifo -- addr1 addr2 )
 ;     DUP CELL+ @ SWAP @ ;
-dnl    head_system(STACKBOUNDS,STACK-BOUNDS,docolon)
+dnl    head_system(STACKBOUNDS,SBOUNDS,docolon)
 STACKBOUNDS:
         call docolon
         DW DUP,CELLPLUS,FETCH,SWOP,FETCH
@@ -981,9 +981,9 @@ STACKBOUNDS:
 ;    ELSE
 ;      NIP DUP CELL+ @ SWAP !   \ clear stack
 ;    THEN    ;
-dnl    head_system(STACKSET,STACK-SET,docolon)
-STACKSET:
-        call docolon
+   head_system(STACKSET,STACK-SET,docolon)
+;STACKSET:
+;        call docolon
         DW OVER,ZEROLESS,qbranch,STACKSET0
         DW lit,-4,THROW
 STACKSET0:
@@ -1017,9 +1017,9 @@ STACKSET2:
 ;         NIP            ( n )
 ;     THEN               ( )
 ;     ;
-dnl    head_system(STACKGET,STACK-GET,docolon)
-STACKGET:
-        call docolon
+   head_system(STACKGET,STACK-GET,docolon)
+;STACKGET:
+;        call docolon
         DW DUP,STACKDEPTH
         DW DUP,qbranch,STACKGET2
         DW TOR,CELLPLUS,FETCH,CELLMINUS,RFETCH
@@ -3323,6 +3323,7 @@ XREFILL16K4:
         head(SOURCE_ID,SOURCE-ID,docolon)
             dw TICKSOURCE_ID,FETCH,EXIT
 
+
 ;X SAVE-INPUT   -- xn ... x1 n                 save input state
 ;   REFILL-VEC @ SOURCE-ID   BLK @ 'SOURCE 2@  >IN @   ;
     head(SAVE_INPUT,SAVE-INPUT,docolon)
@@ -3336,7 +3337,7 @@ XREFILL16K4:
         DW EXIT
 
 ;X RESTORE-INPUT   xn ... x1 n -- flag      restore input state
-;   7 = IF DROP  >IN !  'SOURCE 2! BLK ! 'SOURCE-ID ! REFILL-VEC !  FALSE ELSE TRUE THEN ;
+;   7 = IF  >IN !  'SOURCE 2! BLK ! 'SOURCE-ID ! REFILL-VEC !  FALSE ELSE TRUE THEN ;
     head(RESTORE_INPUT,RESTORE-INPUT,docolon)
         DW lit,7,EQUAL,qbranch,RESTORE_INPUT1
         DW TOIN,STORE
