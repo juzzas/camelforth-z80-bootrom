@@ -37,6 +37,28 @@ SECTION code
 
 EXTERN jp_hl
 
+;Z CODE   --                    create an empty code definition
+;   CREATE
+;   -3 ALLOT  ;
+    head(CODE,CODE,docolon)
+        DW CREATE
+        DW lit,-3,ALLOT
+        DW EXIT
+
+
+;X ;CODE   --                             end a code definition
+    head(SEMICODE,;CODE,docolon)
+        DW EXIT
+
+;X NEXT,   --        compile forth NEXT word to code definition
+    head(NEXTCOMMA,``NEXT,'',docolon)
+        DW lit,nextcomma_block,HERE
+        DW lit,nextcomma_block_len,MOVE
+        DW lit,nextcomma_block_len,ALLOT
+        DW EXIT
+
+
+
 ;Z CALL       a-addr --            call machine code at address
     head(CALL,CALL,docode)
         ; protect against some stack abuse

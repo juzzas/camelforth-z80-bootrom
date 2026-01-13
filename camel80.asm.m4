@@ -248,6 +248,14 @@ defc nextcomma_block_len = 7
         pop bc          ; get new TOS
         jp (hl)         ; go do Forth word
 
+;Z ?EXECUTE   i*x xt -- j*x     execute word at 'xt', if not 0
+    head(QEXECUTE,?EXECUTE,docode)
+        ld a, b
+        or c
+        jr nz, EXECUTE
+        pop bc
+        next
+
 ; DEFINING WORDS ================================
 
 ; ENTER, a.k.a. DOCOLON, entered by CALL ENTER

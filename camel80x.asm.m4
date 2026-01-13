@@ -105,6 +105,24 @@ EXTERN pausevec_ptr
         DW SLASHBLKCTX
         dw EXIT
 
+;Z @EXECUTE   i*x addr -- j*x      execute Forth word at 'addr'
+    head(FETCHEXECUTE,@EXECUTE,docode)
+        ld h,b          ; address in hl
+        ld l,c
+        ld c, (hl)
+        inc hl
+        ld b, (hl)
+        jp EXECUTE
+
+;Z ?@EXECUTE   i*x addr-- j*x  execute word at 'addr', if not 0
+    head(QFETCHEXECUTE,?@EXECUTE,docode)
+        ld h,b          ; address in hl
+        ld l,c
+        ld c, (hl)
+        inc hl
+        ld b, (hl)
+        jp QEXECUTE
+
 SECTION data
 
 ramtop_ptr:
@@ -387,7 +405,7 @@ dnl         dw EXIT
 dnl ;: DEFER    ( "name" -- )      \  create a deferred word
 dnl ;   CREATE ['] NOOP ,
 dnl ;   DOES>
-dnl ;   @ EXECUTE ;
+dnl ;   @EXECUTE ;
 dnl     head(DEFER,DEFER,docolon)
 dnl         DW CREATE,lit,-3,ALLOT
 dnl         DW lit,dodefer,COMMACF
@@ -778,59 +796,6 @@ SECTION code_16k
         dec bc
         dec bc
         next
-
-;Z CODE   --                    create an empty code definition
-;   PARSE-NAME CURRENT @ (CREATE-WID) 
-;   -3 ALLOT  ;
-    head(CODE,CODE,docolon)
-        DW PARSE_NAME,CURRENT,FETCH,XCREATE_WID
-        DW lit,-3,ALLOT
-        DW EXIT
-
-
-;X ;CODE   --                             end a code definition
-    head(SEMICODE,;CODE,docolon)
-        DW EXIT
-
-;X NEXT,   --        compile forth NEXT word to code definition
-    head(NEXTCOMMA,``NEXT,'',docolon)
-        DW lit,nextcomma_block,HERE
-        DW lit,nextcomma_block_len,MOVE
-        DW lit,nextcomma_block_len,ALLOT
-        DW EXIT
-
-
-dnl ;Z <$    --               compile following hex values until $>
-dnl ; : <$ 
-dnl ;    BASE @ >R HEX                \ base 16
-dnl ;    BEGIN   BL WORD   ?NUMBER
-dnl ;    WHILE   C,
-dnl ;    REPEAT      ( caddr )
-dnl ;    R>  BASE !       \ restore base
-dnl ;    DUP
-dnl ;    COUNT  S" $>" ROT MAX STRCMP  IF  -259 THROW  THEN
-dnl ;  ; IMMEDIATE
-dnl     immed(MINIASM,``<$'',docolon)
-dnl         DW BASE,FETCH,TOR,HEX
-dnl MINIASM1:
-dnl         DW BL,WORD,QNUMBER
-dnl         DW qbranch,MINIASM2
-dnl 
-dnl         DW CCOMMA,branch,MINIASM1
-dnl 
-dnl MINIASM2:
-dnl         DW RFROM,BASE,STORE
-dnl         DW DUP,COUNT,XSQUOTE
-dnl         db 2,"$>"
-dnl         DW ROT,MAX,STRCMP
-dnl 
-dnl         DW qbranch,MINIASM3
-dnl         DW lit,-259,THROW
-dnl 
-dnl MINIASM3:
-dnl         DW EXIT
-
-
 
 
 dnl ; http://www.forth.org/svfig/Len/softstak.htm
@@ -1939,7 +1904,7 @@ DEFC SLICECTX_SIZE = 8
         DEFC SLICE_SECTORS = 8192*2
 ;Z RESLICE   n slice-id --     set n*8MB LBA offset to slice-id 
 ;  >R SLICE_SECTORS UM*                ( lba-offset ; slice-id )
-;  2DUP R@ SLICE>DRIVE @ DRIVE>CAPACITY @ EXECUTE  ( lba-offset lba-offset capacity )
+;  2DUP R@ SLICE>DRIVE @ DRIVE>CAPACITY @EXECUTE  ( lba-offset lba-offset capacity )
 ;  2OVER 2OVER  D<  IF                            ( lba-offset lba-offset capacity )
 ;  2SWAP SLICE_SECTORS M+  DMIN                   ( lba-offset lba-end )
 ;  2OVER  D-  D2/  D>S                            ( lba-offset limit )
@@ -1949,7 +1914,7 @@ DEFC SLICECTX_SIZE = 8
     head_system(RESLICE,RESLICE,docolon)
         DW FLUSH
         DW TOR,lit,SLICE_SECTORS,UMSTAR
-        DW TWODUP,RFETCH,SLICETODRIVE,FETCH,DRIVETOCAPACITY,FETCH,EXECUTE
+        DW TWODUP,RFETCH,SLICETODRIVE,FETCH,DRIVETOCAPACITY,FETCHEXECUTE
         DW TWOOVER,TWOOVER,DLESS,qbranch,SLICE1
         DW TWOSWAP,lit,SLICE_SECTORS,MPLUS
         DW DMIN
@@ -2122,10 +2087,10 @@ SECTION code_16k
 BLOCK_READ:
         call docolon
         dw TOR,BLK2LBA,TWODUP,RFETCH    ; convert block to LBA
-        dw SECTRDVEC,FETCH,EXECUTE,THROW
+        dw SECTRDVEC,FETCHEXECUTE,THROW
         dw lit,1,MPLUS
         dw RFROM,lit,512,PLUS
-        dw SECTRDVEC,FETCH,EXECUTE,THROW
+        dw SECTRDVEC,FETCHEXECUTE,THROW
         dw EXIT
 
 ;: BLOCK-WRITE  ( blk slice-id adrs -- )  Compact Flash write BLK and SLICE-ID
@@ -2135,10 +2100,10 @@ BLOCK_READ:
 BLOCK_WRITE:
         call docolon
         dw TOR,BLK2LBA,TWODUP,RFETCH    ; convert block to LBA
-        dw SECTWRVEC,FETCH,EXECUTE,THROW
+        dw SECTWRVEC,FETCHEXECUTE,THROW
         dw SWOP,ONEPLUS,SWOP
         dw RFROM,lit,512,PLUS
-        dw SECTWRVEC,FETCH,EXECUTE,THROW
+        dw SECTWRVEC,FETCHEXECUTE,THROW
         dw EXIT
 
 ;: BLOCK-READWRITE    ( ctx f -- )  read or write block
@@ -2167,9 +2132,9 @@ BLOCK_READWRITE2:
 
 ;: (BUFFER)      n -- ctx    get buffer context
 ;     DUP BLKLIMIT U< IF
-;     SLICE
-;     BLKCTX-GET
-;     DUP BLKCTX_CURR !
+;        SLICE
+;        BLKCTX-GET
+;        DUP BLKCTX_CURR !
 ;     ELSE  -35 THROW THEN ;
 XBUFFER:
         call docolon
@@ -2258,7 +2223,7 @@ FLUSH1:
         dw SAVE_BUFFERS, SLASHBLKCTX
         dw EXIT
 
-
+;: \-BLK   ( blk code path of the \ word )
 ;    >in @  b/line 1- +  b/line negate and  >in !
 XBACKSLASH_BLK:
     call docolon
@@ -2288,6 +2253,7 @@ LOAD_REFILL1:
 
 ;C LOAD   blk --                        load and evaluate block
 ;    SAVE-INPUT N>R
+;    0 'SOURCE-ID !
 ;    DUP BLK !
 ;    BLOCK B/BLK 'SOURCE 2!  0 >IN !
 ;    INTERPRET
@@ -2295,6 +2261,7 @@ LOAD_REFILL1:
     head(LOAD,LOAD,docolon)
         dw SAVE_INPUT,NTOR
         dw DUP,BLK,STORE
+        dw ZERO,TICKSOURCE_ID,STORE
         dw BLOCK,B_BLK,TICKSOURCE,TWOSTORE
         dw ZERO,TOIN,STORE
         dw INTERPRET
@@ -2515,7 +2482,7 @@ BLKF_RW_FLAG:
 ;   DUP >R blkf>bufferidx   ( c-addr u c-addr u dest   r: blkfile-id )
 ;   BLKF-RW-FLAG @ IF
 ;      SWAP                    ( c-addr u c-addr dest u   r: blkfile-id )
-;      set-dirty
+;      UPDATE
 ;   ELSE
 ;      -ROT                    ( c-addr u src c-addr u   r: blkfile-id )
 ;   THEN
@@ -2580,11 +2547,11 @@ BLKF_DOCHARS:
         call docolon
         DW BLKF_RW_FLAG,STORE
         DW DUP,QSET_BLKFILE
-        DW SLICE,TOR,DUP,BLKFDOTSLICE,SELECT
+        DW SAVE_INPUT,NTOR,DUP,BLKFDOTSLICE,SELECT
         DW OVER,TOR
         DW XBLKF_DOCHARS
         DW NIP,RFROM,SWOP,MINUS
-        DW RFROM,SELECT
+        DW NRFROM,RESTORE_INPUT,DROP
         DW EXIT
 
 ;Z BLKF-PUTCHARS   ( c-addr u blkfile-id -- u )   put u chars to blkfile stream
@@ -2870,7 +2837,7 @@ XSAVEHDR:
 ;      BLK_HEADER_SIZE internal-blkfid BLKF.OFFSET !
 ;      internal-blkfid BLKF-GETCHARS  DROP
 ;
-;      ENTRY @ EXECUTE
+;      ENTRY ?@EXECUTE
 ;   ELSE -258 THROW THEN   ;
     head(RESTORE,RESTORE,docolon)
         dw DUP,TOR,BLOCK
@@ -2885,7 +2852,7 @@ XSAVEHDR:
         dw RFROM,lit,internal_blkfid,SLASHBLKF
         dw lit,BLK_HEADER_SIZE,lit,internal_blkfid,STORE
         dw lit,internal_blkfid,BLKF_GETCHARS,DROP
-        dw ENTRY,FETCH,EXECUTE
+        dw ENTRY,QFETCHEXECUTE
         dw EXIT
 
 RESTORE1:
@@ -3299,7 +3266,7 @@ INTRP_NG9: DW CHECK_SP,DROP
 ;             ELSE  XREFILL8K  EXIT ( TIB version )  THEN
 ;   THEN
 ;   -1 OVER = IF DROP FALSE EXIT THEN
-;   DROP  'REFILL @ EXECUTE   ;
+;   DROP  'REFILL ?@EXECUTE   ;
 XREFILL_16K:
         call docolon
         dw SOURCE_ID
@@ -3316,7 +3283,7 @@ XREFILL16K2:
         dw DROP,FALSE,EXIT
 
 XREFILL16K4:
-        dw DROP,TICKREFILL,FETCH,EXECUTE,EXIT
+        dw DROP,TICKREFILL,FETCHEXECUTE,EXIT
 
 
 ;X SOURCE-ID   'SOURCE-ID @ ;
@@ -3383,7 +3350,7 @@ RESTORE_INPUT1:
 ;  0 HANDLER !
 ;  0 BLK !
 ;  ['] <WAKE> U0 !   ( we're away! )
-;  ENTRY @ EXECUTE
+;  ENTRY ?@EXECUTE
 ;  ['] <SLEEP> U0 !  ( if we come back, the stop this thread )
 ;  (PAUSE)   ;
     head_system(XINIT,<INIT>,docolon)
@@ -3396,7 +3363,7 @@ XINIT1:
        dw ZERO,HANDLER,STORE
        dw ZERO,BLK,STORE
        dw lit,XWAKE,U0,STORE
-       dw ENTRY,FETCH,EXECUTE
+       dw ENTRY,QFETCHEXECUTE
        dw lit,XSLEEP,U0,STORE
        dw XPAUSE
        dw branch,XINIT1

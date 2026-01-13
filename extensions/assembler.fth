@@ -100,9 +100,9 @@ VARIABLE dsp   ( ix/iy displacement )
 :  8m  CONSTANT DOES> 0ED C, C@ C, , ;
 :  9m  CONSTANT DOES> 0CB C, ?dsp C@ + C, ;
 : 10m  CONSTANT DOES> 0CB C, ?dsp C@ SWAP 8 * + + C, ;
-: 11m  VARIABLE DOES> @ , ;
-: 12m  VARIABLE DOES> @ , , ;
-: 13m  VARIABLE DOES> COUNT C, ?xy C@ SWAP 8 * + C, ;
+: 11m  CONSTANT DOES> @ , ;
+: 12m  CONSTANT DOES> @ , , ;
+: 13m  CONSTANT DOES> COUNT C, ?xy C@ SWAP 8 * + C, ;
 
 
 
@@ -172,5 +172,18 @@ VARIABLE dsp   ( ix/iy displacement )
 
 
 
+
+\ structured conditionals
+0C2 CONSTANT 0=   0CA CONSTANT 0<>  0D2 CONSTANT U<
+0DA CONSTANT U>=  0E2 CONSTANT PE   0EA CONSTANT PO
+0F2 CONSTANT 0<   0FA CONSTANT 0>=  0C3 CONSTANT NEVER
+U>= CONSTANT NC   U<  CONSTANT CY   PE CONSTANT NO 
+PO  CONSTANT OV
+
+: THEN    HERE SWAP ! ;          : BEGIN  HERE ;
+: UNTIL   C, , ;                 : IF     C, BEGIN 0 , ;
+: AHEAD   NEVER IF ;             : ELSE   AHEAD SWAP THEN ;
+: WHILE   IF SWAP ;              : AGAIN  NEVER UNTIL ;
+: REPEAT  AGAIN THEN ;
 
 
