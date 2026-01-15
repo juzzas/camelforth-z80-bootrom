@@ -1600,12 +1600,11 @@ ESAC2:
 
 ; BLOCKCTX structure
 ;   Each context struct is indexed to a 1024byte block buffer
-;    SLICE ID (1 cell)
 ;    BLOCK number (1 cell)
 ;    BUFFER address (1 cell)
 ;    BLOCK update flag (1 cell)
 
-DEFC BLOCKCTX_SIZE = 8
+DEFC BLOCKCTX_SIZE = 6
 DEFC BLOCKCTX_NUM = 4
 
 BLKCTXS:
@@ -1620,48 +1619,23 @@ BLKCTX_CURR:
         call docon
         DW blkctx_curr_ptr
 
-;: /BLKCTX   ( -- ) initialise the block contexts
-;    BLKCTXS BLKCTX# 0 DO   ( ctx[i] )
-;       0xffff OVER BLKCTX>BLOCK !  ( ctx[i] )
-;       0xffff OVER BLKCTX>SLICE !  ( ctx[i] )
-;       0x0000 OVER BLKCTX>BUFFER !  ( ctx[i] )
-;       0x0000 OVER BLKCTX>FLAGS !  ( ctx[i] )
-;       BLOCKCTX_SIZE +             ( ctx[i+1 ]
-;    LOOP
-;    DROP  0 BLKCTX_IDX !   0 BLKCTX_CURR ! ;
-SLASHBLKCTX:
-        call docolon
-        dw BLKCTXS,BLKCTXNUM,ZERO,xdo
-SLASHBLKCTX1:
-        dw lit,0xffff,OVER,BLKCTXTOBLOCK,STORE
-        dw lit,0xffff,OVER,BLKCTXTOSLICE,STORE
-        dw ZERO,OVER,BLKCTXTOBUFFER,STORE
-        dw ZERO,OVER,BLKCTXTOFLAGS,STORE
-        dw BLKCTXSIZE,PLUS
-        dw xloop,SLASHBLKCTX1
-        dw DROP
-        dw ZERO,BLKCTX_IDX,STORE
-        dw ZERO,BLKCTX_CURR,STORE
-        dw EXIT
-
-;: BLKCTX>SLICE  ( ctx -- a-addr' )  get address of slice-id 
-;    ;
-BLKCTXTOSLICE:
-        jp ctx_next
-
 ;: BLKCTX>BLOCK  ( ctx -- a-addr' )  get address of BLOCK number
 ;    ;
 BLKCTXTOBLOCK:
-        jp ctx_plus_2
+        jp ctx_next
 
 ;: BLKCTX>BUFFER  ( ctx -- a-addr' )  get address of BUFFER
 ;    ;
 BLKCTXTOBUFFER:
-        jp ctx_plus_4
+        jp ctx_plus_2
 
 ;: BLKCTX>FLAGS  ( ctx -- a-addr' )  get address of FLAGS
 ;    ;
 BLKCTXTOFLAGS:
+        jp ctx_plus_4
+
+
+
 ctx_plus_6:
         inc bc
         inc bc
@@ -1692,15 +1666,21 @@ BLKFIRST:
         dw RAMTOP,lit,0xFC00,AND,lit,0x1000,MINUS
         dw EXIT
 
-;:  BLKCTX_NOT_INUSE?   ( ctx -- f )
-;   DUP BLKCTX>BLOCK @ SWAP BLKCTX>SLICE @
-;   BLK @  SLICE
-;   D=  INVERT  ;
+;: BLKCTX_NOT_INUSE?   ( ctx -- f )
+;   BLK @  0=  IF
+;      DROP TRUE
+;   THEN
+;   BLKCTX>BLOCK @
+;   BLK @
+;   =  INVERT  ;
 BLKCTX_NOT_INUSEQ:
         call docolon
-        DW DUP,BLKCTXTOBLOCK,FETCH,SWOP,BLKCTXTOSLICE,FETCH
-        DW BLK,FETCH,SLICE
-        DW DEQUAL,INVERT
+        DW BLK,FETCH,ZEROEQUAL,qbranch,NOTINUSE1
+        DW DROP,TRUE,EXIT
+NOTINUSE1:
+        DW BLKCTXTOBLOCK,FETCH
+        DW BLK,FETCH
+        DW NOTEQUAL
         DW EXIT
 
 ;: IDX>BLKCTX   ( -- ctx )
@@ -1750,59 +1730,67 @@ BLKCTX_NEXT1:
         dw OVER,BLKCTXTOBUFFER,STORE
         dw EXIT
 
-;: BLKCTX-FIND   blk slice-id -- ctx    address of matching buffer, if exists, else 0
-;    BLKCTXS BLKCTX# 0 DO   ( blk slice-id ctx[i] )
-;       >R                ( blk slice-id ; r: ctx[i] )
-;       2DUP              ( blk slice-id blk slice-id ; r: ctx[i] )
-;       R@ BLKCTX>BLOCK @  ( blk slice-id blk slice-id blk[i] ; r: ctx[i] )
-;       R@ BLKCTX>SLICE  @  ( blk slice-id blk slice-id blk[i] slice-id[i] ; r: ctx[i] )
-;       D=  IF            ( blk slice-id ; r: ctx[i] )
-;           2DROP R> UNLOOP EXIT
+;: BLKCTX-FIND   blk -- ctx    address of matching buffer, if exists, else 0
+;    BLKCTXS BLKCTX# 0 DO   ( blk ctx[i] )
+;       >R                ( blk  ; r: ctx[i] )
+;       DUP              ( blk blk  ; r: ctx[i] )
+;       R@ BLKCTX>BLOCK @  ( blk blk blk' ; r: ctx[i] )
+;       =  IF            ( blk  ; r: ctx[i] )
+;           DROP R> UNLOOP EXIT
 ;       THEN
-;       R> BLKCTX% + ( blk slice-id ctx[i+1] )
+;       R> BLKCTX% + ( blk ctx[i+1] )
 ;    LOOP
-;    2DROP DROP 0   ;
+;    2DROP 0   ;
 BLKCTX_FIND:
         call docolon
         dw BLKCTXS,BLKCTXNUM,ZERO,xdo
 BLKCTXF1:
         dw TOR
-        dw TWODUP
+        dw DUP
         dw RFETCH,BLKCTXTOBLOCK,FETCH
-        dw RFETCH,BLKCTXTOSLICE,FETCH
-        dw DEQUAL,qbranch,BLKCTXF2
-        dw TWODROP,RFROM,UNLOOP
+        dw EQUAL,qbranch,BLKCTXF2
+        dw DROP,RFROM,UNLOOP
         dw EXIT
 BLKCTXF2:
         dw RFROM,BLKCTXSIZE,PLUS
         dw xloop,BLKCTXF1
-        dw TWODROP,DROP,FALSE
+        dw TWODROP,ZERO
         dw EXIT
 
 
-;: BLKCTX-GET   blk slice-id -- ctx    incr. buffer structure
-;     2DUP BLKCTX-FIND ?DUP IF   ( blk slice-id ctx )
-;         NIP NIP
-;     ELSE                       ( blk slice-id )
-;         BLKCTX-NEXT    ( blk slice-id ctx )
+;: BLKCTX-GET   blk -- ctx    incr. buffer structure
+;     DUP BLKCTX-FIND ?DUP IF   ( blk ctx )
+;         NIP
+;     ELSE                       ( blk )
+;         BLKCTX-NEXT    ( blk ctx )
 ;         >R
-;         R@ BLKCTX>SLICE !
 ;         R@ BLKCTX>BLOCK !
 ;         R@ BLKCTX>FLAGS 1 SWAP !
-;         R>  ;
+;         R> 
+;     THEN   ;
 BLKCTX_GET:
         call docolon
-        dw TWODUP,BLKCTX_FIND,QDUP,qbranch,BLKCTXG1
-        dw NIP,NIP
+        dw DUP,BLKCTX_FIND,QDUP,qbranch,BLKCTXG1
+        dw NIP
         dw EXIT
 
 BLKCTXG1:
         dw BLKCTX_NEXT
         dw TOR
-        dw RFETCH,BLKCTXTOSLICE,STORE
         dw RFETCH,BLKCTXTOBLOCK,STORE
         dw RFETCH,BLKCTXTOFLAGS,lit,1,SWOP,STORE
         dw RFROM
+        dw EXIT
+
+;: BLKCTX-RESET  (ctx -- )   reset buffer 
+;       0xffff OVER BLKCTX>BLOCK !  ( ctx )
+;       0x0000 OVER BLKCTX>BUFFER !  ( ctx )
+;       0x0000 SWAP BLKCTX>FLAGS !  ;
+BLKCTX_RESET:
+        call docolon
+        dw lit,0xffff,OVER,BLKCTXTOBLOCK,STORE
+        dw ZERO,OVER,BLKCTXTOBUFFER,STORE
+        dw ZERO,SWOP,BLKCTXTOFLAGS,STORE
         dw EXIT
 
 ;: BLKCTX-MAP   xt --     execute xt for each blkctx
@@ -1821,6 +1809,29 @@ BLKCTXMAP1:
         dw RFROM,BLKCTXSIZE,PLUS
         dw xloop,BLKCTXMAP1
         dw TWODROP
+        dw EXIT
+
+
+;: /BLKCTX   ( -- ) initialise the block contexts
+;    BLKCTXS BLKCTX# 0 DO   ( ctx[i] )
+;       0xffff OVER BLKCTX>BLOCK !  ( ctx[i] )
+;       0x0000 OVER BLKCTX>BUFFER !  ( ctx[i] )
+;       0x0000 OVER BLKCTX>FLAGS !  ( ctx[i] )
+;       BLOCKCTX_SIZE +             ( ctx[i+1 ]
+;    LOOP
+;    DROP  0 BLKCTX_IDX !   0 BLKCTX_CURR ! ;
+SLASHBLKCTX:
+        call docolon
+        dw BLKCTXS,BLKCTXNUM,ZERO,xdo
+SLASHBLKCTX1:
+        dw lit,0xffff,OVER,BLKCTXTOBLOCK,STORE
+        dw ZERO,OVER,BLKCTXTOBUFFER,STORE
+        dw ZERO,OVER,BLKCTXTOFLAGS,STORE
+        dw BLKCTXSIZE,PLUS
+        dw xloop,SLASHBLKCTX1
+        dw DROP
+        dw ZERO,BLKCTX_IDX,STORE
+        dw ZERO,BLKCTX_CURR,STORE
         dw EXIT
 
 
@@ -2110,36 +2121,34 @@ BLOCK_WRITE:
 ;                              f = 0 read, f = -1 write
 ;     >R >R
 ;     R@ BLKCTX>BLOCK @
-;     R@ BLKCTX>SLICE @
+;     SLICE
 ;     R@ BLKCTX>BUFFER @
 ;     0 R> BLKCTX>FLAGS !
-;     R>      ( slice-id blk adrs f )
+;     R>      ( blk adrs f )
 ;     IF BLOCK-WRITE ELSE BLOCK-READ ;
 BLOCK_READWRITE:
         call docolon
         dw TOR,TOR
         dw RFETCH,BLKCTXTOBLOCK,FETCH
-        dw RFETCH,BLKCTXTOSLICE,FETCH
+        dw SLICE
         dw RFETCH,BLKCTXTOBUFFER,FETCH
         dw ZERO,RFROM,BLKCTXTOFLAGS,STORE
         dw RFROM
         dw qbranch,BLOCK_READWRITE1
-        dw BLOCK_WRITE,branch,BLOCK_READWRITE2
+        dw BLOCK_WRITE
+        dw EXIT
 BLOCK_READWRITE1:
         dw BLOCK_READ
-BLOCK_READWRITE2:
         dw EXIT
 
 ;: (BUFFER)      n -- ctx    get buffer context
 ;     DUP BLKLIMIT U< IF
-;        SLICE
 ;        BLKCTX-GET
 ;        DUP BLKCTX_CURR !
 ;     ELSE  -35 THROW THEN ;
 XBUFFER:
         call docolon
         dw DUP,BLKLIMIT,ULESS,qbranch,XBUFFER1
-        dw SLICE
         dw BLKCTX_GET
         dw DUP,BLKCTX_CURR,STORE
         dw EXIT
@@ -2150,9 +2159,15 @@ XBUFFER1:
 
 ;C BUFFER   n -- addr                       push buffer address
 ;     (BUFFER)       ( ctx )
+;     DUP BLKCTX>FLAGS @ 1 = IF  ( ctx )
+;            DUP BLKCTX>FLAGS 0 SWAP !
+;     THEN
 ;     BLKCTX>BUFFER @  ;
     head(BUFFER,BUFFER,docolon)
         dw XBUFFER
+        dw DUP,BLKCTXTOFLAGS,FETCH,lit,1,EQUAL,qbranch,BUFFER1
+        dw DUP,BLKCTXTOFLAGS,ZERO,SWOP,STORE
+BUFFER1:
         dw BLKCTXTOBUFFER,FETCH
         dw EXIT
 
@@ -2160,6 +2175,7 @@ XBUFFER1:
 ;        (BUFFER)     ( ctx )
 ;        DUP BLKCTX>FLAGS @ 1 = IF  ( ctx )
 ;            DUP 0 BLOCK-READWRITE
+;            DUP BLKCTX>FLAGS 0 SWAP !
 ;        THEN
 ;        BLKCTX>BUFFER @
 ;        ;
@@ -2168,6 +2184,7 @@ XBUFFER1:
         dw DUP,BLKCTXTOFLAGS,FETCH,lit,1,EQUAL,qbranch,BLOCK1
         dw DUP,ZERO,BLOCK_READWRITE
 BLOCK1:
+        dw DUP,BLKCTXTOFLAGS,ZERO,SWOP,STORE
         dw BLKCTXTOBUFFER,FETCH
         dw EXIT
 
@@ -2182,11 +2199,11 @@ UPDATE1:
         dw EXIT
 
 ;C UPDATED?   blk -- f                  are any blocks updated?
-;     SLICE BLKCTX-FIND DUP IF
+;     SLICE BLKCTX-FIND ?DUP IF
 ;         BLKCTX>FLAGS @ -1 =
 ;     THEN ;
     head(UPDATEDQ,UPDATED?,docolon)
-        dw SLICE,BLKCTX_FIND,DUP,qbranch,UPDATEDQ1
+        dw SLICE,BLKCTX_FIND,QDUP,qbranch,UPDATEDQ1
         dw BLKCTXTOFLAGS,FETCH,ALLONES,EQUAL
 UPDATEDQ1:
         dw EXIT
@@ -2260,8 +2277,8 @@ LOAD_REFILL1:
 ;    NR> RESTORE-INPUT DROP  ;
     head(LOAD,LOAD,docolon)
         dw SAVE_INPUT,NTOR
-        dw DUP,BLK,STORE
         dw ZERO,TICKSOURCE_ID,STORE
+        dw DUP,BLK,STORE
         dw BLOCK,B_BLK,TICKSOURCE,TWOSTORE
         dw ZERO,TOIN,STORE
         dw INTERPRET
@@ -3283,7 +3300,7 @@ XREFILL16K2:
         dw DROP,FALSE,EXIT
 
 XREFILL16K4:
-        dw DROP,TICKREFILL,FETCHEXECUTE,EXIT
+        dw DROP,TICKREFILL,QFETCHEXECUTE,EXIT
 
 
 ;X SOURCE-ID   'SOURCE-ID @ ;
