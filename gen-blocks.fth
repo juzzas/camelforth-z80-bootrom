@@ -58,6 +58,7 @@ OPEN:  build/cf-image.blk
 +BLKFILE: test/forth2012-test-suite/src/toolstest.fth
 +BLKFILE: test/forth2012-test-suite/src/searchordertest.fth
 +BLKFILE: test/forth2012-test-suite/src/stringtest.fth
++BLKFILE: test/loadfromram.fth
 
 3300 150 MKFS
 3300 ROOT!

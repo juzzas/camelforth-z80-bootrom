@@ -237,7 +237,7 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
 
 ;C UNUSED   -- u               return unused space in data area
     head(UNUSED,UNUSED,docolon)
-        dw BLKFIRST,HERE,MINUS
+        dw BLKCTX_HEAD,HERE,MINUS
         dw EXIT
 
 ;C BOUNDS   c-addr n -- n-end n-start       get bounds for a DO
@@ -1596,259 +1596,6 @@ ESAC2:
         DW SWOP,STORE
         DW EXIT
 
-; BLOCK implementation ==========================
-
-; BLOCKCTX structure
-;   Each context struct is indexed to a 1024byte block buffer
-;    BLOCK number (1 cell)
-;    BUFFER address (1 cell)
-;    BLOCK update flag (1 cell)
-
-DEFC BLOCKCTX_SIZE = 6
-DEFC BLOCKCTX_NUM = 4
-
-BLKCTXS:
-        call docon
-        DW blkctxs_ptr
-
-BLKCTX_IDX:
-        call docon
-        DW blkctx_idx_ptr
-
-BLKCTX_CURR:
-        call docon
-        DW blkctx_curr_ptr
-
-;: BLKCTX>BLOCK  ( ctx -- a-addr' )  get address of BLOCK number
-;    ;
-BLKCTXTOBLOCK:
-        jp ctx_next
-
-;: BLKCTX>BUFFER  ( ctx -- a-addr' )  get address of BUFFER
-;    ;
-BLKCTXTOBUFFER:
-        jp ctx_plus_2
-
-;: BLKCTX>FLAGS  ( ctx -- a-addr' )  get address of FLAGS
-;    ;
-BLKCTXTOFLAGS:
-        jp ctx_plus_4
-
-
-
-ctx_plus_6:
-        inc bc
-        inc bc
-ctx_plus_4:
-        inc bc
-        inc bc
-ctx_plus_2:
-        inc bc
-        inc bc
-ctx_next:
-        next
-
-;: BLKCTX%  (  -- u )  size of stucture
-BLKCTXSIZE:
-        call docon
-        dw BLOCKCTX_SIZE
-
-;: BLKCTX#  ( -- u )  number of buffer structures
-BLKCTXNUM:
-        call docon
-        dw BLOCKCTX_NUM
-
-
-;: BLKFIRST      -- a-adrs      address of first block buffer
-;   RAMTOP 0xFC00 AND 0x1000 - ;
-BLKFIRST:
-        call docolon
-        dw RAMTOP,lit,0xFC00,AND,lit,0x1000,MINUS
-        dw EXIT
-
-;: BLKCTX_NOT_INUSE?   ( ctx -- f )
-;   BLK @  0=  IF
-;      DROP TRUE
-;   THEN
-;   BLKCTX>BLOCK @
-;   BLK @
-;   =  INVERT  ;
-BLKCTX_NOT_INUSEQ:
-        call docolon
-        DW BLK,FETCH,ZEROEQUAL,qbranch,NOTINUSE1
-        DW DROP,TRUE,EXIT
-NOTINUSE1:
-        DW BLKCTXTOBLOCK,FETCH
-        DW BLK,FETCH
-        DW NOTEQUAL
-        DW EXIT
-
-;: IDX>BLKCTX   ( -- ctx )
-;      BLKCTXS   BLKCTX_IDX @
-;      BLKCTX% * +  ( new-ctx )   ;
-IDX_TO_BLKCTX:
-        call docolon
-        dw BLKCTXS
-        dw BLKCTX_IDX,FETCH
-        dw BLKCTXSIZE,STAR,PLUS
-        dw EXIT
-
-;: IDX>BUFFER   ( -- c-addr )
-;   BLKCTX_IDX @  B/BLK *  BLKFIRST PLUS  ( buffer )  ;
-IDX_TO_BUFFER:
-        call docolon
-        dw BLKCTX_IDX,FETCH
-        dw B_BLK,STAR,BLKFIRST,PLUS
-        dw EXIT
-
-;: IDX++   ( -- )
-;      BLKCTX_IDX @ 1+ BLKCTXNUM MOD  BLKCTX_IDX !    ;
-IDXPLUSPLUS:
-        call docolon
-        dw BLKCTX_IDX,FETCH,ONEPLUS,BLKCTXNUM,MOD,BLKCTX_IDX,STORE
-        dw EXIT
-
-;: BLKCTX-NEXT  ( -- ctx )  increment buffer structure
-;   BEGIN
-;      IDX++
-;      IDX>BLKCTX   ( ctx )
-;   BLKCTX_NOT_INUSE?  UNTIL
-;   IDX>BLKCTX   ( ctx )
-;   DUP (FLUSH)
-;   IDX>BUFFER    ( ctx buffer )
-;   OVER BLKCTX>BUFFER !  ( new-ctx )
-;   ;
-BLKCTX_NEXT:
-        call docolon
-BLKCTX_NEXT1:
-        dw IDXPLUSPLUS
-        dw IDX_TO_BLKCTX
-        dw BLKCTX_NOT_INUSEQ,qbranch,BLKCTX_NEXT1
-        dw IDX_TO_BLKCTX
-        dw DUP,XFLUSH
-        dw IDX_TO_BUFFER
-        dw OVER,BLKCTXTOBUFFER,STORE
-        dw EXIT
-
-;: BLKCTX-FIND   blk -- ctx    address of matching buffer, if exists, else 0
-;    BLKCTXS BLKCTX# 0 DO   ( blk ctx[i] )
-;       >R                ( blk  ; r: ctx[i] )
-;       DUP              ( blk blk  ; r: ctx[i] )
-;       R@ BLKCTX>BLOCK @  ( blk blk blk' ; r: ctx[i] )
-;       =  IF            ( blk  ; r: ctx[i] )
-;           DROP R> UNLOOP EXIT
-;       THEN
-;       R> BLKCTX% + ( blk ctx[i+1] )
-;    LOOP
-;    2DROP 0   ;
-BLKCTX_FIND:
-        call docolon
-        dw BLKCTXS,BLKCTXNUM,ZERO,xdo
-BLKCTXF1:
-        dw TOR
-        dw DUP
-        dw RFETCH,BLKCTXTOBLOCK,FETCH
-        dw EQUAL,qbranch,BLKCTXF2
-        dw DROP,RFROM,UNLOOP
-        dw EXIT
-BLKCTXF2:
-        dw RFROM,BLKCTXSIZE,PLUS
-        dw xloop,BLKCTXF1
-        dw TWODROP,ZERO
-        dw EXIT
-
-
-;: BLKCTX-GET   blk -- ctx    incr. buffer structure
-;     DUP BLKCTX-FIND ?DUP IF   ( blk ctx )
-;         NIP
-;     ELSE                       ( blk )
-;         BLKCTX-NEXT    ( blk ctx )
-;         >R
-;         R@ BLKCTX>BLOCK !
-;         R@ BLKCTX>FLAGS 1 SWAP !
-;         R> 
-;     THEN   ;
-BLKCTX_GET:
-        call docolon
-        dw DUP,BLKCTX_FIND,QDUP,qbranch,BLKCTXG1
-        dw NIP
-        dw EXIT
-
-BLKCTXG1:
-        dw BLKCTX_NEXT
-        dw TOR
-        dw RFETCH,BLKCTXTOBLOCK,STORE
-        dw RFETCH,BLKCTXTOFLAGS,lit,1,SWOP,STORE
-        dw RFROM
-        dw EXIT
-
-;: BLKCTX-RESET  (ctx -- )   reset buffer 
-;       0xffff OVER BLKCTX>BLOCK !  ( ctx )
-;       0x0000 OVER BLKCTX>BUFFER !  ( ctx )
-;       0x0000 SWAP BLKCTX>FLAGS !  ;
-BLKCTX_RESET:
-        call docolon
-        dw lit,0xffff,OVER,BLKCTXTOBLOCK,STORE
-        dw ZERO,OVER,BLKCTXTOBUFFER,STORE
-        dw ZERO,SWOP,BLKCTXTOFLAGS,STORE
-        dw EXIT
-
-;: BLKCTX-MAP   xt --     execute xt for each blkctx
-;    BLKCTXS BLKCTX# 0 DO   ( xt ctx[i] )
-;       >R                ( xt ; r: ctx[i] )
-;       DUP R@ SWAP EXECUTE
-;       R> BLKCTX% +      ( xt ctx[i+1] )
-;    LOOP   2DROP  ;
-BLKCTX_MAP:
-        call docolon
-        dw BLKCTXS,BLKCTXNUM,ZERO,xdo
-BLKCTXMAP1:
-        dw TOR
-        dw DUP
-        dw RFETCH,SWOP,EXECUTE
-        dw RFROM,BLKCTXSIZE,PLUS
-        dw xloop,BLKCTXMAP1
-        dw TWODROP
-        dw EXIT
-
-
-;: /BLKCTX   ( -- ) initialise the block contexts
-;    BLKCTXS BLKCTX# 0 DO   ( ctx[i] )
-;       0xffff OVER BLKCTX>BLOCK !  ( ctx[i] )
-;       0x0000 OVER BLKCTX>BUFFER !  ( ctx[i] )
-;       0x0000 OVER BLKCTX>FLAGS !  ( ctx[i] )
-;       BLOCKCTX_SIZE +             ( ctx[i+1 ]
-;    LOOP
-;    DROP  0 BLKCTX_IDX !   0 BLKCTX_CURR ! ;
-SLASHBLKCTX:
-        call docolon
-        dw BLKCTXS,BLKCTXNUM,ZERO,xdo
-SLASHBLKCTX1:
-        dw lit,0xffff,OVER,BLKCTXTOBLOCK,STORE
-        dw ZERO,OVER,BLKCTXTOBUFFER,STORE
-        dw ZERO,OVER,BLKCTXTOFLAGS,STORE
-        dw BLKCTXSIZE,PLUS
-        dw xloop,SLASHBLKCTX1
-        dw DROP
-        dw ZERO,BLKCTX_IDX,STORE
-        dw ZERO,BLKCTX_CURR,STORE
-        dw EXIT
-
-
-SECTION data
-
-blkctxs_ptr:
-        DEFS 32  ;  4 * 4 words
-
-blkctx_idx_ptr:
-        DEFS 2
-
-blkctx_curr_ptr:
-        DEFS 2
-
-SECTION code_16k
-
-
 ; DRIVE implementation ==========================
 
 ; DRIVECTX structure
@@ -2084,6 +1831,207 @@ CFLASH_SLICE_CTX:
 
 SECTION code_16k
 
+; BLOCK implementation ==========================
+
+; BLOCKCTX structure
+;   Each context struct is indexed to a 1024byte block buffer
+;    BLOCK number (1 cell)
+;    SLICE number (1 cell)
+;    BLOCK update flag (1 cell)
+;    BUFFER address (1024 bytes)
+
+DEFC BLOCKCTX_SIZE = 1024 + 6
+DEFC BLOCKCTX_NUM = 4
+DEFC BLOCKCTXS_LEN = BLOCKCTX_SIZE * BLOCKCTX_NUM
+
+;: BLKCTX>BLOCK  ( ctx -- a-addr' )  get address of BLOCK number
+;    ;
+BLKCTXTOBLOCK:
+        jp ctx_next
+
+;: BLKCTX>SLICE  ( ctx -- a-addr' )  get address of SLICE
+;    ;
+BLKCTXTOSLICE:
+        jp ctx_plus_2
+
+;: BLKCTX>FLAGS  ( ctx -- a-addr' )  get address of FLAGS
+;    ;
+BLKCTXTOFLAGS:
+        jp ctx_plus_4
+
+;: BLKCTX>BUFFER  ( ctx -- a-addr' )  get address of BUFFER
+;    ;
+BLKCTXTOBUFFER:
+ctx_plus_6:
+        inc bc
+        inc bc
+ctx_plus_4:
+        inc bc
+        inc bc
+ctx_plus_2:
+        inc bc
+        inc bc
+ctx_next:
+        next
+
+
+;: BLKCTX%  (  -- u )  size of stucture
+BLKCTXSIZE:
+        call docon
+        dw BLOCKCTX_SIZE
+
+;: BLKCTX#  ( -- u )  number of buffer structures
+BLKCTXNUM:
+        call docon
+        dw BLOCKCTX_NUM
+
+
+TICKBLKCTX_HEAD:
+        call docon
+        DW blkctx_head_ptr
+
+;: BLKCTX_HEAD  ( -- u )  fetch address of first blkctx
+;   'BLKCTX_HEAD @ ;
+BLKCTX_HEAD:
+        call docolon
+        DW TICKBLKCTX_HEAD,FETCH,EXIT
+
+TICKBLKCTX_TAIL:
+        call docon
+        DW blkctx_tail_ptr
+
+;: BLKCTX_TAIL  ( -- u )  fetch address of last blkctx
+;   'BLKCTX_TAIL @ ;
+BLKCTX_TAIL:
+        call docolon
+        DW TICKBLKCTX_TAIL,FETCH,EXIT
+
+
+TICKBLKCTX_CURR:
+        call docon
+        DW blkctx_curr_ptr
+
+;: BLKCTX_TAIL?  ( ctx -- f )
+;   BLKCTX_TAIL =  ;
+BLKCTX_TAILQ:
+        call docolon
+        DW BLKCTX_TAIL,EQUAL,EXIT
+
+;: BLKCTX-NEXT-END?  ( ctx -- ctx' false | true )  increment buffer structure
+;   DUP  BLKCTX_TAIL?  IF
+;      DROP TRUE EXIT
+;   THEN
+;   BLKCTX% +
+;   FALSE  ;
+BLKCTX_NEXT_ENDQ:
+        call docolon
+        dw DUP,BLKCTX_TAILQ,qbranch,BLKCTX_NEXT_ENDQ1
+        DW DROP,TRUE,EXIT
+
+BLKCTX_NEXT_ENDQ1:
+        dw BLKCTXSIZE,PLUS
+        DW FALSE,EXIT
+
+;: BLKCTX-NEXT  ( ctx -- ctx' )  increment buffer structure
+;   BLKCTX-NEXT-END?  IF
+;      BLKCTX_HEAD
+;   THEN   ;
+BLKCTX_NEXT:
+        call docolon
+        dw BLKCTX_NEXT_ENDQ,qbranch,BLKCTX_NEXT1
+        dw BLKCTX_HEAD
+
+BLKCTX_NEXT1:
+        dw EXIT
+
+
+
+;: BLKCTX_DIRTY  ( ctx --  )    set the block to be updated
+;   TRUE SWAP BLKCTX>FLAGS !  ;
+BLKCTX_DIRTY:
+        call docolon
+        dw TRUE,SWOP,BLKCTXTOFLAGS,STORE
+        dw EXIT
+
+;: BLKCTX_DIRTY?  ( ctx -- f )     has the block been updated?
+;   BLKCTX>FLAGS @  ;
+BLKCTX_DIRTYQ:
+        call docolon
+        dw BLKCTXTOFLAGS,FETCH
+        dw EXIT
+
+;: BLKCTX_NOTDIRTY  ( ctx --  )       clears the flag for blkctx
+;   FALSE SWAP BLKCTX>FLAGS !  ;
+BLKCTX_NOTDIRTY:
+        call docolon
+        dw FALSE,SWOP,BLKCTXTOFLAGS,STORE
+        dw EXIT
+
+;: BLKCTX-RESET  (ctx -- )   reset buffer 
+;       0xffff OVER BLKCTX>BLOCK !  ( ctx )
+;       0 OVER BLKCTX>SLICE !  ( ctx )
+;       BLKCTX_NOTDIRTY   ;
+BLKCTX_RESET:
+        call docolon
+        dw ALLONES,OVER,BLKCTXTOBLOCK,STORE
+        dw ZERO,OVER,BLKCTXTOSLICE,STORE
+        dw BLKCTX_NOTDIRTY
+        dw EXIT
+
+;: BLKCTX-MATCH   ( blk ctx -- f )
+;   TUCK  BLKCTX>BLOCK @ =   ( ctx f )
+;   SWAP BLKCTX>SLICE @  SLICE =  AND ;
+BLKCTX_MATCH:
+        call docolon
+        DW TUCK,BLKCTXTOBLOCK,FETCH,EQUAL
+        DW SWOP,BLKCTXTOSLICE,FETCH,SLICE,EQUAL
+        DW AND
+        DW EXIT
+
+;: BLKCTX-MAP   xt --     execute xt for each blkctx
+;   BLKCTX_HEAD
+;   BEGIN  ( xt blkctx )
+;      2DUP  SWAP EXECUTE
+;   BLKCTX_NEXT_END? UNTIL DROP  ;
+BLKCTX_MAP:
+        call docolon
+        dw BLKCTX_HEAD
+BLKCTXM1:
+        dw TWODUP,SWOP,EXECUTE
+
+BLKCTXM2:
+        dw BLKCTX_NEXT_ENDQ,qbranch,BLKCTXM1
+        dw DROP
+        dw EXIT
+
+;: /BLKCTX   ( -- ) initialise the block contexts
+;   RAMTOP BLKCTX% BLKCTX# * -   'BLKCTX_HEAD !
+;   RAMTOP BLKCTX% -   'BLKCTX_TAIL !
+;   ['] BLKCTX_RESET BLKCTX-MAP
+;   0 'BLKCTX_CURR ! ;
+SLASHBLKCTX:
+        call docolon
+        DW RAMTOP,lit,BLOCKCTXS_LEN,MINUS,TICKBLKCTX_HEAD,STORE
+        DW RAMTOP,BLKCTXSIZE,MINUS,TICKBLKCTX_TAIL,STORE
+        DW lit,BLKCTX_RESET,BLKCTX_MAP
+        dw ZERO,TICKBLKCTX_CURR,STORE
+        dw EXIT
+
+
+SECTION data
+
+blkctx_head_ptr:
+        DEFS 2
+
+blkctx_tail_ptr:
+        DEFS 2
+
+blkctx_curr_ptr:
+        DEFS 2
+
+SECTION code_16k
+
+
 
 ;: BLOCK-READ  ( blk slice-id adrs -- )  Compact Flash read BLK and SLICE-ID
 ; Reads the block from the Compact Flash card into memory
@@ -2117,40 +2065,114 @@ BLOCK_WRITE:
         dw SECTWRVEC,FETCHEXECUTE,THROW
         dw EXIT
 
-;: BLOCK-READWRITE    ( ctx f -- )  read or write block
-;                              f = 0 read, f = -1 write
-;     >R >R
-;     R@ BLKCTX>BLOCK @
-;     SLICE
-;     R@ BLKCTX>BUFFER @
-;     0 R> BLKCTX>FLAGS !
-;     R>      ( blk adrs f )
-;     IF BLOCK-WRITE ELSE BLOCK-READ ;
-BLOCK_READWRITE:
+;: BLKCTX>BSA   ( blkctx -- blk slice adrs )
+;   DUP >R  BLKCTX>BLOCK @
+;   R@ BLKCTX>SLICE @
+;   R>  BLKCTX>BUFFER  ;
+BLKCTXTOBSA:
         call docolon
-        dw TOR,TOR
-        dw RFETCH,BLKCTXTOBLOCK,FETCH
-        dw SLICE
-        dw RFETCH,BLKCTXTOBUFFER,FETCH
-        dw ZERO,RFROM,BLKCTXTOFLAGS,STORE
-        dw RFROM
-        dw qbranch,BLOCK_READWRITE1
-        dw BLOCK_WRITE
-        dw EXIT
-BLOCK_READWRITE1:
-        dw BLOCK_READ
+        DW DUP,TOR,BLKCTXTOBLOCK,FETCH
+        DW RFETCH,BLKCTXTOSLICE,FETCH
+        DW RFROM,BLKCTXTOBUFFER
+        DW EXIT
+
+;: BLKCTX_READ  ( ctx -- )        read data into buffer
+;   DUP BLKCTX_NOTDIRTY
+;   BLKCTX>BSA BLOCK_READ  ;
+BLKCTX_READ:
+        call docolon
+        dw DUP,BLKCTX_NOTDIRTY
+        dw BLKCTXTOBSA,BLOCK_READ
         dw EXIT
 
-;: (BUFFER)      n -- ctx    get buffer context
+;: BLKCTX_WRITE  ( ctx -- )       write buffer to disk
+;   DUP BLKCTX_NOTDIRTY
+;   BLKCTX>BSA BLOCK_WRITE  ;
+BLKCTX_WRITE:
+        call docolon
+        dw DUP,BLKCTX_NOTDIRTY
+        dw BLKCTXTOBSA,BLOCK_WRITE
+        dw EXIT
+
+;: BLKCTX_FLUSH  ( ctx -- )  flush blkctx to disk
+;    DUP BLKCTX_DIRTY? IF    ( ctx )
+;      BLKCTX-WRITE
+;    ELSE DROP
+;    THEN ;
+BLKCTX_FLUSH:
+        call docolon
+        dw DUP,BLKCTX_DIRTYQ,qbranch,FLUSH1
+        dw BLKCTX_WRITE
+        dw EXIT
+FLUSH1:
+        dw DROP,EXIT
+
+;: BLKCTX-FIND  ( blk -- ctx | 0 )  find blkctx, if exists, else 0
+;   BLKCTX_HEAD
+;   BEGIN  ( blk blkctx )
+;      2DUP  BLKCTX_MATCH  IF
+;         NIP EXIT
+;      THEN
+;   BLKCTX_NEXT_END? UNTIL
+;   DROP 0  ;
+BLKCTX_FIND:
+        call docolon
+        dw BLKCTX_HEAD
+BLKCTXF1:
+        dw TWODUP,BLKCTX_MATCH,qbranch,BLKCTXF2
+        dw NIP,EXIT
+
+BLKCTXF2:
+        dw BLKCTX_NEXT_ENDQ,qbranch,BLKCTXF1
+        dw DROP,ZERO
+        dw EXIT
+
+
+;: BLKCTX-GET  ( blk -- ctx f )   get blkctx, true if new allocation
+;     DUP BLKCTX-FIND ?DUP IF   ( blk ctx )
+;         NIP  FALSE
+;     ELSE                       ( blk )
+;         'BLKCTX_CURR @ ?DUP IF
+;             BLKCTX-NEXT    ( blk ctx )
+;         ELSE
+;             BLKCTX_HEAD    ( blk ctx )
+;         THEN
+;         TUCK BLKCTX-FLUSH  ( ctx blk )
+;         OVER BLKCTX>BLOCK !     ( ctx )
+;         SLICE  OVER  BLKCTX>SLICE  !   ( ctx )
+;         TRUE
+;     THEN   ;
+BLKCTX_GET:
+        call docolon
+        dw DUP,BLKCTX_FIND,QDUP,qbranch,BLKCTXG1
+        dw NIP, FALSE
+        dw EXIT
+
+BLKCTXG1:
+        dw TICKBLKCTX_CURR,FETCH,QDUP,qbranch,BLKCTXG2
+        dw BLKCTX_NEXT
+        dw branch,BLKCTXG3
+
+BLKCTXG2:
+        dw BLKCTX_HEAD
+
+BLKCTXG3:
+        dw TUCK,BLKCTX_FLUSH
+        dw OVER,BLKCTXTOBLOCK,STORE
+        dw SLICE,OVER,BLKCTXTOSLICE,STORE
+        dw TRUE
+        dw EXIT
+
+;: (BUFFER)      n -- ctx f   get buffer context true if new
 ;     DUP BLKLIMIT U< IF
-;        BLKCTX-GET
-;        DUP BLKCTX_CURR !
+;        BLKCTX-GET   ( ctx f )
+;        OVER 'BLKCTX_CURR !
 ;     ELSE  -35 THROW THEN ;
 XBUFFER:
         call docolon
         dw DUP,BLKLIMIT,ULESS,qbranch,XBUFFER1
         dw BLKCTX_GET
-        dw DUP,BLKCTX_CURR,STORE
+        dw OVER,TICKBLKCTX_CURR,STORE
         dw EXIT
 XBUFFER1:
         dw lit,-35,THROW
@@ -2158,90 +2180,56 @@ XBUFFER1:
 
 
 ;C BUFFER   n -- addr                       push buffer address
-;     (BUFFER)       ( ctx )
-;     DUP BLKCTX>FLAGS @ 1 = IF  ( ctx )
-;            DUP BLKCTX>FLAGS 0 SWAP !
-;     THEN
-;     BLKCTX>BUFFER @  ;
+;   (BUFFER)           ( ctx f )
+;   DROP  BLKCTX>BUFFER  ;
     head(BUFFER,BUFFER,docolon)
         dw XBUFFER
-        dw DUP,BLKCTXTOFLAGS,FETCH,lit,1,EQUAL,qbranch,BUFFER1
-        dw DUP,BLKCTXTOFLAGS,ZERO,SWOP,STORE
-BUFFER1:
-        dw BLKCTXTOBUFFER,FETCH
+        dw DROP,BLKCTXTOBUFFER
         dw EXIT
 
 ;C BLOCK  n -- addr                    load block
-;        (BUFFER)     ( ctx )
-;        DUP BLKCTX>FLAGS @ 1 = IF  ( ctx )
-;            DUP 0 BLOCK-READWRITE
-;            DUP BLKCTX>FLAGS 0 SWAP !
-;        THEN
-;        BLKCTX>BUFFER @
-;        ;
+;   (BUFFER)           ( ctx f )
+;   IF   DUP BLKCTX-READ  THEN
+;   BLKCTX>BUFFER   :
     head(BLOCK,BLOCK,docolon)
         dw XBUFFER
-        dw DUP,BLKCTXTOFLAGS,FETCH,lit,1,EQUAL,qbranch,BLOCK1
-        dw DUP,ZERO,BLOCK_READWRITE
+        dw qbranch,BLOCK1
+        dw DUP,BLKCTX_READ
 BLOCK1:
-        dw DUP,BLKCTXTOFLAGS,ZERO,SWOP,STORE
-        dw BLKCTXTOBUFFER,FETCH
+        dw BLKCTXTOBUFFER
         dw EXIT
 
 ;C UPDATE  --                    mark last used block to update
-;     BLKCTX_CURR @ ?DUP IF
-;        BLKCTX>FLAGS -1 SWAP !
+;     'BLKCTX_CURR @ ?DUP IF
+;        BLKCTX-DIRTY
 ;     THEN ;
     head(UPDATE,UPDATE,docolon)
-        dw BLKCTX_CURR,FETCH,QDUP,qbranch,UPDATE1
-        dw BLKCTXTOFLAGS,lit,0xffff,SWOP,STORE
+        dw TICKBLKCTX_CURR,FETCH,QDUP,qbranch,UPDATE1
+        dw BLKCTX_DIRTY
 UPDATE1:
         dw EXIT
 
-;C UPDATED?   blk -- f                  are any blocks updated?
-;     SLICE BLKCTX-FIND ?DUP IF
-;         BLKCTX>FLAGS @ -1 =
-;     THEN ;
-    head(UPDATEDQ,UPDATED?,docolon)
-        dw SLICE,BLKCTX_FIND,QDUP,qbranch,UPDATEDQ1
-        dw BLKCTXTOFLAGS,FETCH,ALLONES,EQUAL
-UPDATEDQ1:
-        dw EXIT
-
-;: (FLUSH)  ( ctx -- )  flush blkctx to disk
-;    DUP BLKCTX>FLAGS @ -1 = IF    ( ctx )
-;      DUP -1 BLOCK-READWRITE        ( ctx )
-;      BLKCTX>FLAGS 0 SWAP !
-;    ELSE DROP
-;    THEN ;
-XFLUSH:
-        call docolon
-        dw DUP,BLKCTXTOFLAGS,FETCH,TRUE,EQUAL,qbranch,FLUSH1
-        dw DUP,TRUE,BLOCK_READWRITE
-        dw BLKCTXTOFLAGS,ZERO,SWOP,STORE
-        dw EXIT
-FLUSH1:
-        dw DROP,EXIT
-
 ;C EMPTY-BUFFERS   --        release blocks, don't save to disk
+;     ' BLKCTX-RESET BLKCTX-MAP  ;
     head(EMPTY_BUFFERS,EMPTY-BUFFERS,docolon)
-        dw SLASHBLKCTX
+        dw lit,BLKCTX_RESET,BLKCTX_MAP
         dw EXIT
 
 ;C SAVE-BUFFERS   --                save updated blocks to disk
-;     ' (FLUSH) BLKCTX-MAP  ;
+;     ' BLKCTX-FLUSH BLKCTX-MAP  ;
     head(SAVE_BUFFERS,SAVE-BUFFERS,docolon)
-        dw lit,XFLUSH,BLKCTX_MAP
+        dw lit,BLKCTX_FLUSH,BLKCTX_MAP
         dw EXIT
 
 ;C FLUSH   --                  flush all updated blocks to disk
-;    SAVE-BUFFERS /BLKCTX  ;
+;    SAVE-BUFFERS EMPTY-BUFFERS  ;
     head(FLUSH,FLUSH,docolon)
-        dw SAVE_BUFFERS, SLASHBLKCTX
+        dw SAVE_BUFFERS, EMPTY_BUFFERS
+        dw ZERO,TICKBLKCTX_CURR,STORE
         dw EXIT
 
 ;: \-BLK   ( blk code path of the \ word )
-;    >in @  b/line 1- +  b/line negate and  >in !
+;    >IN @  C/L 1- +  C/L NEGATE AND  >IN !  ;
 XBACKSLASH_BLK:
     call docolon
     DW TOIN,FETCH,C_L,ONEMINUS,PLUS
@@ -2252,7 +2240,7 @@ XBACKSLASH_BLK:
 ;  BLK @  BLKLIMIT  U< IF
 ;    1 BLK +!
 ;    BLK @ BLOCK  B/BLK   'SOURCE 2!  0 >IN !
-;    TRUE  
+;    TRUE
 ;  ELSE
 ;    FALSE
 ;  THEN   ;
@@ -2316,9 +2304,9 @@ THRU2:
 ;C COPY   n1 n2 --                          copy block n1 to n2
 ;   SWAP BLOCK  ( n2 blk1 )
 ;   SWAP BLOCK  ( blk1 blk2 )
-;   B/BLK MOVE UPDATE ;
+;   B/BLK MOVE UPDATE FLUSH ;
     head(COPY,COPY,docolon)
-        dw SWOP,BLOCK,SWOP,BLOCK,B_BLK,MOVE,UPDATE
+        dw SWOP,BLOCK,SWOP,BLOCK,B_BLK,MOVE,UPDATE,FLUSH
         dw EXIT
 
 
@@ -2433,7 +2421,7 @@ BYTES_TO_READ1:
 ;Z BLKF>BUFFERIDX  ( blkfile-id -- c-addr )   -- get buffer index of blkfile
 ;   SLICE >R DUP BLK.SLICE  SELECT
 ;   DUP BLKF.BLK @ BLOCK
-;   SWAP BLKF.OFFSET @ + 
+;   SWAP BLKF.OFFSET @ +
 ;   R> SELECT    ;
     head_system(BLKFTOBUFFERIDX,BLKF>BUFFERIDX,docolon)
         DW SLICE,TOR,DUP,BLKFDOTSLICE,SELECT
@@ -3432,7 +3420,7 @@ SLASH16KROM:
         DW NINIT,PLUSUSERPTR,STORE
         DW U0,LINK,STORE
         DW lit,XWAKE,U0,STORE
-        DW ZERO,RAMTOPSTORE
+        DW ZERO,lit,ramtop_ptr,STORE
         DW ZERO,LOCALS_WID,STORE
         DW lit,default_xt_16k_start,lit,default_xt,lit,default_xt_16k_len,MOVE
         DW lit,system_lastword,SYSTEM_WORDLIST,STORE

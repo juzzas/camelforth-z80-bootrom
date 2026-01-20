@@ -1054,7 +1054,8 @@ CHECK_SP1:
         DW ZERO,BLK,STORE
         DW lit,XREFILL0,REFILLVEC,STORE
 
-QUIT1:  DW REFILL
+QUIT1:  
+        DW REFILL
 
         DW qbranch,QUITX
         DW lit,INTERPRET,CATCH

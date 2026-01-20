@@ -173,7 +173,7 @@ FORTH-WORDLIST SET-CURRENT
 
 : READ-LINE ( c-addr u fileid -- u f ior ) 
    ['] (READ-LINE) CATCH
-   DUP  IF >R 2DROP DROP 0 0 R> THEN ;
+   DUP  IF >R 2DROP DROP 0 FALSE  R> THEN ;
 
 
 
@@ -218,7 +218,7 @@ FORTH-WORDLIST SET-CURRENT
    WHILE       ( blkfile-id chrs )
      OVER blkfile.buffer  SWAP TYPE CR
    REPEAT
-   DROP (CLOSE-BLKFILE)    ;
+   DROP (CLOSE-BLKFILE)   ;
 
 
 

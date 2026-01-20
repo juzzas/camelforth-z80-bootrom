@@ -9,8 +9,7 @@ T{ blk-id BLKF.ORIGIN @  -> test-block }T
 
 .( Testing BLKF-GETCHARS ) CR
 64 BUFFER: read-buffer
-read-block blk-id BLKF.BLK !
-0 blk-id BLKF.OFFSET !
+read-block blk-id /BLKF
 read-buffer 64 0 FILL
 T{ read-buffer 4 blk-id BLKF-GETCHARS  -> 4 }T
 T{ read-buffer C@  -> 'T' }T
