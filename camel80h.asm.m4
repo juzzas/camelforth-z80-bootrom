@@ -118,18 +118,6 @@ SLICE_ID:
     head(CURRENT,CURRENT,douser)
         dw 30
 
-;Z 'SOURCE-ID      -- addr    current source ID for interpreter
-;  32 USER SOURCE-ID
-    head(TICKSOURCE_ID,'SOURCE-ID,douser)
-        dw 32
-
-
-;Z 'REFILL      -- xt           if set, use XT as REFILL source
-;  34 USER REFILLVEC
-REFILLVEC:
-        call douser
-        dw 34
-
 ; 36 USER LINK
 ; 38 USER STACKTOP
 
@@ -952,6 +940,16 @@ XREFILL0:
     head(REFILL,REFILL,dodeferv)
         DW xt_refill
 
+;X 'SOURCE-ID      -- addr                      address for SOURCE-ID
+TICKSOURCE_ID:
+        call docon
+        DW source_id_ptr
+
+;X 'REFILL-ID      -- addr                      address for REFILL vector
+TICKREFILL:
+        call docon
+        DW user_refill_ptr
+
 ;C EVALUATE  i*x c-addr u -- j*x               interpret string
 ;   SOURCE-ID R>
 ;   -1 'SOURCE-ID !
@@ -1029,7 +1027,7 @@ CHECK_SP1:
 
 ;C QUIT     --    R: i*x --                  interpret from kbd
 ;   L0 LP !  R0 RP!   0 STATE ! 0 HANDLER !  0 'SOURCE-ID !
-;   ['] XREFILL0 REFILLVEC !
+;   ['] XREFILL0 'REFILL !
 ;   BEGIN
 ;     CHECK_SP
 ;     REFILL  IF
@@ -1052,7 +1050,7 @@ CHECK_SP1:
         DW ZERO,HANDLER,STORE
         DW ZERO,TICKSOURCE_ID,STORE
         DW ZERO,BLK,STORE
-        DW lit,XREFILL0,REFILLVEC,STORE
+        DW lit,XREFILL0,TICKREFILL,STORE
 
 QUIT1:  
         DW REFILL
@@ -1653,6 +1651,12 @@ xt_pause:
         DEFS 2
 exception_msg:
         DEFS 80
+
+user_refill_ptr:
+        DEFS 2
+
+source_id_ptr:
+        DEFS 2
 
 SECTION code
 default_xt_start:

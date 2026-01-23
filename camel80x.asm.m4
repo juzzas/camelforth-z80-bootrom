@@ -58,11 +58,6 @@ SECTION code_16k
     head(ENTRY,ENTRY,douser)
         dw 28
 
-;Z 'REFILL      -- xt           if set, use XT as REFILL source
-;   USER 'REFILL
-    head(TICKREFILL,'REFILL,docode)
-        jp REFILLVEC
-
 ;Z LINK        -- a-addr     link to following round-robin task
 ;  36 USER LINK
     head(LINK,LINK,douser)
@@ -2236,6 +2231,13 @@ XBACKSLASH_BLK:
     DW C_L,NEGATE,AND,TOIN,STORE
     DW EXIT
 
+;: LOAD-REFETCH ( -- )
+;   BLK @   BLOCK  B/BLK  'SOURCE  2!  ;
+LOAD_REFETCH:
+        call docolon
+        DW BLK,FETCH,BLOCK,B_BLK,TICKSOURCE,TWOSTORE
+        DW EXIT
+
 ;: LOAD-REFILL  ( -- flag )
 ;  BLK @  BLKLIMIT  U< IF
 ;    1 BLK +!
@@ -2248,13 +2250,12 @@ LOAD_REFILL:
         call docolon
         dw BLK,FETCH,BLKLIMIT,ULESS,qbranch,LOAD_REFILL1
         dw lit,1,BLK,PLUSSTORE
-        dw BLK,FETCH,BLOCK,B_BLK,TICKSOURCE,TWOSTORE
+        dw LOAD_REFETCH
         dw ZERO,TOIN,STORE
         dw TRUE,EXIT
 
 LOAD_REFILL1:
         dw FALSE,EXIT
-
 
 ;C LOAD   blk --                        load and evaluate block
 ;    SAVE-INPUT N>R
@@ -3262,33 +3263,70 @@ INTRP_NG9: DW CHECK_SP,DROP
         DW EXIT
 
 
+; SOURCE-ID implementation =====================================
 
-;: REFILL      -- f  refill input buffer
-; 16K version
-; SOURCE-ID  
+; SOURCECTX structure
+;   Each context struct is block file
+;    REFILL xt  (1 cell)
+;    REFETCH xt  (1 cell)
+
+DEFC SOURCECTX_SIZE = 4
+
+
+;Z SOURCE.REFILL   source-id -- a-addr'       addr of current blk
+    head_system(SOURCEDOTREFILL,SOURCE.REFILL,docode)
+        jp ctx_next
+
+;Z SOURCE.REFETCH   source-id -- a-addr'   addr of current offs.
+    head_system(SOURCEDOTREFETCH,SOURCE.REFETCH,docode)
+        jp ctx_plus_2
+
+;Z SOURCE%   -- u              size of SOURCEILE context stucture
+    head_system(SOURCESIZE,SOURCE%,docon)
+        dw SOURCECTX_SIZE
+
+; SOURCE-CTX definitions
+
+TIB_SOURCE_CTX:
+        call docreate
+        dw XREFILL8K
+        dw NOOP
+
+EVALUATE_SOURCE_CTX:
+        call docreate
+        dw FALSE
+        dw NOOP
+
+LOAD_SOURCE_CTX:
+        call docreate
+        dw LOAD_REFILL
+        dw LOAD_REFETCH
+
+;Z SOURCE>SOURCE-CTX  ( source-id -- source-ctx )
 ;   0 OVER = IF DROP 
-;       BLK @ IF LOAD_REFILL EXIT 
-;             ELSE  XREFILL8K  EXIT ( TIB version )  THEN
+;       BLK @ IF LOAD_SOURCE_CTX EXIT 
+;             ELSE  TIB_SOURCE_CTX  EXIT ( TIB version )  THEN
 ;   THEN
-;   -1 OVER = IF DROP FALSE EXIT THEN
-;   DROP  'REFILL ?@EXECUTE   ;
-XREFILL_16K:
+;   -1 OVER = IF DROP EVALUATE_SOURCE_CTX EXIT THEN
+;   ( else source-id is source-ctx )   ;
+SOURCETOSOURCE_CTX:
         call docolon
-        dw SOURCE_ID
-        dw ZERO,OVER,EQUAL,qbranch,XREFILL16K2
+        dw ZERO,OVER,EQUAL,qbranch,STOSCTX1
 
-        dw DROP,BLK,FETCH,qbranch,XREFILL16K3
-        dw LOAD_REFILL,EXIT
+        dw DROP,BLK,FETCH,qbranch,STOSCTX2
+        dw LOAD_SOURCE_CTX,EXIT
 
-XREFILL16K3:
-        dw XREFILL8K,EXIT
+STOSCTX2:
+        dw TIB_SOURCE_CTX,EXIT
 
-XREFILL16K2:
-        dw ALLONES,OVER,EQUAL,qbranch,XREFILL16K4
-        dw DROP,FALSE,EXIT
+STOSCTX1:
+        dw ALLONES,OVER,EQUAL,qbranch,STOSCTX3
+        dw DROP,EVALUATE_SOURCE_CTX,EXIT
 
-XREFILL16K4:
-        dw DROP,TICKREFILL,QFETCHEXECUTE,EXIT
+STOSCTX3:
+        dw EXIT
+
+
 
 
 ;X SOURCE-ID   'SOURCE-ID @ ;
@@ -3299,34 +3337,48 @@ XREFILL16K4:
 ;X SAVE-INPUT   -- xn ... x1 n                 save input state
 ;   REFILL-VEC @ SOURCE-ID   BLK @ 'SOURCE 2@  >IN @   ;
     head(SAVE_INPUT,SAVE-INPUT,docolon)
-        DW REFILLVEC,FETCH
         DW SOURCE_ID
         DW BLK,FETCH
         DW SLICE_ID,FETCH
         DW TICKSOURCE,TWOFETCH
         DW TOIN,FETCH
-        DW lit,7
+        DW lit,6
         DW EXIT
 
 ;X RESTORE-INPUT   xn ... x1 n -- flag      restore input state
-;   7 = IF  >IN !  'SOURCE 2! BLK ! 'SOURCE-ID ! REFILL-VEC !  FALSE ELSE TRUE THEN ;
+;   6 = IF  >IN !  'SOURCE 2! BLK ! 'SOURCE-ID !  FALSE ELSE TRUE THEN ;
     head(RESTORE_INPUT,RESTORE-INPUT,docolon)
-        DW lit,7,EQUAL,qbranch,RESTORE_INPUT1
+        DW lit,6,EQUAL,qbranch,RESTORE_INPUT1
         DW TOIN,STORE
         DW TICKSOURCE,TWOSTORE
         DW SLICE_ID,STORE
         DW BLK,STORE
         DW TICKSOURCE_ID,STORE
-        DW REFILLVEC,STORE
-        dw BLK,FETCH,QDUP,qbranch,RI1
-        DW BLOCK,B_BLK,TICKSOURCE,TWOSTORE
-RI1:
+        DW REFETCH
         DW FALSE
         DW EXIT
 
 RESTORE_INPUT1:
         DW TRUE
         DW EXIT
+
+
+;: REFILL      -- f  refill input buffer
+;\ 16K version
+;   SOURCE-ID  SOURCE>SOURCE-CTX  SOURCE.REFILL  @EXECUTE   ;
+XREFILL_16K:
+        call docolon
+        dw SOURCE_ID,SOURCETOSOURCE_CTX
+        dw SOURCEDOTREFILL,FETCHEXECUTE
+        dw EXIT
+
+;: REFETCH   ( -- )   call RESTORE-INPUT source refetch
+;   SOURCE-ID  SOURCE>SOURCE-CTX  SOURCE.REFETCH  ?@EXECUTE   ;
+REFETCH:
+        call docolon
+        dw SOURCE_ID,SOURCETOSOURCE_CTX
+        dw SOURCEDOTREFETCH,QFETCHEXECUTE
+        dw EXIT
 
 
 ; RC2014 Multitasking ====================
