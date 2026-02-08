@@ -386,14 +386,16 @@ dodeferv:
 ; TERMINAL I/O ==================================
 
 ;Z TX     c --                      output character to console
-    head(TX,TX,docode)
+dnl ;   head(TX,TX,docode)
+TX:
         ld a,c
         rst 0x08 
         pop bc
         next
 
 ;Z RX?     -- f                     return true if char waiting
-    head(RXQ,RX?,docode)
+dnl ;   head(RXQ,RX?,docode)
+RXQ:
         push bc
         rst 0x18
         or a
@@ -402,7 +404,8 @@ dodeferv:
 
 
 ;Z RX      -- c                      get character from console
-    head(RX,RX,docode)
+dnl ;    head(RX,RX,docode)
+RX:
         push bc
         rst 0x10
         ld c,a
@@ -1108,6 +1111,58 @@ sdiff:  ; mismatch!  undo last 'cpi' increment
         or 1            ; bc=0001 if ncy (s1>s2)
         ld c,a
 snext:  next
+
+;X N>R    ( i * n +n -- ) ( R: -- j * x +n )       n cells to R
+    head(NTOR,N>R,docode)
+        push bc
+        exx
+        pop hl          ; hl = count
+        ld a,h
+        or l
+        jr z, ntor_done
+        ld b,l
+ntor_loop:
+        pop de
+        dec ix          ; push item onto rtn stk
+        ld (ix+0),d
+        dec ix
+        ld (ix+0),e
+        djnz ntor_loop
+ntor_done:
+        dec ix          ; push stack count onto rtn stk
+        ld (ix+0),h
+        dec ix
+        ld (ix+0),l
+        exx
+        pop bc
+        next
+
+;X NR>   ( -- i * x +n ) ( R: j * x +n -- )      n cells from R
+    head(NRFROM,NR>,docode)
+        push bc
+        exx
+        ld l,(ix+0)     ; pop count from rtn skt
+        inc ix          ;
+        ld h,(ix+0)
+        inc ix
+
+        ld a,h
+        or l
+        jr z, nrfrom_done
+        ld b, l
+nrfrom_loop:
+        ld e,(ix+0)     ; pop item from rtn skt
+        inc ix          ;
+        ld d,(ix+0)
+        inc ix
+        push de
+        djnz nrfrom_loop
+
+nrfrom_done:
+        push hl
+        exx
+        pop bc
+        next
 
 include(camel80d.asm.m4)   ; CPU Dependencies
 include(camel80h.asm.m4)   ; High Level words

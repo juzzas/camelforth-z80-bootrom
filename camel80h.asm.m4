@@ -100,10 +100,6 @@ BLK:
         dw 20
 
 ;  22 USER SLICE-ID
-SLICE_ID:
-        call douser
-        dw 22
-
 ;  24 USER SCR
 
 ;Z HANDLER      -- a-addr       if set, use XT as THROW handler
@@ -155,13 +151,11 @@ UINIT:
         DW 0            ; HANDLER
         DW NOOP         ; ENTRY
         DW 1            ; CURRENT                    30
-        DW 0            ; 'SOURCE-ID
-        DW XREFILL0     ; 'REFILL                    34
 
 
 ;Z #INIT    -- n                  #bytes of user area init data
     head(NINIT,``#INIT'',docon)
-        DW 40
+        DW 32
 
 ; ARITHMETIC OPERATORS ==========================
 
@@ -930,11 +924,6 @@ XREFILL8K:
         DW ZERO,TOIN,STORE,SPACE,TRUE
         DW EXIT
 
-XREFILL0:
-        push bc
-        jp tosfalse
-
-
 ;X REFILL      -- f                         refill input buffer
 ;   xt_refill @ EXECUTE   ;
     head(REFILL,REFILL,dodeferv)
@@ -945,35 +934,54 @@ TICKSOURCE_ID:
         call docon
         DW source_id_ptr
 
-;X 'REFILL-ID      -- addr                      address for REFILL vector
-TICKREFILL:
-        call docon
-        DW user_refill_ptr
+
+;: save-exec-restore-input  ( i*x xt -- j*x )
+; DEFER SAVE-EXEC-RESTORE-INPUT
+SAVE_EXEC_RESTORE_INPUT:
+       call dodeferv
+       DW  xt_save_restore
+
+;: save-exec-restore-input-8k  ( i*x xt -- j*x )
+;   'SOURCE 2@ >R >R
+;   >IN @ >R
+;   SOURCE-ID R>
+;    EXECUTE
+;   R> 'SOURCE-ID !
+;   R> >IN ! 
+;   R> R> 'SOURCE 2!   ;
+SAVE_EXEC_RESTORE_INPUT_8K:
+        call docolon
+        DW TICKSOURCE,TWOFETCH
+        DW TOIN,FETCH
+        DW TICKSOURCE_ID,FETCH
+        DW lit,4,NTOR
+        DW EXECUTE
+        DW NRFROM,DROP
+        DW TICKSOURCE_ID,STORE
+        DW TOIN,STORE
+        DW TICKSOURCE,TWOSTORE
+        DW EXIT
+
+;: (EVALUATE)  i*x c-addr u -- j*x             interpret string
+;   -1 'SOURCE-ID !
+;   'SOURCE 2!
+;   0 >IN !
+;   INTERPRET   ;
+XEVALUATE:
+        call docolon
+        DW ALLONES,TICKSOURCE_ID,STORE
+        DW TICKSOURCE,TWOSTORE
+        DW ZERO,TOIN,STORE
+        DW INTERPRET
+        DW EXIT
 
 ;C EVALUATE  i*x c-addr u -- j*x               interpret string
-;   SOURCE-ID R>
-;   -1 'SOURCE-ID !
-;   'SOURCE 2@ >R >R  >IN @ >R
-;   'SOURCE 2! 0 >IN !
-;       INTERPRET
-;   R> >IN !  R> R> 'SOURCE 2! R> 'SOURCE-ID ! ;
+;   ['] (EVALUATE)  SAVE-EXEC-RESTORE-INPUT   ;
     head(EVALUATE,EVALUATE,docolon)
-        DW TICKSOURCE_ID,FETCH,TOR
-        DW ALLONES,TICKSOURCE_ID,STORE
-        DW TICKSOURCE,TWOFETCH,TOR,TOR
-        DW TOIN,FETCH,TOR
-        DW TICKSOURCE,TWOSTORE,ZERO,TOIN,STORE
-        DW BLK,FETCH,TOR
-        DW SLICE_ID,FETCH,TOR
-        DW ZERO,BLK,STORE
-        DW INTERPRET
-        DW RFROM,SLICE_ID,STORE
-        DW RFROM,BLK,STORE
-        DW RFROM,TOIN,STORE,RFROM,RFROM
-        DW TICKSOURCE,TWOSTORE
-        DW RFROM,TICKSOURCE_ID,STORE,EXIT
+        DW lit,XEVALUATE,SAVE_EXEC_RESTORE_INPUT
+        DW EXIT
 
-;C CATCH   xt --    ( exception# | 0 ; r: return addr on stack)
+;: (CATCH)   xt --    ( exception# | 0 ; r: return addr on stack)
 ;     SP@ >R             ( xt )       \ save data stack pointer
 ;     HANDLER @ >R       ( xt )       \ and previous handler
 ;     RP@ HANDLER !      ( xt )       \ set current handler
@@ -991,11 +999,11 @@ TICKREFILL:
         DW EXECUTE
         DW RFROM,HANDLER,STORE
         DW RFROM,DROP
-        DW RFROM,TOIN,STORE,RFROM,RFROM
-        DW TICKSOURCE,TWOSTORE
+        DW RFROM,TOIN,STORE
+        DW RFROM,RFROM,TICKSOURCE,TWOSTORE
         DW RFROM,TICKSOURCE_ID,STORE
-        DW ZERO,EXIT
-
+        DW ZERO
+        DW EXIT
 
 ;C THROW                   ( ??? exception# -- ??? exception# )
 ;    ?DUP IF          ( exc# )     \ 0 THROW is no-op
@@ -1027,7 +1035,6 @@ CHECK_SP1:
 
 ;C QUIT     --    R: i*x --                  interpret from kbd
 ;   L0 LP !  R0 RP!   0 STATE ! 0 HANDLER !  0 'SOURCE-ID !
-;   ['] XREFILL0 'REFILL !
 ;   BEGIN
 ;     CHECK_SP
 ;     REFILL  IF
@@ -1050,7 +1057,6 @@ CHECK_SP1:
         DW ZERO,HANDLER,STORE
         DW ZERO,TICKSOURCE_ID,STORE
         DW ZERO,BLK,STORE
-        DW lit,XREFILL0,TICKREFILL,STORE
 
 QUIT1:  
         DW REFILL
@@ -1645,6 +1651,8 @@ xt_find:
         DEFS 2
 xt_words:
         DEFS 2
+xt_save_restore:
+        DEFS 2
 xt_refill:
         DEFS 2
 xt_pause:
@@ -1664,6 +1672,7 @@ default_xt_start:
         DW POSTPONE_8K
         DW FIND_8K
         DW WORDS_8K
+        DW SAVE_EXEC_RESTORE_INPUT_8K
         DW XREFILL8K
         DW NOOP
 default_xt_end:

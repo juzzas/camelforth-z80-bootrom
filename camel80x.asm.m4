@@ -45,8 +45,8 @@ SECTION code_16k
 
 ;Z SLICE-ID      -- a-addr          storage of current slice-id
 ;  22 USER SLICE-ID
-    head(USERSLICE_ID,SLICE-ID,douser)
-        JP SLICE_ID
+    head(SLICE_ID,SLICE-ID,douser)
+        dw 22
 
 ;Z SCR          -- a-addr             last edited screen number
 ;  24 USER SCR
@@ -502,59 +502,6 @@ DLITER1: DW EXIT
         DW TWOTOR,TWODROP,TWORFROM
         DW EXIT
 
-;X N>R    ( i * n +n -- ) ( R: -- j * x +n )       n cells to R
-    head(NTOR,N>R,docode)
-        push bc
-        exx
-        pop hl          ; hl = count
-        ld a,h
-        or l
-        jr z, ntor_done
-        ld b,l
-ntor_loop:
-        pop de
-        dec ix          ; push item onto rtn stk
-        ld (ix+0),d
-        dec ix
-        ld (ix+0),e
-        djnz ntor_loop
-ntor_done:
-        dec ix          ; push stack count onto rtn stk
-        ld (ix+0),h
-        dec ix
-        ld (ix+0),l
-        exx 
-        pop bc
-        next
-
-;X NR>   ( -- i * x +n ) ( R: j * x +n -- )      n cells from R
-    head(NRFROM,NR>,docode)
-        push bc
-        exx
-        ld l,(ix+0)     ; pop count from rtn skt
-        inc ix          ;
-        ld h,(ix+0)
-        inc ix
-
-        ld a,h
-        or l
-        jr z, nrfrom_done
-        ld b, l
-nrfrom_loop:
-        ld e,(ix+0)     ; pop item from rtn skt
-        inc ix          ;       
-        ld d,(ix+0)
-        inc ix
-        push de
-        djnz nrfrom_loop
-
-nrfrom_done:
-        push hl
-        exx
-        pop bc
-        next
-
-
 ;C 0<>     x1 -- flag                          test not eq to 0
     head(ZERONOTEQUAL,0<>,docode)
         ld a,b
@@ -824,7 +771,9 @@ dnl ;      CELLS CELL+ CELL+   ( bytes )
 dnl ;      HERE OVER ALLOT      ( bytes addr )
 dnl ;      SWAP /STACK
 dnl ;   DOES>  ;
-    head_system(STACK,STACK:,docolon)
+dnl ;    head_system(STACK,STACK:,docolon)
+STACK:
+        call docolon
         DW CREATE
         DW CELLS,CELLPLUS,CELLPLUS
         DW HERE,OVER,ALLOT
@@ -838,9 +787,9 @@ dnl ;   DOES>  ;
 ;      SWAP OVER @ ( lifo n tos )
 ;      CELL- !     ( lifo )
 ;      CELL NEGATE SWAP +! ;
-     head_system(TOSTACK,>S,docolon)
-;TOSTACK:
-;        call docolon
+dnl ;     head_system(TOSTACK,>S,docolon)
+TOSTACK:
+        call docolon
         DW SWOP,OVER,FETCH
         DW CELLMINUS,STORE
         DW CELL,NEGATE,SWOP,PLUSSTORE
@@ -851,9 +800,9 @@ dnl ;   DOES>  ;
 ;      DUP @ @        ( lifo x )
 ;      SWAP           ( x lifo  )
 ;      CELL SWAP +!  ;  ( x )
-    head_system(STACKFROM,S>,docolon)
-;STACKFROM:
-;        call docolon
+dnl ;    head_system(STACKFROM,S>,docolon)
+STACKFROM:
+        call docolon
         DW DUP,FETCH,FETCH
         DW SWOP
         DW CELL,SWOP,PLUSSTORE
@@ -941,9 +890,9 @@ STACKBOUNDS:
 ;    ELSE
 ;      NIP DUP CELL+ @ SWAP !   \ clear stack
 ;    THEN    ;
-   head_system(STACKSET,STACK-SET,docolon)
-;STACKSET:
-;        call docolon
+dnl ;   head_system(STACKSET,STACK-SET,docolon)
+STACKSET:
+        call docolon
         DW OVER,ZEROLESS,qbranch,STACKSET0
         DW lit,-4,THROW
 STACKSET0:
@@ -977,9 +926,9 @@ STACKSET2:
 ;         NIP            ( n )
 ;     THEN               ( )
 ;     ;
-   head_system(STACKGET,STACK-GET,docolon)
-;STACKGET:
-;        call docolon
+dnl ;   head_system(STACKGET,STACK-GET,docolon)
+STACKGET:
+        call docolon
         DW DUP,STACKDEPTH
         DW DUP,qbranch,STACKGET2
         DW TOR,CELLPLUS,FETCH,CELLMINUS,RFETCH
@@ -3285,6 +3234,21 @@ DEFC SOURCECTX_SIZE = 4
     head_system(SOURCESIZE,SOURCE%,docon)
         dw SOURCECTX_SIZE
 
+;Z /SOURCE  xt-refill xt-refetch source-ctx --    set up a source-ctx
+;   TUCK  SOURCE.REFETCH !
+;   SOURCE.REFILL !  ;
+    head_system(SLASHSOURCE,/SOURCE,docolon)
+        dw TUCK,SOURCEDOTREFETCH,STORE
+        dw SOURCEDOTREFILL,STORE
+        dw EXIT
+
+;Z SOURCE:  xt-refill xt-refetch <name> --    set up a source-ctx
+    head_system(SOURCECOLON,SOURCE:,docolon)
+        DW CREATE,HERE
+        DW SOURCESIZE,ALLOT
+        DW SLASHSOURCE
+        DW EXIT
+
 ; SOURCE-CTX definitions
 
 TIB_SOURCE_CTX:
@@ -3333,6 +3297,11 @@ STOSCTX3:
         head(SOURCE_ID,SOURCE-ID,docolon)
             dw TICKSOURCE_ID,FETCH,EXIT
 
+;Z SET-SOURCE    ( source-ctx  -- )
+;   'SOURCE-ID  !  ;
+        head_system(SET_SOURCE,SET-SOURCE,docolon)
+            dw TICKSOURCE_ID,STORE,EXIT
+
 
 ;X SAVE-INPUT   -- xn ... x1 n                 save input state
 ;   REFILL-VEC @ SOURCE-ID   BLK @ 'SOURCE 2@  >IN @   ;
@@ -3362,6 +3331,19 @@ RESTORE_INPUT1:
         DW TRUE
         DW EXIT
 
+;: save-exec-restore-input-16k  ( i*x xt -- j*x )
+;   SAVE-INPUT  N>R
+;    EXECUTE
+;   NR> RESTORE-INPUT  ;
+SAVE_EXEC_RESTORE_INPUT_16K:
+        call docolon
+        DW SAVE_INPUT,NTOR
+        DW ZERO,BLK,STORE
+        DW lit,'<',EMIT
+        DW EXECUTE
+        DW lit,'>',EMIT
+        DW NRFROM,RESTORE_INPUT,DOT,DROP
+        DW EXIT
 
 ;: REFILL      -- f  refill input buffer
 ;\ 16K version
@@ -3497,6 +3479,7 @@ default_xt_16k_start:
         DW POSTPONE_16K
         DW FIND_16K
         DW WORDS_16K
+        DW SAVE_EXEC_RESTORE_INPUT_16K
         DW XREFILL_16K
         DW NOOP         ; pause
 default_xt_16k_end:

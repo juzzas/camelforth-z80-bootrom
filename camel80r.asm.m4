@@ -112,32 +112,33 @@ forth_pop:
 ; forth_callxt --  call Forth XT in HL
 PUBLIC forth_callxt
 forth_callxt:
-        ld (user_stack_save), sp
-
-        ; get snapshot of Forth state
-        ld sp, (forth_state_stack_save)
-        pop de
-        pop iy
-        pop ix
-
-        ld sp, (forth_stack_save)
-        pop bc   ; fill BC with TOS
-
-        ; set up a new forth thread, xt in hl
-        ld de, callxt_exit_xt
-        jp (hl)              ; jump to xt
-
-callxt_exit:
-        push bc    ; save current TOS
-        ld (forth_stack_save), sp
-
-        ld sp, (user_stack_save)
         ret
-
-; simple forth thread to jump back to exit
-callxt_exit_xt:
-        DEFW  callxt_exit
-
+;        ld (user_stack_save), sp
+;
+;        ; get snapshot of Forth state
+;        ld sp, (forth_state_stack_save)
+;        pop de
+;        pop iy
+;        pop ix
+;
+;        ld sp, (forth_stack_save)
+;        pop bc   ; fill BC with TOS
+;
+;        ; set up a new forth thread, xt in hl
+;        ld de, callxt_exit_xt
+;        jp (hl)              ; jump to xt
+;
+; callxt_exit:
+;         push bc    ; save current TOS
+;         ld (forth_stack_save), sp
+; 
+;         ld sp, (user_stack_save)
+;         ret
+; 
+; ; simple forth thread to jump back to exit
+; callxt_exit_xt:
+;         DEFW  callxt_exit
+; 
 SECTION data
 
 forth_stack_save:
