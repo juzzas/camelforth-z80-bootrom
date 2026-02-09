@@ -491,6 +491,58 @@ poptos: pop bc
         ld b,(ix+1)     ;       to TOS
         next
 
+;X N>R    ( i * n +n -- ) ( R: -- j * x +n )       n cells to R
+    head(NTOR,N>R,docode)
+        push bc
+        exx
+        pop hl          ; hl = count
+        ld a,h
+        or l
+        jr z, ntor_done
+        ld b,l
+ntor_loop:
+        pop de
+        dec ix          ; push item onto rtn stk
+        ld (ix+0),d
+        dec ix
+        ld (ix+0),e
+        djnz ntor_loop
+ntor_done:
+        dec ix          ; push stack count onto rtn stk
+        ld (ix+0),h
+        dec ix
+        ld (ix+0),l
+        exx
+        pop bc
+        next
+
+;X NR>   ( -- i * x +n ) ( R: j * x +n -- )      n cells from R
+    head(NRFROM,NR>,docode)
+        push bc
+        exx
+        ld l,(ix+0)     ; pop count from rtn skt
+        inc ix          ;
+        ld h,(ix+0)
+        inc ix
+
+        ld a,h
+        or l
+        jr z, nrfrom_done
+        ld b, l
+nrfrom_loop:
+        ld e,(ix+0)     ; pop item from rtn skt
+        inc ix          ;
+        ld d,(ix+0)
+        inc ix
+        push de
+        djnz nrfrom_loop
+
+nrfrom_done:
+        push hl
+        exx
+        pop bc
+        next
+
 ;Z SP@  -- a-addr                        get data stack pointer
     head(SPFETCH,SP@,docode)
         push bc
@@ -1112,57 +1164,6 @@ sdiff:  ; mismatch!  undo last 'cpi' increment
         ld c,a
 snext:  next
 
-;X N>R    ( i * n +n -- ) ( R: -- j * x +n )       n cells to R
-    head(NTOR,N>R,docode)
-        push bc
-        exx
-        pop hl          ; hl = count
-        ld a,h
-        or l
-        jr z, ntor_done
-        ld b,l
-ntor_loop:
-        pop de
-        dec ix          ; push item onto rtn stk
-        ld (ix+0),d
-        dec ix
-        ld (ix+0),e
-        djnz ntor_loop
-ntor_done:
-        dec ix          ; push stack count onto rtn stk
-        ld (ix+0),h
-        dec ix
-        ld (ix+0),l
-        exx
-        pop bc
-        next
-
-;X NR>   ( -- i * x +n ) ( R: j * x +n -- )      n cells from R
-    head(NRFROM,NR>,docode)
-        push bc
-        exx
-        ld l,(ix+0)     ; pop count from rtn skt
-        inc ix          ;
-        ld h,(ix+0)
-        inc ix
-
-        ld a,h
-        or l
-        jr z, nrfrom_done
-        ld b, l
-nrfrom_loop:
-        ld e,(ix+0)     ; pop item from rtn skt
-        inc ix          ;
-        ld d,(ix+0)
-        inc ix
-        push de
-        djnz nrfrom_loop
-
-nrfrom_done:
-        push hl
-        exx
-        pop bc
-        next
 
 include(camel80d.asm.m4)   ; CPU Dependencies
 include(camel80h.asm.m4)   ; High Level words

@@ -64,7 +64,7 @@ _z80_rst_08h:
     jp acia_putc
 
 jp_hl:
-	jp	(hl)
+    jp (hl)
 
 ALIGN 0x0010
 PUBLIC _z80_rst_10h
@@ -90,7 +90,8 @@ _z80_rst_28h:
 ALIGN 0x0030
 PUBLIC _z80_rst_30h
 _z80_rst_30h:
-    jp forth_callxt
+    ret
+;     jp forth_callxt
 
 
 ALIGN 0x0038

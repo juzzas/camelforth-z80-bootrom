@@ -3305,7 +3305,11 @@ STOSCTX3:
 
 ;X SAVE-INPUT   -- xn ... x1 n                 save input state
 ;   REFILL-VEC @ SOURCE-ID   BLK @ 'SOURCE 2@  >IN @   ;
-    head(SAVE_INPUT,SAVE-INPUT,docolon)
+    head(SAVE_INPUT,SAVE-INPUT,docode)
+        jp VSAVE_INPUT
+
+SAVE_INPUT_16K:
+        call docolon
         DW SOURCE_ID
         DW BLK,FETCH
         DW SLICE_ID,FETCH
@@ -3316,7 +3320,11 @@ STOSCTX3:
 
 ;X RESTORE-INPUT   xn ... x1 n -- flag      restore input state
 ;   6 = IF  >IN !  'SOURCE 2! BLK ! 'SOURCE-ID !  FALSE ELSE TRUE THEN ;
-    head(RESTORE_INPUT,RESTORE-INPUT,docolon)
+    head(RESTORE_INPUT,RESTORE-INPUT,docode)
+        jp VRESTORE_INPUT
+
+RESTORE_INPUT_16K:
+        call docolon
         DW lit,6,EQUAL,qbranch,RESTORE_INPUT1
         DW TOIN,STORE
         DW TICKSOURCE,TWOSTORE
@@ -3329,20 +3337,6 @@ STOSCTX3:
 
 RESTORE_INPUT1:
         DW TRUE
-        DW EXIT
-
-;: save-exec-restore-input-16k  ( i*x xt -- j*x )
-;   SAVE-INPUT  N>R
-;    EXECUTE
-;   NR> RESTORE-INPUT  ;
-SAVE_EXEC_RESTORE_INPUT_16K:
-        call docolon
-        DW SAVE_INPUT,NTOR
-        DW ZERO,BLK,STORE
-        DW lit,'<',EMIT
-        DW EXECUTE
-        DW lit,'>',EMIT
-        DW NRFROM,RESTORE_INPUT,DOT,DROP
         DW EXIT
 
 ;: REFILL      -- f  refill input buffer
@@ -3479,7 +3473,8 @@ default_xt_16k_start:
         DW POSTPONE_16K
         DW FIND_16K
         DW WORDS_16K
-        DW SAVE_EXEC_RESTORE_INPUT_16K
+        DW SAVE_INPUT_16K
+        DW RESTORE_INPUT_16K
         DW XREFILL_16K
         DW NOOP         ; pause
 default_xt_16k_end:

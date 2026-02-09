@@ -110,9 +110,8 @@ forth_pop:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; forth_callxt --  call Forth XT in HL
-PUBLIC forth_callxt
-forth_callxt:
-        ret
+; PUBLIC forth_callxt
+; forth_callxt:
 ;        ld (user_stack_save), sp
 ;
 ;        ; get snapshot of Forth state

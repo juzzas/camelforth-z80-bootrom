@@ -935,50 +935,60 @@ TICKSOURCE_ID:
         DW source_id_ptr
 
 
-;: save-exec-restore-input  ( i*x xt -- j*x )
+;: save-input  ( -- x1...xn n )
 ; DEFER SAVE-EXEC-RESTORE-INPUT
-SAVE_EXEC_RESTORE_INPUT:
+VSAVE_INPUT:
        call dodeferv
-       DW  xt_save_restore
+       DW  xt_save_input
 
-;: save-exec-restore-input-8k  ( i*x xt -- j*x )
-;   'SOURCE 2@ >R >R
-;   >IN @ >R
-;   SOURCE-ID R>
-;    EXECUTE
-;   R> 'SOURCE-ID !
-;   R> >IN ! 
-;   R> R> 'SOURCE 2!   ;
-SAVE_EXEC_RESTORE_INPUT_8K:
+;: restore-input  ( i*x xt -- j*x )
+;: restore-input  ( x1...xn n -- f )
+; DEFER SAVE-EXEC-RESTORE-INPUT
+VRESTORE_INPUT:
+       call dodeferv
+       DW  xt_restore_input
+
+;: save-input-8k  ( -- x1...xn n )
+;   'SOURCE 2@
+;   >IN @
+;   SOURCE-ID
+;   4   ;
+SAVE_INPUT_8K:
         call docolon
         DW TICKSOURCE,TWOFETCH
         DW TOIN,FETCH
         DW TICKSOURCE_ID,FETCH
-        DW lit,4,NTOR
-        DW EXECUTE
-        DW NRFROM,DROP
+        DW lit,4
+        DW EXIT
+
+;: restore-input-8k  ( x1...xn n -- f )
+;    DROP   ( assume correct number of items )
+;   'SOURCE-ID !
+;   >IN ! 
+;   'SOURCE 2!  FALSE  ( assume good ) ;
+RESTORE_INPUT_8K:
+        call docolon
+        DW DROP
         DW TICKSOURCE_ID,STORE
         DW TOIN,STORE
         DW TICKSOURCE,TWOSTORE
+        DW FALSE
         DW EXIT
 
-;: (EVALUATE)  i*x c-addr u -- j*x             interpret string
+
+;C EVALUATE  i*x c-addr u -- j*x               interpret string
+;   SAVE-INPUT  N>R
 ;   -1 'SOURCE-ID !
 ;   'SOURCE 2!
 ;   0 >IN !
-;   INTERPRET   ;
-XEVALUATE:
-        call docolon
+;   NR> RESTORE-INPUT DROP ;
+    head(EVALUATE,EVALUATE,docolon)
+        DW VSAVE_INPUT,NTOR
         DW ALLONES,TICKSOURCE_ID,STORE
         DW TICKSOURCE,TWOSTORE
         DW ZERO,TOIN,STORE
         DW INTERPRET
-        DW EXIT
-
-;C EVALUATE  i*x c-addr u -- j*x               interpret string
-;   ['] (EVALUATE)  SAVE-EXEC-RESTORE-INPUT   ;
-    head(EVALUATE,EVALUATE,docolon)
-        DW lit,XEVALUATE,SAVE_EXEC_RESTORE_INPUT
+        DW NRFROM,VRESTORE_INPUT,DROP
         DW EXIT
 
 ;: (CATCH)   xt --    ( exception# | 0 ; r: return addr on stack)
@@ -990,20 +1000,17 @@ XEVALUATE:
 ;     R> DROP            ( )          \ discard saved stack ptr
 ;     0   ;              ( 0 )        \ normal completion
     head(CATCH,CATCH,docolon)
-        DW TICKSOURCE_ID,FETCH,TOR
-        DW TICKSOURCE,TWOFETCH,TOR,TOR
-        DW TOIN,FETCH,TOR
+        DW VSAVE_INPUT,NTOR
         DW SPFETCH,TOR
         DW HANDLER,FETCH,TOR
         DW RPFETCH,HANDLER,STORE
         DW EXECUTE
         DW RFROM,HANDLER,STORE
         DW RFROM,DROP
-        DW RFROM,TOIN,STORE
-        DW RFROM,RFROM,TICKSOURCE,TWOSTORE
-        DW RFROM,TICKSOURCE_ID,STORE
+        DW NRFROM,VRESTORE_INPUT,DROP
         DW ZERO
         DW EXIT
+
 
 ;C THROW                   ( ??? exception# -- ??? exception# )
 ;    ?DUP IF          ( exc# )     \ 0 THROW is no-op
@@ -1021,9 +1028,7 @@ XEVALUATE:
         DW RFROM,HANDLER,STORE
         DW RFROM,SWOP,TOR
         DW SPSTORE,DROP,RFROM
-        DW RFROM,TOIN,STORE,RFROM,RFROM
-        DW TICKSOURCE,TWOSTORE
-        DW RFROM,TICKSOURCE_ID,STORE
+        DW NRFROM,VRESTORE_INPUT,DROP
 THROW1: DW EXIT
 
 CHECK_SP:
@@ -1651,7 +1656,9 @@ xt_find:
         DEFS 2
 xt_words:
         DEFS 2
-xt_save_restore:
+xt_save_input:
+        DEFS 2
+xt_restore_input:
         DEFS 2
 xt_refill:
         DEFS 2
@@ -1672,7 +1679,8 @@ default_xt_start:
         DW POSTPONE_8K
         DW FIND_8K
         DW WORDS_8K
-        DW SAVE_EXEC_RESTORE_INPUT_8K
+        DW SAVE_INPUT_8K
+        DW RESTORE_INPUT_8K
         DW XREFILL8K
         DW NOOP
 default_xt_end:
