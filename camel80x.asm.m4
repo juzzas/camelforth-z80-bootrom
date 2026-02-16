@@ -1442,7 +1442,6 @@ roll_do:
 roll_end:
         next
 
-
 ;X CASE   -- 0                  start a CASE..ENDCASE statement
 ; 0 >L ; IMMEDIATE
     immed(CASE,CASE,docolon)
@@ -1532,6 +1531,11 @@ ESAC2:
 ;X CFIELD: 1 CHARS +FIELD ;
     head(CFIELDCOLON,CFIELD:,docolon)
         DW lit,1,PLUSFIELD
+        DW EXIT
+
+;X DFIELD: 2 CELLS +FIELD ;
+    head(DFIELDCOLON,DFIELD:,docolon)
+        DW lit,4,PLUSFIELD
         DW EXIT
 
 ;X END-STRUCTURE
@@ -2502,11 +2506,11 @@ BLKF_DOCHARS:
         call docolon
         DW BLKF_RW_FLAG,STORE
         DW DUP,QSET_BLKFILE
-        DW SAVE_INPUT,NTOR,DUP,BLKFDOTSLICE,SELECT
+        DW SLICE,TOR,DUP,BLKFDOTSLICE,SELECT
         DW OVER,TOR
         DW XBLKF_DOCHARS
         DW NIP,RFROM,SWOP,MINUS
-        DW NRFROM,RESTORE_INPUT,DROP
+        DW RFROM,SELECT
         DW EXIT
 
 ;Z BLKF-PUTCHARS   ( c-addr u blkfile-id -- u )   put u chars to blkfile stream
@@ -3298,9 +3302,11 @@ STOSCTX3:
             dw TICKSOURCE_ID,FETCH,EXIT
 
 ;Z SET-SOURCE    ( source-ctx  -- )
-;   'SOURCE-ID  !  ;
+;   'SOURCE-ID  !   0 BLK !  ;
         head_system(SET_SOURCE,SET-SOURCE,docolon)
-            dw TICKSOURCE_ID,STORE,EXIT
+            dw TICKSOURCE_ID,STORE
+            dw ZERO,BLK,STORE
+            dw EXIT
 
 
 ;X SAVE-INPUT   -- xn ... x1 n                 save input state

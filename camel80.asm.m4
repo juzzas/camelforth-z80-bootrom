@@ -466,6 +466,19 @@ poptos: pop bc
     head(TUCK,TUCK,docolon)
         DW SWOP,OVER,EXIT
 
+;Z NDROP  i*x n -- j*x        drop n items from stack
+    head(NDROP,NDROP,docode)
+ndrop_loop:
+        ld a,b
+        or c
+        jr z,ndrop_end
+        pop hl
+        dec bc
+        jr ndrop_loop
+ndrop_end:
+        pop bc
+        next
+
 ;C >R    x --   R: -- x                    push to return stack
     head(TOR,>R,docode)
         dec ix          ; push TOS onto rtn stk
