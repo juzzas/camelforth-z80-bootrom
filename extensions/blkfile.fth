@@ -6,7 +6,7 @@ CR .( Loading blkfile... )
 
 
 ONLY FORTH DEFINITIONS   ALSO SYSTEM
-1 22 +THRU
+1 28 +THRU
 ONLY FORTH DEFINITIONS
 
 
@@ -28,40 +28,102 @@ flag.readable flag.writable +  CONSTANT R/W
 
 blkfile-private-wid SET-CURRENT
 128 CONSTANT buff%
-0 VALUE 'blkfile
-0 VALUE blkfidpool
+
+
    ( blkfile - extension to treat blocks as files      2 / n )
 \ blkfile structure
 blkfile-private-wid SET-CURRENT
 32 CONSTANT blkfile.name%
-BEGIN-STRUCTURE BLKFILE-CONTEXT%
-   BLKF% +FIELD           blkfile.blkfid 
-   FIELD:                 blkfile.flags
-   blkfile.name% +FIELD   blkfile.name
-   2 CELLS +FIELD         blkfile.filesize
-   2 CELLS +FIELD         blkfile.bufferpos
-   buff% +FIELD           blkfile.buffer
+
+BEGIN-STRUCTURE pool%
+   FIELD:  pool.head
+   FIELD:  pool.node%
 END-STRUCTURE
 
 
 
 
 
-   ( blkfile - extension to treat blocks as files      3 / n )
-: (blkfidpool-allot)  ( -- ptr )
-    HERE 0  ,  BLKFILE-CONTEXT% ALLOT ;
-: (blkfidpool-get) ( -- ptr )
-   blkfidpool >R
-   blkfidpool @ TO blkfidpool  R>  ;
-: (blkfidpool-free)  ( ptr -- )
-   DUP blkfidpool  !   TO blkfidpool  ;
-: blkfidpool-get   ( -- c-addr )
-   blkfidpool   IF   (blkfidpool-get)
-   ELSE   (blkfidpool-allot)   THEN    \ ptr to buffer item 
-   CELL+  DUP  BLKFILE-CONTEXT% 0 FILL  ;
+
+
+   ( blkfile - extension to treat blocks as files      2 / n )
+
+: create-pool:  ( node-size ccc"name" -- )
+   CREATE 0 , ,  ;
+
+: node-next@    @  ;
+: node-next!    !  ;
+: node>item    CELL+  ;
+: item>node    CELL-  ;
+
+: pool-head@  ( pool-id -- node )    pool.head @  ;
+: pool-head!  ( node pool-id -- node )    pool.head !  ;
+: pool-node%  ( pool-id -- u )  pool.node% @  ;
+: pool-empty?  ( pool-id -- f )    pool-head@ 0=  ;
+
+
+   ( blkfile - extension to treat blocks as files      2 / n )
+: pool-push ( node pool-id -- )  
+    SWAP  >R        ( pool-id  r: node )
+    DUP pool-head@  R@  node-next!   ( pool-id  r: node )
+    R> SWAP pool-head!  ;
+
+: pool-allot  ( pool-id -- node )
+   >R  HERE  0 ,  R> pool-node% ALLOT  ;
+
+: pool-pop  ( pool-id -- node )
+   DUP pool-head@  ( pool head )
+   DUP >R node-next@   ( pool next ;  r: node )
+   SWAP pool-head!  R>  ;
+
+
+
+   ( blkfile - extension to treat blocks as files      2 / n )
+: pool-get   ( pool -- node )
+   DUP  pool-empty? IF
+      pool-allot
+   ELSE
+      pool-pop
+   THEN  ;
+
+: .pool  ( pool -- )
+   CR ." pool: " DUP U.
+   pool-head@
+   BEGIN
+   DUP  WHILE
+      CR ."    node: "  DUP U.
+      node-next@
+   REPEAT   DROP ;
+   ( blkfile - extension to treat blocks as files      2 / n )
+BEGIN-STRUCTURE BLKFILE-CONTEXT%
+   BLKF% +FIELD           blkfile.blkfid 
+   FIELD:                 blkfile.flags
+   blkfile.name% +FIELD   blkfile.name
+   2 CELLS +FIELD         blkfile.filesize
+END-STRUCTURE
+
+
+
+
+
+
+
+
+
+   ( blkfile - extension to treat blocks as files      4 / n )
+BLKFILE-CONTEXT% create-pool:  blkfidpool
+
+: blkfidpool-get  ( -- c-addr )
+   blkfidpool pool-get  node>item
+   DUP  blkfidpool pool-node% 0 FILL ;
+
 : blkfidpool-free  ( c-addr -- )
-   CELL-  ( ptr )
-   (blkfidpool-free)  ;
+   item>node blkfidpool pool-push  ;
+
+
+
+
+
 
    ( blkfile - extension to treat blocks as files      4 / n )
 FORTH-WORDLIST SET-CURRENT
@@ -78,9 +140,10 @@ FORTH-WORDLIST SET-CURRENT
    ?DUP IF  BLKF.SLICE SUBSLICE  ELSE  2DROP  THEN
    R>  ;
 
+
+   ( blkfile - extension to treat blocks as files      5 / n )
 : OPEN-FENCE-BLKFILE  ( blkstart blkend fam -- blkfileid )
    >R OVER  -  R>  OPEN-LIMIT-BLKFILE   ;
-   ( blkfile - extension to treat blocks as files      5 / n )
 : adjust-fpos  ( n  blkfileid -- )
    DUP >R  BLKF>POSITION@  ( n d    r: blkfileid )
    ROT M+  R>  BLKF>POSITION!  ;
@@ -89,8 +152,6 @@ FORTH-WORDLIST SET-CURRENT
    DUP >R  BLKF>POSITION@ 
    R@  blkfile.filesize 2@   DMAX
    R>  blkfile.filesize 2!  ;
-
-
 
 
 
@@ -209,95 +270,102 @@ FORTH-WORDLIST SET-CURRENT
 
 
 
-   ( blkfile - extension to treat blocks as files     12 / n )
-: TLIST ( blk -- )
-   R/O OPEN-BLKFILE   ( blkfile-id )
-   BEGIN
-     DUP DUP blkfile.buffer  buff% ROT
-          (READ-LINE)   ( blkfile-id chrs f )
-   WHILE       ( blkfile-id chrs )
-     OVER blkfile.buffer  SWAP TYPE CR
-   REPEAT
-   DROP (CLOSE-BLKFILE)   ;
-
-
-
-
-
-
    ( blkfile - extension to treat blocks as files     13 / n )
 blkfile-private-wid SET-CURRENT
 1 VALUE line-index
-16 STACK: inputs-stack
 
-2VARIABLE input-position   0 0 input-position 2!
+BEGIN-STRUCTURE BLKFILE-SOURCE%
+   SOURCE% +FIELD         source.source
+   FIELD:                 source.blkfile
+   DFIELD:                source.bufferpos
+   buff% +FIELD           source.buffer
+END-STRUCTURE
+
+   ( blkfile - extension to treat blocks as files      3 / n )
+
+BLKFILE-SOURCE% create-pool:  sourcepool
+: sourcepool-get  ( -- c-addr )
+   sourcepool pool-get  node>item
+   DUP  sourcepool pool-node% 0 FILL ;
+
+: sourcepool-free  ( c-addr -- )
+   item>node sourcepool pool-push  ;
+
+
+
+
 
 : source-file?  ( source-id -- f )
    ?DUP IF  -1 <>  ELSE  FALSE  THEN ;
 
 FORTH-WORDLIST SET-CURRENT
-: SAVE-INPUT 
-   'REFILL @   BLK @  SLICE-ID @   'SOURCE 2@  >IN @   6
-   inputs-stack STACK-SET
 
-   SOURCE-ID  source-file? IF
-      input-position 2@
-      inputs-stack >S   inputs-stack >S
-   THEN
-
-   SOURCE-ID inputs-stack >S
-   inputs-stack STACK-GET  ;
-
-
-: RESTORE-INPUT
-   inputs-stack STACK-SET
-
-   inputs-stack S>  DUP  >R  ( r: source-id )
-   source-file? IF
-      inputs-stack S>  inputs-stack S>
-      2DUP input-position 2!
-      R@ BLKF>POSITION!
-      R@ blkfile.buffer buff% R@ (READ-LINE) 2DROP
-   THEN
-
-   inputs-stack STACK-GET
-   6 = IF 
-      >IN !  'SOURCE 2!  SLICE-ID !   BLK !   'REFILL !
-      R> 'SOURCE-ID !
-      BLK @  ?DUP IF
-         BLOCK B/BLK 'SOURCE 2!
-      THEN
-      FALSE
-   ELSE
-      R>  DROP
-      TRUE
-   THEN  ;
-
+   ( blkfile - extension to treat blocks as files     12 / n )
 blkfile-private-wid SET-CURRENT
-: tload-refill  ( -- flag )
-    SOURCE-ID BLKF>POSITION@
-          input-position 2!
-    SOURCE-ID blkfile.buffer   buff%
-       SOURCE-ID  (READ-LINE)
-    IF
-       line-index 1+ TO line-index
-       SOURCE-ID  blkfile.buffer   SWAP  'SOURCE 2!
-       0 >IN !  TRUE
-    ELSE DROP  FALSE  THEN ;
 
+: source>blkfile  ( source-ctx -- blkfile-id )
+   source.blkfile @   ;
+
+: source>blkf-position@  ( source-ctx -- d )
+   source>blkfile BLKF>POSITION@  ;
+
+: source>blkf-position!  ( d source-ctx -- )
+   source>blkfile BLKF>POSITION!  ;
+
+: source>bufferpos@  ( source-ctx -- d )
+   source.bufferpos 2@  ;
+
+: source>bufferpos!  ( d source-ctx -- )
+   source.bufferpos 2!  ;
+
+: TLIST ( blk -- )
+   R/O OPEN-BLKFILE   ( blkfile-id )
+   sourcepool-get DUP >R
+   source.blkfile !
+   BEGIN
+     R@ source.buffer  buff%
+     R@ source>blkfile (READ-LINE)   ( chrs f )
+   WHILE       ( chrs )
+     R@ source.buffer  SWAP TYPE CR
+   REPEAT   DROP
+   R@ source>blkfile  (CLOSE-BLKFILE)
+   R> sourcepool-free  ;
+
+
+: tload-refill  ( -- flag )
+   SOURCE-ID  DUP >R      ( source-ctx   r: source-ctx )
+   source>blkf-position@    R@ source>bufferpos!
+
+   R@ source.buffer  buff%   R> source>blkfile  (READ-LINE)
+
+   IF
+      line-index 1+ TO line-index
+      SOURCE-ID  source.buffer   SWAP  'SOURCE 2!
+      0 >IN !  TRUE
+   ELSE DROP  FALSE  THEN 
+;
+
+: tload-refetch  ( -- )
+   SOURCE-ID  DUP >R source>blkfile IF
+      R@  source>bufferpos@
+            R@  source>blkfile BLKF>POSITION!
+      R@  source.buffer buff%
+            R@  source>blkfile (READ-LINE)
+                    2DROP
+   THEN  R> DROP
+;
 
 
 
    ( blkfile - extension to treat blocks as files     14 / n )
 : (INCLUDE-BLK) ( blk -- )
    R/O  OPEN-BLKFILE  ( blkfile-id )
-   'SOURCE-ID  !
-   0 BLK !
+   SOURCE-ID  source.blkfile !
    BEGIN
      REFILL  IF
        ( SOURCE TYPE  CR )  \ debug print of line
        INTERPRET
-     ELSE  'SOURCE-ID @ 
+     ELSE  SOURCE-ID  source.blkfile
            (CLOSE-BLKFILE)  EXIT
      THEN
    AGAIN  ;
@@ -310,7 +378,9 @@ FORTH-WORDLIST SET-CURRENT
    SAVE-INPUT N>R
    line-index >R
    0 TO line-index
-   ['] tload-refill 'REFILL !
+   ['] tload-refill ['] tload-refetch
+   sourcepool-get DUP >R    /SOURCE
+   R>  SET-SOURCE
    ['] (INCLUDE-BLK)  CATCH ?DUP IF
        >R CR ." Line: " line-index .
        R> THROW THEN
@@ -351,8 +421,8 @@ SYSTEM-WORDLIST SET-CURRENT
    ." BLKFILE:"       DUP U. CR
    ."  FLAGS  : "     DUP blkfile.flags     @   U. CR
    ."  NAME : "       DUP blkfile.name      COUNT TYPE CR
-   ."  FILESIZE : "   DUP blkfile.filesize  2@  D. CR
-   ."  BUFFER : "         blkfile.buffer        U. CR  ;
+   ."  FILESIZE : "       blkfile.filesize  2@  D. CR   ;
+
    ( blkfile - extension to treat blocks as files     18 / n )
 : .SLICE   ( sliceid -- )
    ." SLICE:" DUP U. CR
@@ -360,3 +430,4 @@ SYSTEM-WORDLIST SET-CURRENT
    ."  OFFSET : "  DUP SLICE.OFFSET 2@ D. CR
    ."  LIMIT  : "      SLICE.LIMIT   @ U. CR   ;
 
+CR  .( Blkfile loaded. )

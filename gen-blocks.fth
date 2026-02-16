@@ -71,10 +71,13 @@ OPEN:  build/cf-image.blk
    BLKFILE: test/forth2012-test-suite/src/required-helper1.fth
 
 3600 BLOCKS: test/blkfile_tests.fth
-3615 BLKFILE: test/blkfile_test1.fth
-3630 BLKFILE: test/blkfile_test2.fth
-3645 BLKFILE: test/ipsum.txt
+3615 BLOCKS: test/blkfile_test1.fth
+3630 BLOCKS: test/blkfile_test2.fth
+3645 BLOCKS: test/blkfile_test3.fth
 3660 BLKFILE: test/blkfs_test.fth
+3675 BLKFILE: test/ipsum.txt
+3678 BLKFILE: test/blkfile_inc.fth
+3679 BLKFILE: test/blkfile_nested.fth
 
 3900 BLOCKS: test/hexload_test.fth
 +BLOCKS: test/hexload_test2.fth
