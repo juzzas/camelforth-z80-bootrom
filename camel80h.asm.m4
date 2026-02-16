@@ -934,6 +934,14 @@ TICKSOURCE_ID:
         call docon
         DW source_id_ptr
 
+;Z SET-SOURCE    ( source-ctx  -- )
+;   'SOURCE-ID  !   0 BLK !  ;
+XSET_SOURCE:
+        call docolon
+        dw TICKSOURCE_ID,STORE
+        dw ZERO,BLK,STORE
+        dw EXIT
+
 
 ;: save-input  ( -- x1...xn n )
 ; DEFER SAVE-EXEC-RESTORE-INPUT
@@ -984,7 +992,7 @@ RESTORE_INPUT_8K:
 ;   NR> RESTORE-INPUT DROP ;
     head(EVALUATE,EVALUATE,docolon)
         DW VSAVE_INPUT,NTOR
-        DW ALLONES,TICKSOURCE_ID,STORE
+        DW ALLONES,XSET_SOURCE
         DW TICKSOURCE,TWOSTORE
         DW ZERO,TOIN,STORE
         DW INTERPRET
@@ -1060,8 +1068,7 @@ CHECK_SP1:
         DW L0,LP,STORE
         DW R0,RPSTORE,ZERO,STATE,STORE
         DW ZERO,HANDLER,STORE
-        DW ZERO,TICKSOURCE_ID,STORE
-        DW ZERO,BLK,STORE
+        DW ZERO,XSET_SOURCE
 
 QUIT1:  
         DW REFILL
@@ -1103,8 +1110,7 @@ QUIT4:
         DW QUIT
 
 QUITX:
-        DW ZERO,TICKSOURCE_ID,STORE
-        DW ZERO,BLK,STORE
+        DW ZERO,XSET_SOURCE
         DW branch,QUIT1
 
 

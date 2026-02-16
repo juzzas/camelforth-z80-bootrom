@@ -3303,10 +3303,8 @@ STOSCTX3:
 
 ;Z SET-SOURCE    ( source-ctx  -- )
 ;   'SOURCE-ID  !   0 BLK !  ;
-        head_system(SET_SOURCE,SET-SOURCE,docolon)
-            dw TICKSOURCE_ID,STORE
-            dw ZERO,BLK,STORE
-            dw EXIT
+    head_system(SET_SOURCE,SET-SOURCE,docode)
+        jp XSET_SOURCE
 
 
 ;X SAVE-INPUT   -- xn ... x1 n                 save input state

@@ -46,22 +46,17 @@ loadbuffer% BUFFER: loadbuffer
    THEN  ;
 
 BEGIN-STRUCTURE source-ctx%
-   FIELD:   source.refill-xt
-   FIELD:   source.refetch-xt
+   SOURCE% +FIELD   source.source
    FIELD:   source.handle
 END-STRUCTURE
 
-: source-init ( refill-xt refetch-xt handle ctx -- )
-   DUP >R  source.handle !
-   R@ source.refetch-xt !
-   R>  source.refill-xt !  ;
+: source-init ( refill-xt refetch-xt ctx -- )
+   /SOURCE  ;
 
 
 : source-input  ( source-ctx -- )
    SAVE-INPUT N>R
-   DUP 'SOURCE-ID  !
-   DUP source.refill-xt @  'REFILL !
-   0 BLK !
+   SET-SOURCE
    BEGIN
       REFILL
    WHILE
@@ -83,7 +78,7 @@ CREATE loadram-source  source-ctx%
 
 : load-from-ram  ( -- )
    ." LOADing from paged ram " CR
-   ['] loadram-refill 0 0 loadram-source source-init
+   ['] loadram-refill 0 loadram-source source-init
    0 TO pr-ptr
    loadram-source  source-input
    ." LOADed from paged ram " CR
