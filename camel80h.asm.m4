@@ -679,10 +679,10 @@ INTER9: DW DROP,EXIT
 QUIT1:  DW TIB,DUP,TIBSIZE,ACCEPT,SPACE
         DW INTERPRET
         DW STATE,FETCH,ZEROEQUAL,qbranch,QUIT2
-        DW CR,XSQUOTE
-        DB 4,"OK",13,10
+        DW XSQUOTE
+        DB 3," ok"
         DW TYPE
-QUIT2:  DW branch,QUIT1
+QUIT2:  DW CR,branch,QUIT1
 
 ;C ABORT    i*x --   R: j*x --   clear stk & QUIT
 ;   S0 SP!  QUIT ;
