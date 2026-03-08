@@ -232,7 +232,7 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
 
 ;C UNUSED   -- u               return unused space in data area
     head(UNUSED,UNUSED,docolon)
-        dw BLKCTX_HEAD,HERE,MINUS
+        dw BLKCTXS,HERE,MINUS
         dw EXIT
 
 ;C BOUNDS   c-addr n -- n-end n-start       get bounds for a DO
@@ -246,7 +246,9 @@ dnl ;    HIDE ] !COLON  ;   ( start compiling as a docolon )
 ;          I @ SWAP DUP >R EXECUTE R>
 ;      CELL +LOOP
 ;      DROP ;
-    head_system(MAP,MAP,docolon)
+dnl    head_system(MAP,MAP,docolon)
+MAP:
+        call docolon
         DW TWODUP,EQUAL,qbranch,MAP0
         DW TWODROP,DROP,EXIT
 MAP0:
@@ -271,7 +273,9 @@ MAP1:
 ;    CELL +LOOP                  ( xt )
 ;    DROP FALSE
 ;     ;
-    head_system(MAP_UNTIL,MAP-UNTIL,docolon)
+dnl    head_system(MAP_UNTIL,MAP-UNTIL,docolon)
+MAP_UNTIL:
+        call docolon
         DW TWODUP,EQUAL,qbranch,MAPUNTIL0
         DW TWODROP,DROP,FALSE,EXIT
 MAPUNTIL0:
@@ -611,6 +615,11 @@ DMIN1:
 
 ;X BUFFER:    u "name" --      create a named buffer of u bytes
 ;\        execution:   -- addr 
+; For RAM-only and for RAM/ROM systems
+;     : BUFFER: ( u <name> -- )
+;        HERE SWAP ALLOT  \ ram { b_0 | ... | b_u }
+;        CREATE ,         \ rom { 'ram }
+;        DOES> ( -- addr ) @ ;
     head(BUFFERCOLON,BUFFER:,docolon)
         DW CREATE,ALLOT
         DW EXIT
@@ -852,18 +861,18 @@ dnl         DW FETCH,SWOP,CELLS,PLUS,FETCH
 dnl         DW EXIT
 
 ; : STACK-DEPTH ( lifo -- n )
-;      STACK.BOUNDS - CELL /  ;
+;      STACK-BOUNDS - CELL /  ;
 dnl    head_system(STACKDEPTH,SDEPTH,docolon)
-STACKDEPTH:
+STACK_DEPTH:
         call docolon
-        DW STACKBOUNDS,MINUS
+        DW STACK_BOUNDS,MINUS
         DW TWOSLASH      ;  optimize "DW CELL,SLASH" for 16bit
         DW EXIT
 
 dnl ; : STACK-EMPTY? ( lifo -- flag )
-dnl ;      STACK.BOUNDS = ;
+dnl ;      STACK-BOUNDS = ;
 dnl     head_system(STACKEMPTYQ,SEMPTY?,docolon)
-dnl         DW STACKBOUNDS,EQUAL
+dnl         DW STACK_BOUNDS,EQUAL
 dnl         DW EXIT
 
 ; Create parameters for a ?DO loop that will scan every item currently in STACK. The intended use is:
@@ -871,7 +880,7 @@ dnl         DW EXIT
 ; : STACK-BOUNDS ( lifo -- addr1 addr2 )
 ;     DUP CELL+ @ SWAP @ ;
 dnl    head_system(STACKBOUNDS,SBOUNDS,docolon)
-STACKBOUNDS:
+STACK_BOUNDS:
         call docolon
         DW DUP,CELLPLUS,FETCH,SWOP,FETCH
         DW EXIT
@@ -891,7 +900,7 @@ STACKBOUNDS:
 ;      NIP DUP CELL+ @ SWAP !   \ clear stack
 ;    THEN    ;
 dnl ;   head_system(STACKSET,STACK-SET,docolon)
-STACKSET:
+STACK_SET:
         call docolon
         DW OVER,ZEROLESS,qbranch,STACKSET0
         DW lit,-4,THROW
@@ -927,9 +936,9 @@ STACKSET2:
 ;     THEN               ( )
 ;     ;
 dnl ;   head_system(STACKGET,STACK-GET,docolon)
-STACKGET:
+STACK_GET:
         call docolon
-        DW DUP,STACKDEPTH
+        DW DUP,STACK_DEPTH
         DW DUP,qbranch,STACKGET2
         DW TOR,CELLPLUS,FETCH,CELLMINUS,RFETCH
         DW ZERO,xdo
@@ -944,6 +953,44 @@ STACKGET2:
         DW NIP
         DW EXIT
 
+
+; add an item at the bottom of a stack
+; : >SBACK ( x stack-id -- )
+;     DUP >R GET-STACK 1+ R> SET-STACK
+; ;
+; TOSBACK:
+;        call docolon
+;        DW DUP,TOR,STACKGET,ONEPLUS,RFROM,STACKSET
+;        DW EXIT
+
+
+; destructivly get Bottom Of Stack
+; : SBACK> ( stack-id -- x )
+;     DUP >R GET-STACK 1- R> SET-STACK
+; ;
+; SBACKFROM: 
+;        call docolon
+;        DW DUP,TOR,STACKGET,ONEMINUS,RFROM,STACKSET
+;        DW EXIT
+
+; perform ROLL on stack
+; : STACK-ROLL  ( i*x n stack-id  -- j*x )
+;     DUP >R SWAP >R    ( stack-id  r: stack-id n )
+;     GET-STACK   R> SWAP >R  ( stack n  r: stack-id n-items )
+;     ROLL
+;     R> R>  SET-STACK   ;
+STACK_ROLL:
+        call docolon
+        DW DUP,TOR,SWOP,TOR
+        DW STACK_GET,RFROM,SWOP,TOR
+        DW ROLL
+        DW RFROM,RFROM,STACK_SET
+        DW EXIT
+
+STACK_MAP:
+        call docolon
+        DW STACK_BOUNDS,MAP
+        DW EXIT
 
 
 ; RC2014 EXTENSION CONSTANTS ====================
@@ -1093,17 +1140,17 @@ SECTION code_16k
 
 ;X GET-ORDER  ( -- wid1 .. widn n )
         head(GET_ORDER,GET-ORDER,docolon)
-            dw WORDLISTS,STACKGET
+            dw WORDLISTS,STACK_GET
             dw EXIT
 
 ;X SET-ORDER  ( wid1 .. widn n -- )
     head(SET_ORDER,SET-ORDER,docolon)
         DW ALLONES,OVER,EQUAL,qbranch,SETORDER1
         DW DROP,VOCAB_WORDLIST,FORTH_WORDLIST,lit,2
-        DW WORDLISTS,STACKSET,EXIT
+        DW WORDLISTS,STACK_SET,EXIT
 
 SETORDER1:
-        DW WORDLISTS,STACKSET
+        DW WORDLISTS,STACK_SET
         DW EXIT
 
 ;Z SAVE-ORDER    addr --            save wordlist order to addr
@@ -1249,7 +1296,7 @@ FIND_NAME:
         call docolon
         DW QFIND_LOCALS,DUP,ZEROEQUAL,qbranch,FINDNAME1
         DW DROP
-        DW lit,FIND_NAME_IN,WORDLISTS,STACKBOUNDS,MAP_UNTIL
+        DW lit,FIND_NAME_IN,WORDLISTS,STACK_BOUNDS,MAP_UNTIL
 
 FINDNAME1:
         DW NIP,NIP
@@ -1375,7 +1422,7 @@ XVOCDOES:
 ;   ['] (WORDS) WORDLISTS STACK-BOUNDS MAP ;
 WORDS_16K:
         call docolon
-        DW lit,XWORDS,WORDLISTS,STACKBOUNDS,MAP
+        DW lit,XWORDS,WORDLISTS,STACK_BOUNDS,MAP
         DW EXIT
 
 ;Z VLIST  --                  list all words in current context
@@ -1781,16 +1828,24 @@ SECTION code_16k
 
 ; BLOCK implementation ==========================
 
-; BLOCKCTX structure
-;   Each context struct is indexed to a 1024byte block buffer
-;    BLOCK number (1 cell)
-;    SLICE number (1 cell)
-;    BLOCK update flag (1 cell)
-;    BUFFER address (1024 bytes)
-
-DEFC BLOCKCTX_SIZE = 1024 + 6
-DEFC BLOCKCTX_NUM = 4
-DEFC BLOCKCTXS_LEN = BLOCKCTX_SIZE * BLOCKCTX_NUM
+; \ BLOCKCTX structure
+; \   Each context struct is indexed to a 1024byte block buffer
+; \    BLOCK number (1 cell)
+; \    SLICE number (1 cell)
+; \    BLOCK update flag (1 cell)
+; \    BUFFER address (1024 bytes)
+; 
+; \ DEFC BLOCKCTX_SIZE = 1024 + 6
+; \ DEFC BLOCKCTX_NUM = 2
+; \ DEFC BLOCKCTXS_LEN = BLOCKCTX_SIZE * BLOCKCTX_NUM
+; \ DEFC BLOCKCTX_STACK_SIZE = (BLOCKCTX_NUM * 2) + 2
+; 
+; BEGIN-STRUCTURE BLKCTX%
+;    FIELD: BLKCTX>BLOCK
+;    FIELD: BLKCTX>SLICE
+;    FIELD: BLKCTX>FLAGS
+;    1024 +FIELD BLKCTX>BUFFER
+; END-STRUCTURE
 
 ;: BLKCTX>BLOCK  ( ctx -- a-addr' )  get address of BLOCK number
 ;    ;
@@ -1821,114 +1876,149 @@ ctx_plus_2:
         inc bc
 ctx_next:
         next
-
+; 
+; 4  CONSTANT BLKCTX#
+; 32 CELLS   CONSTANT   BLKCTX-STACK%
+; BLKCTX# BLKCTX% *   CONSTANT BLKCTXS% 
 
 ;: BLKCTX%  (  -- u )  size of stucture
 BLKCTXSIZE:
         call docon
         dw BLOCKCTX_SIZE
 
+
+DEFC BLOCKCTX_SIZE = 1024 + 6
+DEFC BLOCKCTX_NUM = 4
+DEFC BLOCKCTXS_LEN = BLOCKCTX_SIZE * BLOCKCTX_NUM
+DEFC BLOCKCTX_STACK_SIZE = (BLOCKCTX_NUM * 2) + 4
+
+BLKCTX_STACK:
+        call docon
+        DW TICK_BLKCTX_STACK
+
+SECTION data
+
+TICK_BLKCTX_STACK:
+        DEFS BLOCKCTX_STACK_SIZE
+
+SECTION code_16k
+
+;VARIABLE    CURRENT_BLKCTX
+CURRENT_BLKCTX:
+        call docon
+        DW current_blkctx_ptr
+
+SECTION data
+
+current_blkctx_ptr: DS 2
+
+SECTION code_16k
+
 ;: BLKCTX#  ( -- u )  number of buffer structures
 BLKCTXNUM:
         call docon
         dw BLOCKCTX_NUM
 
-
-TICKBLKCTX_HEAD:
-        call docon
-        DW blkctx_head_ptr
-
-;: BLKCTX_HEAD  ( -- u )  fetch address of first blkctx
-;   'BLKCTX_HEAD @ ;
-BLKCTX_HEAD:
+;: BLKCTXS  RAMTOP BLKCTXS% -  ;
+BLKCTXS:
         call docolon
-        DW TICKBLKCTX_HEAD,FETCH,EXIT
+        DW RAMTOP,lit,BLOCKCTXS_LEN,MINUS
+        DW EXIT
 
-TICKBLKCTX_TAIL:
-        call docon
-        DW blkctx_tail_ptr
-
-;: BLKCTX_TAIL  ( -- u )  fetch address of last blkctx
-;   'BLKCTX_TAIL @ ;
-BLKCTX_TAIL:
+;: BLKCTX-MRU  ( -- ctx )           \ most recently used  
+;   BLKCTX-STACK  STACK@
+;;
+BLKCTX_MRU:
         call docolon
-        DW TICKBLKCTX_TAIL,FETCH,EXIT
+        DW BLKCTX_STACK,STACKFETCH
+        DW EXIT
 
-
-TICKBLKCTX_CURR:
-        call docon
-        DW blkctx_curr_ptr
-
-;: BLKCTX_TAIL?  ( ctx -- f )
-;   BLKCTX_TAIL =  ;
-BLKCTX_TAILQ:
-        call docolon
-        DW BLKCTX_TAIL,EQUAL,EXIT
-
-;: BLKCTX-NEXT-END?  ( ctx -- ctx' false | true )  increment buffer structure
-;   DUP  BLKCTX_TAIL?  IF
-;      DROP TRUE EXIT
-;   THEN
-;   BLKCTX% +
-;   FALSE  ;
-BLKCTX_NEXT_ENDQ:
-        call docolon
-        dw DUP,BLKCTX_TAILQ,qbranch,BLKCTX_NEXT_ENDQ1
-        DW DROP,TRUE,EXIT
-
-BLKCTX_NEXT_ENDQ1:
-        dw BLKCTXSIZE,PLUS
-        DW FALSE,EXIT
-
-;: BLKCTX-NEXT  ( ctx -- ctx' )  increment buffer structure
-;   BLKCTX-NEXT-END?  IF
-;      BLKCTX_HEAD
-;   THEN   ;
-BLKCTX_NEXT:
-        call docolon
-        dw BLKCTX_NEXT_ENDQ,qbranch,BLKCTX_NEXT1
-        dw BLKCTX_HEAD
-
-BLKCTX_NEXT1:
-        dw EXIT
-
-
-
-;: BLKCTX_DIRTY  ( ctx --  )    set the block to be updated
-;   TRUE SWAP BLKCTX>FLAGS !  ;
+;: BLKCTX-DIRTY  ( ctx --  )        \ set the block to be updated
+;   TRUE SWAP BLKCTX>FLAGS !
+;;
 BLKCTX_DIRTY:
         call docolon
-        dw TRUE,SWOP,BLKCTXTOFLAGS,STORE
-        dw EXIT
+        DW TRUE,SWOP,BLKCTXTOFLAGS,STORE
+        DW EXIT
 
-;: BLKCTX_DIRTY?  ( ctx -- f )     has the block been updated?
-;   BLKCTX>FLAGS @  ;
+;: BLKCTX-DIRTY?  ( ctx -- f )      \ has the block been updated?
+;   BLKCTX>FLAGS @
+;;
 BLKCTX_DIRTYQ:
         call docolon
         dw BLKCTXTOFLAGS,FETCH
         dw EXIT
 
-;: BLKCTX_NOTDIRTY  ( ctx --  )       clears the flag for blkctx
-;   FALSE SWAP BLKCTX>FLAGS !  ;
+;: BLKCTX-NOTDIRTY  ( ctx --  )     \ clears the flag for blkctx
+;   FALSE SWAP BLKCTX>FLAGS !
+;;
 BLKCTX_NOTDIRTY:
         call docolon
         dw FALSE,SWOP,BLKCTXTOFLAGS,STORE
         dw EXIT
 
-;: BLKCTX-RESET  (ctx -- )   reset buffer 
-;       0xffff OVER BLKCTX>BLOCK !  ( ctx )
-;       0 OVER BLKCTX>SLICE !  ( ctx )
-;       BLKCTX_NOTDIRTY   ;
+;: BLKCTX-RESET  ( ctx -- f )       \ reset buffer 
+;   -1 OVER BLKCTX>BLOCK !  ( ctx )
+;   -1 OVER BLKCTX>SLICE !  ( ctx )
+;   BLKCTX-NOTDIRTY
+;;
 BLKCTX_RESET:
         call docolon
         dw ALLONES,OVER,BLKCTXTOBLOCK,STORE
-        dw ZERO,OVER,BLKCTXTOSLICE,STORE
+        dw ALLONES,OVER,BLKCTXTOSLICE,STORE
         dw BLKCTX_NOTDIRTY
         dw EXIT
 
+;: BLKCTX>BSA   ( blkctx -- blk slice adrs )
+;   DUP >R  BLKCTX>BLOCK @
+;   R@ BLKCTX>SLICE @
+;   R>  BLKCTX>BUFFER
+;;
+BLKCTXTOBSA:
+        call docolon
+        DW DUP,TOR,BLKCTXTOBLOCK,FETCH
+        DW RFETCH,BLKCTXTOSLICE,FETCH
+        DW RFROM,BLKCTXTOBUFFER
+        DW EXIT
+
+;: BLKCTX-READ  ( ctx -- )          \ read data into buffer
+;   DUP BLKCTX-NOTDIRTY
+;   BLKCTX>BSA BLOCK-READ
+;;
+BLKCTX_READ:
+        call docolon
+        dw DUP,BLKCTX_NOTDIRTY
+        dw BLKCTXTOBSA,BLOCK_READ
+        dw EXIT
+
+;: BLKCTX-WRITE  ( ctx -- )         \ write buffer to disk
+;   DUP BLKCTX-NOTDIRTY
+;   BLKCTX>BSA BLOCK-WRITE
+;;
+BLKCTX_WRITE:
+        call docolon
+        dw DUP,BLKCTX_NOTDIRTY
+        dw BLKCTXTOBSA,BLOCK_WRITE
+        dw EXIT
+
+;: BLKCTX-?FLUSH  ( ctx -- )         \ flush blkctx to disk
+;    DUP BLKCTX-DIRTY? IF    ( ctx )
+;      BLKCTX-WRITE
+;    ELSE DROP
+;    THEN
+;;
+BLKCTX_QFLUSH:
+        call docolon
+        dw DUP,BLKCTX_DIRTYQ,qbranch,FLUSH1
+        dw BLKCTX_WRITE
+        dw EXIT
+FLUSH1:
+        dw DROP,EXIT
+
 ;: BLKCTX-MATCH   ( blk ctx -- f )
-;   TUCK  BLKCTX>BLOCK @ =   ( ctx f )
-;   SWAP BLKCTX>SLICE @  SLICE =  AND ;
+;   TUCK BLKCTX>BLOCK @ =   ( ctx f )
+;   SWAP BLKCTX>SLICE @  SLICE =  AND
+;;
 BLKCTX_MATCH:
         call docolon
         DW TUCK,BLKCTXTOBLOCK,FETCH,EQUAL
@@ -1936,48 +2026,92 @@ BLKCTX_MATCH:
         DW AND
         DW EXIT
 
-;: BLKCTX-MAP   xt --     execute xt for each blkctx
-;   BLKCTX_HEAD
-;   BEGIN  ( xt blkctx )
-;      2DUP  SWAP EXECUTE
-;   BLKCTX_NEXT_END? UNTIL DROP  ;
-BLKCTX_MAP:
+;: FIND-BLKCTX-INDEX   ( blk -- n true | false )
+;   0      ( blk index )
+;   BLKCTX-STACK  STACK-BOUNDS ?DO
+;      OVER  I @  BLKCTX-MATCH  ( blk index f )  IF
+;         NIP TRUE UNLOOP EXIT
+;      THEN
+;      1+
+;   CELL +LOOP 
+;   2DROP FALSE
+;;
+FIND_BLKCTX_INDEX:
         call docolon
-        dw BLKCTX_HEAD
-BLKCTXM1:
-        dw TWODUP,SWOP,EXECUTE
+        DW ZERO
+        DW BLKCTX_STACK,STACK_BOUNDS,xdo
+FBI1:
+        DW OVER,II,FETCH,BLKCTX_MATCH,qbranch,FBI2
+        DW NIP,TRUE,UNLOOP,EXIT
+FBI2:
+        DW ONEPLUS
+        DW CELL,xplusloop,FBI1
+        DW TWODROP,FALSE
+        DW EXIT
 
-BLKCTXM2:
-        dw BLKCTX_NEXT_ENDQ,qbranch,BLKCTXM1
-        dw DROP
-        dw EXIT
+;: BLKCTX-SET  ( blk ctx -- )
+;   SLICE OVER BLKCTX>SLICE !
+;   BLKCTX>BLOCK !
+;;
+BLKCTX_SET:
+        call docolon
+        DW SLICE,OVER,BLKCTXTOSLICE,STORE
+        DW BLKCTXTOBLOCK,STORE
+        DW EXIT
 
-;: /BLKCTX   ( -- ) initialise the block contexts
-;   RAMTOP BLKCTX% BLKCTX# * -   'BLKCTX_HEAD !
-;   RAMTOP BLKCTX% -   'BLKCTX_TAIL !
-;   ['] BLKCTX_RESET BLKCTX-MAP
-;   0 'BLKCTX_CURR ! ;
+
+;: GET-BLKCTX  ( blk -- ctx f )     \ get blkctx, true if new allocation
+;   DUP FIND-BLKCTX-INDEX  ( blk [index] f )
+;   IF   ( blk index )
+;      NIP                         \ drop blk number
+;      BLKCTX-STACK STACK-ROLL     \ roll found context to top
+;      BLKCTX-MRU FALSE
+;   ELSE  ( blk )
+;      BLKCTX-STACK STACK-DEPTH 1-   \ roll LRU context to top
+;      BLKCTX-STACK STACK-ROLL
+;      BLKCTX-MRU BLKCTX-?FLUSH    \ flush if needs be
+;      BLKCTX-MRU BLKCTX-RESET     \ reset the context
+;      BLKCTX-MRU BLKCTX-SET       \ set the blk/slice for context
+;      BLKCTX-MRU TRUE
+;   THEN
+;;
+GET_BLKCTX:
+        call docolon
+        DW DUP,FIND_BLKCTX_INDEX
+        DW qbranch,GET_BLKCTX1
+        DW NIP
+        DW BLKCTX_STACK,STACK_ROLL
+        DW BLKCTX_MRU,FALSE
+        DW EXIT
+
+GET_BLKCTX1:
+        DW BLKCTX_STACK,STACK_DEPTH,ONEMINUS
+        DW BLKCTX_STACK,STACK_ROLL
+        DW BLKCTX_MRU,BLKCTX_QFLUSH
+        DW BLKCTX_MRU,BLKCTX_RESET
+        DW BLKCTX_MRU,BLKCTX_SET
+        DW BLKCTX_MRU,TRUE
+        DW EXIT
+
+
+;: /BLKCTX   ( -- )              \  initialise the block contexts
+;   BLKCTX-STACK  BLKCTX-STACK%    /STACK
+;   BLKCTX# 0 DO
+;      BLKCTX% I *  BLKCTXS  +    BLKCTX-STACK >STACK
+;   LOOP
+;   ['] BLKCTX-RESET BLKCTX-STACK STACK-MAP
+;   0 CURRENT_BLKCTX !
+;;
 SLASHBLKCTX:
         call docolon
-        DW RAMTOP,lit,BLOCKCTXS_LEN,MINUS,TICKBLKCTX_HEAD,STORE
-        DW RAMTOP,BLKCTXSIZE,MINUS,TICKBLKCTX_TAIL,STORE
-        DW lit,BLKCTX_RESET,BLKCTX_MAP
-        dw ZERO,TICKBLKCTX_CURR,STORE
-        dw EXIT
-
-
-SECTION data
-
-blkctx_head_ptr:
-        DEFS 2
-
-blkctx_tail_ptr:
-        DEFS 2
-
-blkctx_curr_ptr:
-        DEFS 2
-
-SECTION code_16k
+        DW BLKCTX_STACK,lit,BLOCKCTX_STACK_SIZE,SLASHSTACK
+        DW BLKCTXNUM,ZERO,xdo
+SLASHBLKCTX1:
+        DW BLKCTXSIZE,II,STAR,BLKCTXS,PLUS,BLKCTX_STACK,TOSTACK
+        DW xloop,SLASHBLKCTX1
+        DW lit,BLKCTX_RESET,BLKCTX_STACK,STACK_MAP
+        DW ZERO,CURRENT_BLKCTX,STORE
+        DW EXIT
 
 
 
@@ -2013,114 +2147,15 @@ BLOCK_WRITE:
         dw SECTWRVEC,FETCHEXECUTE,THROW
         dw EXIT
 
-;: BLKCTX>BSA   ( blkctx -- blk slice adrs )
-;   DUP >R  BLKCTX>BLOCK @
-;   R@ BLKCTX>SLICE @
-;   R>  BLKCTX>BUFFER  ;
-BLKCTXTOBSA:
-        call docolon
-        DW DUP,TOR,BLKCTXTOBLOCK,FETCH
-        DW RFETCH,BLKCTXTOSLICE,FETCH
-        DW RFROM,BLKCTXTOBUFFER
-        DW EXIT
 
-;: BLKCTX_READ  ( ctx -- )        read data into buffer
-;   DUP BLKCTX_NOTDIRTY
-;   BLKCTX>BSA BLOCK_READ  ;
-BLKCTX_READ:
-        call docolon
-        dw DUP,BLKCTX_NOTDIRTY
-        dw BLKCTXTOBSA,BLOCK_READ
-        dw EXIT
-
-;: BLKCTX_WRITE  ( ctx -- )       write buffer to disk
-;   DUP BLKCTX_NOTDIRTY
-;   BLKCTX>BSA BLOCK_WRITE  ;
-BLKCTX_WRITE:
-        call docolon
-        dw DUP,BLKCTX_NOTDIRTY
-        dw BLKCTXTOBSA,BLOCK_WRITE
-        dw EXIT
-
-;: BLKCTX_FLUSH  ( ctx -- )  flush blkctx to disk
-;    DUP BLKCTX_DIRTY? IF    ( ctx )
-;      BLKCTX-WRITE
-;    ELSE DROP
-;    THEN ;
-BLKCTX_FLUSH:
-        call docolon
-        dw DUP,BLKCTX_DIRTYQ,qbranch,FLUSH1
-        dw BLKCTX_WRITE
-        dw EXIT
-FLUSH1:
-        dw DROP,EXIT
-
-;: BLKCTX-FIND  ( blk -- ctx | 0 )  find blkctx, if exists, else 0
-;   BLKCTX_HEAD
-;   BEGIN  ( blk blkctx )
-;      2DUP  BLKCTX_MATCH  IF
-;         NIP EXIT
-;      THEN
-;   BLKCTX_NEXT_END? UNTIL
-;   DROP 0  ;
-BLKCTX_FIND:
-        call docolon
-        dw BLKCTX_HEAD
-BLKCTXF1:
-        dw TWODUP,BLKCTX_MATCH,qbranch,BLKCTXF2
-        dw NIP,EXIT
-
-BLKCTXF2:
-        dw BLKCTX_NEXT_ENDQ,qbranch,BLKCTXF1
-        dw DROP,ZERO
-        dw EXIT
-
-
-;: BLKCTX-GET  ( blk -- ctx f )   get blkctx, true if new allocation
-;     DUP BLKCTX-FIND ?DUP IF   ( blk ctx )
-;         NIP  FALSE
-;     ELSE                       ( blk )
-;         'BLKCTX_CURR @ ?DUP IF
-;             BLKCTX-NEXT    ( blk ctx )
-;         ELSE
-;             BLKCTX_HEAD    ( blk ctx )
-;         THEN
-;         TUCK BLKCTX-FLUSH  ( ctx blk )
-;         OVER BLKCTX>BLOCK !     ( ctx )
-;         SLICE  OVER  BLKCTX>SLICE  !   ( ctx )
-;         TRUE
-;     THEN   ;
-BLKCTX_GET:
-        call docolon
-        dw DUP,BLKCTX_FIND,QDUP,qbranch,BLKCTXG1
-        dw NIP, FALSE
-        dw EXIT
-
-BLKCTXG1:
-        dw TICKBLKCTX_CURR,FETCH,QDUP,qbranch,BLKCTXG2
-        dw BLKCTX_NEXT
-        dw branch,BLKCTXG3
-
-BLKCTXG2:
-        dw BLKCTX_HEAD
-
-BLKCTXG3:
-        dw TUCK,BLKCTX_FLUSH
-        dw OVER,BLKCTXTOBLOCK,STORE
-        dw SLICE,OVER,BLKCTXTOSLICE,STORE
-        dw TRUE
-        dw EXIT
-
-;: (BUFFER)      n -- ctx f   get buffer context true if new
+;: (BUFFER)      n -- ctx f  get buffer context true if new
 ;     DUP BLKLIMIT U< IF
-;        BLKCTX-GET   ( ctx f )
-;        OVER 'BLKCTX_CURR !
+;        GET-BLKCTX  ( ctx f )
 ;     ELSE  -35 THROW THEN ;
 XBUFFER:
         call docolon
         dw DUP,BLKLIMIT,ULESS,qbranch,XBUFFER1
-        dw BLKCTX_GET
-        dw OVER,TICKBLKCTX_CURR,STORE
+        dw GET_BLKCTX
         dw EXIT
 XBUFFER1:
         dw lit,-35,THROW
@@ -2128,52 +2163,59 @@ XBUFFER1:
 
 
 ;C BUFFER   n -- addr                       push buffer address
-;   (BUFFER)           ( ctx f )
-;   DROP  BLKCTX>BUFFER  ;
+;   (BUFFER)  DROP         ( ctx )
+;   DUP CURRENT-BLKCTX !
+;   BLKCTX>BUFFER  ;
     head(BUFFER,BUFFER,docolon)
-        dw XBUFFER
-        dw DROP,BLKCTXTOBUFFER
+        dw XBUFFER,DROP
+        dw DUP,CURRENT_BLKCTX,STORE
+        dw BLKCTXTOBUFFER
+        dw DUP,B_BLK,ERASE
         dw EXIT
 
 ;C BLOCK  n -- addr                    load block
 ;   (BUFFER)           ( ctx f )
-;   IF   DUP BLKCTX-READ  THEN
-;   BLKCTX>BUFFER   :
+;   IF  DUP BLKCTX-READ  THEN
+;   DUP CURRENT-BLKCTX !
+;   BLKCTX>BUFFER   ;
     head(BLOCK,BLOCK,docolon)
         dw XBUFFER
         dw qbranch,BLOCK1
         dw DUP,BLKCTX_READ
 BLOCK1:
+        dw DUP,CURRENT_BLKCTX,STORE
         dw BLKCTXTOBUFFER
         dw EXIT
 
 ;C UPDATE  --                    mark last used block to update
-;     'BLKCTX_CURR @ ?DUP IF
+;     CURRENT-BLKCTX @ ?DUP IF
 ;        BLKCTX-DIRTY
 ;     THEN ;
     head(UPDATE,UPDATE,docolon)
-        dw TICKBLKCTX_CURR,FETCH,QDUP,qbranch,UPDATE1
+        dw CURRENT_BLKCTX,FETCH,QDUP,qbranch,UPDATE1
         dw BLKCTX_DIRTY
 UPDATE1:
         dw EXIT
 
 ;C EMPTY-BUFFERS   --        release blocks, don't save to disk
-;     ' BLKCTX-RESET BLKCTX-MAP  ;
+;     ['] BLKCTX-RESET BLKCTX-STACK STACK-MAP 
+;      0 CURRENT_BLKCTX !
+;;
     head(EMPTY_BUFFERS,EMPTY-BUFFERS,docolon)
-        dw lit,BLKCTX_RESET,BLKCTX_MAP
+        dw lit,BLKCTX_RESET,BLKCTX_STACK,STACK_MAP
+        dw ZERO,CURRENT_BLKCTX,STORE
         dw EXIT
 
 ;C SAVE-BUFFERS   --                save updated blocks to disk
-;     ' BLKCTX-FLUSH BLKCTX-MAP  ;
+;     ['] BLKCTX-?FLUSH BLKCTX-STACK STACK-MAP  ;
     head(SAVE_BUFFERS,SAVE-BUFFERS,docolon)
-        dw lit,BLKCTX_FLUSH,BLKCTX_MAP
+        dw lit,BLKCTX_QFLUSH,BLKCTX_STACK,STACK_MAP
         dw EXIT
 
 ;C FLUSH   --                  flush all updated blocks to disk
 ;    SAVE-BUFFERS EMPTY-BUFFERS  ;
     head(FLUSH,FLUSH,docolon)
         dw SAVE_BUFFERS, EMPTY_BUFFERS
-        dw ZERO,TICKBLKCTX_CURR,STORE
         dw EXIT
 
 ;: \-BLK   ( blk code path of the \ word )
@@ -3459,7 +3501,7 @@ SLASH16KROM:
         DW lit,vocab_lastword,VOCAB_WORDLIST,STORE
         DW FALSE,ENVIRONMENT_WORDLIST,STORE
         DW WORDLISTS,lit,STACK_WORDLISTS_SIZE,SLASHSTACK
-        DW VOCAB_WORDLIST,FORTH_WORDLIST,lit,2,WORDLISTS,STACKSET
+        DW VOCAB_WORDLIST,FORTH_WORDLIST,lit,2,WORDLISTS,STACK_SET
         DW FORTH_WORDLIST,CURRENT,STORE
         DW SLASHBLKCTX
         DW XSQUOTE
