@@ -22,13 +22,13 @@ VARIABLE XCURSOR      ( for ...}T )
 VARIABLE ERROR-XT     ( error reporting vector )
 VARIABLE #ERRORS 0 #ERRORS !
 
-
 VARIABLE VERBOSE
    TRUE  VERBOSE !
 
-
-
-
+: source-line  ( -- c-addr u )
+   SOURCE    BLK @ IF
+      DROP   >IN @  C/L NEGATE AND  +    C/L
+   THEN  ;
 
 ( ttester is based on the original tester suite by Hayes: 2/5  )
 : ERROR 1 #ERRORS +! ERROR-XT @ EXECUTE ;   ( for vector )
@@ -41,14 +41,14 @@ VARIABLE VERBOSE
     THEN   ;
 
 : ERROR1  ( C-ADDR U -- )   ( display an error message )
-   TYPE SOURCE TYPE CR      ( display line of error )
+   TYPE   source-line  TYPE CR      ( display line of error )
    EMPTY-STACK      ;       ( throw away everything else )
 
 ' ERROR1 ERROR-XT !
 
 ( ttester is based on the original tester suite by Hayes: 3/5  )
 : T{   ( -- )
-   DEPTH START-DEPTH ! 0 XCURSOR ! ;
+   DEPTH START-DEPTH ! 0 XCURSOR !  ;
 
 : ->       ( ... -- )    ( record depth and contents of stack )
    DEPTH DUP ACTUAL-DEPTH !   ( record depth )
@@ -79,11 +79,15 @@ VARIABLE VERBOSE
 
 
 ( ttester is based on the original tester suite by Hayes: 5/5  )
+: >EOL 
+   BLK @ IF
+    >IN @  C/L 1- +  C/L NEGATE AND  >IN !
+   ELSE  SOURCE >IN ! DROP  THEN  ;
+
 : TESTING        ( -- ) ( TALKING COMMENT. )
-   SOURCE VERBOSE @
-   IF DUP >R  CR TYPE SPACE  R> >IN !
-   ELSE >IN ! DROP
-   THEN ;
+   source-line VERBOSE @
+   IF  CR TYPE SPACE  ELSE  2DROP  THEN 
+   >EOL   ;
 
 \ TESTING simple test
 \ T{ 1 2 3 SWAP -> 1 3 2 }T

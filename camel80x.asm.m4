@@ -2114,6 +2114,56 @@ SLASHBLKCTX1:
         DW EXIT
 
 
+dnl ;: .BLKCTX ( ctx -- )
+dnl ;   CR
+dnl ;   ." CTX: " DUP  >R U.
+dnl ;   ." , BLOCK: "   R@ BLKCTX>BLOCK @ .
+dnl ;   ." , SLICE: "   R@ BLKCTX>SLICE @ U.
+dnl ;   ." , FLAGS: "   R@ BLKCTX>FLAGS @ U.
+dnl ;   ." , BUFFER "   R> BLKCTX>BUFFER U.
+dnl ;;
+dnl DOTBLKCTX:
+dnl         call docolon
+dnl         DW CR
+dnl         DW XSQUOTE
+dnl         DB 5,"CTX: "
+dnl         DW TYPE
+dnl         DW DUP,TOR,UDOT
+dnl 
+dnl         DW XSQUOTE
+dnl         DB 7,", BLK: "
+dnl         DW TYPE
+dnl         DW RFETCH,BLKCTXTOBLOCK,FETCH,DOT
+dnl 
+dnl         DW XSQUOTE
+dnl         DB 7,", SLC: "
+dnl         DW TYPE
+dnl         DW RFETCH,BLKCTXTOSLICE,FETCH,UDOT
+dnl 
+dnl         DW XSQUOTE
+dnl         DB 7,", UPD: "
+dnl         DW TYPE
+dnl         DW RFETCH,BLKCTXTOFLAGS,FETCH,UDOT
+dnl 
+dnl         DW XSQUOTE
+dnl         DB 7,", BUF: "
+dnl         DW TYPE
+dnl         DW RFROM,BLKCTXTOBUFFER,UDOT
+dnl         DW EXIT
+dnl 
+dnl ;: .BLKCTXS
+dnl ;   CR ." BLKCTXS: " BLKCTX-STACK   U.
+dnl ;   ['] .BLKCTX  BLKCTX-STACK STACK-MAP
+dnl ;;
+dnl     head(DOTBLKCTXS,.BLKCTXS,docolon)
+dnl         DW CR
+dnl         DW XSQUOTE
+dnl         DB 8,"BLKCTX: "
+dnl         DW TYPE
+dnl         DW BLKCTX_STACK,UDOT
+dnl 
+dnl         DW lit,DOTBLKCTX,BLKCTX_STACK,STACK_MAP
+dnl         DW EXIT
 
 ;: BLOCK-READ  ( blk slice-id adrs -- )  Compact Flash read BLK and SLICE-ID
 ; Reads the block from the Compact Flash card into memory
@@ -2163,14 +2213,17 @@ XBUFFER1:
 
 
 ;C BUFFER   n -- addr                       push buffer address
-;   (BUFFER)  DROP         ( ctx )
+;   (BUFFER)          ( ctx f )
+;   IF  DUP BLKCTX>BUFFER B/BLK ERASE  THEN
 ;   DUP CURRENT-BLKCTX !
 ;   BLKCTX>BUFFER  ;
     head(BUFFER,BUFFER,docolon)
-        dw XBUFFER,DROP
+        dw XBUFFER
+        dw qbranch,BUFFER1
+        dw DUP,BLKCTXTOBUFFER,B_BLK,ERASE
+BUFFER1:
         dw DUP,CURRENT_BLKCTX,STORE
         dw BLKCTXTOBUFFER
-        dw DUP,B_BLK,ERASE
         dw EXIT
 
 ;C BLOCK  n -- addr                    load block

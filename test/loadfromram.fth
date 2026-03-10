@@ -30,7 +30,7 @@ loadbuffer% BUFFER: loadbuffer
           (READ-LINE)   ( blkfile-id chrs f )
    WHILE       ( blkfile-id chrs )
      loadbuffer  SWAP  string-to-pr
-   REPEAT  DROP
+   REPEAT  2DROP
    pr-ptr TO pr-end
 ;
 
@@ -65,7 +65,7 @@ END-STRUCTURE
    REPEAT
    NR> RESTORE-INPUT DROP  ;
 
-CREATE loadram-source  source-ctx%
+CREATE loadram-source  source-ctx% ALLOT
 
 : loadram-refill  ( -- f )
    loadbuffer  pr-to-string
