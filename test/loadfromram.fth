@@ -76,9 +76,15 @@ CREATE loadram-source  source-ctx% ALLOT
       DROP
    THEN   R>   ;
 
+: loadram-getpos ( -- d )   pr-end pr-ptr ;
+: loadram-setpos ( d -- )   TO pr-ptr   TO pr-end ;
+
+
 : load-from-ram  ( -- )
    ." LOADing from paged ram " CR
    ['] loadram-refill 0 loadram-source source-init
+   ['] loadram-getpos  loadram-source SOURCE.GETPOS !
+   ['] loadram-setpos  loadram-source SOURCE.SETPOS !
    0 TO pr-ptr
    loadram-source  source-input
    ." LOADed from paged ram " CR

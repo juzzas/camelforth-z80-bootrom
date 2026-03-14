@@ -59,6 +59,10 @@ CREATE ESCAPETABLE    \  -- addr
  ( y )  'y' C,   ( z )  0   C,
 
 
+: ADDCHAR       ( c c-addr -- )
+\ Add the character to the end of the counted string.
+   TUCK COUNT + C!
+   1 SWAP C+!    ;
 
 
 

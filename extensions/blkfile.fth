@@ -120,10 +120,11 @@ BLKFILE-CONTEXT% create-pool:  blkfidpool
 : blkfidpool-free  ( c-addr -- )
    item>node blkfidpool pool-push  ;
 
-
-
-
-
+: blkfidpool-reserve ( u -- )
+   DUP >R 
+   0 ?DO  blkfidpool-get  LOOP
+   R> 0 ?DO blkfidpool-free LOOP  ;
+8 blkfidpool-reserve
 
    ( blkfile - extension to treat blocks as files      4 / n )
 FORTH-WORDLIST SET-CURRENT
@@ -291,9 +292,11 @@ BLKFILE-SOURCE% create-pool:  sourcepool
 : sourcepool-free  ( c-addr -- )
    item>node sourcepool pool-push  ;
 
-
-
-
+: sourcepool-reserve ( u -- )
+   DUP >R 
+   0 ?DO  sourcepool-get  LOOP
+   R> 0 ?DO sourcepool-free LOOP  ;
+8 sourcepool-reserve
 
 : source-file?  ( source-id -- f )
    ?DUP IF  -1 <>  ELSE  FALSE  THEN ;
@@ -346,6 +349,7 @@ blkfile-private-wid SET-CURRENT
 ;
 
 : tload-refetch  ( -- )
+   CR ." tload refetch called"
    SOURCE-ID  DUP >R source>blkfile IF
       R@  source>bufferpos@
             R@  source>blkfile BLKF>POSITION!
@@ -355,7 +359,8 @@ blkfile-private-wid SET-CURRENT
    THEN  R> DROP
 ;
 
-
+: tload-getpos ( -- d )   SOURCE-ID  source>bufferpos@ ;
+: tload-setpos ( d -- )   SOURCE-ID  source>bufferpos! ;
 
    ( blkfile - extension to treat blocks as files     14 / n )
 : (INCLUDE-BLK) ( blk -- )
@@ -380,6 +385,8 @@ FORTH-WORDLIST SET-CURRENT
    0 TO line-index
    ['] tload-refill ['] tload-refetch
    sourcepool-get DUP >R    /SOURCE
+   ['] tload-getpos   R@ source.source SOURCE.GETPOS !
+   ['] tload-setpos   R@ source.source SOURCE.SETPOS !
    R>  SET-SOURCE
    ['] (INCLUDE-BLK)  CATCH ?DUP IF
        >R CR ." Line: " line-index .

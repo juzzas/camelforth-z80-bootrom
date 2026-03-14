@@ -1,8 +1,8 @@
 \ CamelForth tools                                    jps  0 / 4
 CR .( Loading CamelForth tools definitions... )
 
-1 7 +THRU
-
+ONLY FORTH DEFINITIONS
+1 8 +THRU
 
 
 
@@ -15,7 +15,6 @@ CR .( Loading CamelForth tools definitions... )
 
 
    \ CamelForth tools - environment                   jps  1 / 4
-ONLY FORTH DEFINITIONS
 
 \  WORDLIST CONSTANT ENVIRONMENT-WORDLIST
 GET-CURRENT    ENVIRONMENT-WORDLIST SET-CURRENT
@@ -31,7 +30,47 @@ GET-CURRENT    ENVIRONMENT-WORDLIST SET-CURRENT
   128 CONSTANT STACK-CELLS        \ maximum size of the data stack, in cells
 SET-CURRENT
 
-   \ CamelForth tools - environment                   jps  2 / 4
+   \ CamelForth tools - conditional compile           jps  2 / 4
+: [THEN] ( -- ) ; IMMEDIATE
+
+: [UNDEFINED] BL WORD FIND NIP 0= ; IMMEDIATE
+
+: [DEFINED] BL WORD FIND NIP 0<> ; IMMEDIATE
+
+
+
+
+: str=  ( c-addr1 u1 c-addr2 u2 -- f )
+   ROT 2DUP = IF   ( c-addr1 c-addr2 u2 u1  f -- )
+      DROP STRCMP 0=
+   ELSE 
+      2DROP 2DROP FALSE
+   THEN
+;
+
+
+
+
+   \ forth2012 tools - conditional compile            jps  2 / 5
+: [ELSE] ( -- )
+   1 BEGIN                                       \ level
+     BEGIN BL WORD COUNT DUP WHILE               \ level adr len
+       2DUP S" [IF]" str= IF               \ level adr len
+           2DROP 1+                              \ level'
+        ELSE                                     \ level adr len
+          2DUP S" [ELSE]" str= IF          \ level adr len
+              2DROP 1- DUP IF 1+ THEN            \ level'
+          ELSE                                   \ level adr len
+              S" [THEN]" str= IF           \ level
+                 1-                              \ level'
+              THEN  THEN
+        THEN ?DUP 0= IF EXIT THEN                \ level'
+     REPEAT 2DROP                                \ level
+   REFILL 0= UNTIL        DROP    ; IMMEDIATE
+   \ forth2012 tools - conditional compile            jps  3 / 5
+: [IF] ( flag -- )
+   0= IF POSTPONE [ELSE] THEN  ; IMMEDIATE
+
 : ?   ( addr -- ) @ U.  ;
 
 

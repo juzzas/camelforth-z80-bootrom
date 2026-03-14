@@ -1,7 +1,7 @@
 \ forth2012 string wordlist                        jps  0 / 5
 CR .( Loading string definitions... )
 FORTH DEFINITIONS
-1 4 +THRU
+1 5 +THRU
 
 
 
@@ -15,10 +15,6 @@ FORTH DEFINITIONS
 
 
    \ forth2012 string wordlist -- COMPARE          jps  1 / 5
-: ADDCHAR       ( c c-addr -- )
-\ Add the character to the end of the counted string.
-   TUCK COUNT + C!
-   1 SWAP C+!    ;
 
 : APPEND          ( c-addr u c-dest  -- )
 \ Add the string described by c-addr/u to the counted
