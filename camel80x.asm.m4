@@ -3317,8 +3317,10 @@ INTRP_NG9: DW CHECK_SP,DROP
 ;   Each context struct is block file
 ;    REFILL xt  (1 cell)
 ;    REFETCH xt  (1 cell)
+;    GETPOS xt
+;    SETPOS xt
 
-DEFC SOURCECTX_SIZE = 4
+DEFC SOURCECTX_SIZE = 8
 
 
 ;Z SOURCE.REFILL   source-id -- a-addr'       addr of current blk
@@ -3328,6 +3330,14 @@ DEFC SOURCECTX_SIZE = 4
 ;Z SOURCE.REFETCH   source-id -- a-addr'   addr of current offs.
     head_system(SOURCEDOTREFETCH,SOURCE.REFETCH,docode)
         jp ctx_plus_2
+
+;Z SOURCE.GETPOS   source-id -- a-addr'       addr of current blk
+    head_system(SOURCEDOTGETPOS,SOURCE.GETPOS,docode)
+        jp ctx_plus_4
+
+;Z SOURCE.SETPOS   source-id -- a-addr'   addr of current offs.
+    head_system(SOURCEDOTSETPOS,SOURCE.SETPOS,docode)
+        jp ctx_plus_6
 
 ;Z SOURCE%   -- u              size of SOURCEILE context stucture
     head_system(SOURCESIZE,SOURCE%,docon)
@@ -3350,20 +3360,38 @@ DEFC SOURCECTX_SIZE = 4
 
 ; SOURCE-CTX definitions
 
+DEFAULT_GETPOS:
+        call docolon
+        DW BLK,FETCH
+        DW SLICE
+        DW EXIT
+
+DEFAULT_SETPOS:
+        call docolon
+        DW SELECT
+        DW BLK,STORE
+        DW EXIT
+
 TIB_SOURCE_CTX:
         call docreate
         dw XREFILL8K
         dw NOOP
+        dw DEFAULT_GETPOS
+        dw DEFAULT_SETPOS
 
 EVALUATE_SOURCE_CTX:
         call docreate
         dw FALSE
         dw NOOP
+        dw DEFAULT_GETPOS
+        dw DEFAULT_SETPOS
 
 LOAD_SOURCE_CTX:
         call docreate
         dw LOAD_REFILL
         dw LOAD_REFETCH
+        dw DEFAULT_GETPOS
+        dw DEFAULT_SETPOS
 
 ;Z SOURCE>SOURCE-CTX  ( source-id -- source-ctx )
 ;   0 OVER = IF DROP 
@@ -3409,12 +3437,12 @@ STOSCTX3:
 
 SAVE_INPUT_16K:
         call docolon
-        DW SOURCE_ID
-        DW BLK,FETCH
-        DW SLICE_ID,FETCH
+        DW SLICE
+        DW SOURCE_ID,SOURCETOSOURCE_CTX,SOURCEDOTGETPOS,FETCHEXECUTE
         DW TICKSOURCE,TWOFETCH
         DW TOIN,FETCH
-        DW lit,6
+        DW SOURCE_ID
+        DW lit,7
         DW EXIT
 
 ;X RESTORE-INPUT   xn ... x1 n -- flag      restore input state
@@ -3424,12 +3452,12 @@ SAVE_INPUT_16K:
 
 RESTORE_INPUT_16K:
         call docolon
-        DW lit,6,EQUAL,qbranch,RESTORE_INPUT1
+        DW lit,7,EQUAL,qbranch,RESTORE_INPUT1
+        DW XSET_SOURCE
         DW TOIN,STORE
         DW TICKSOURCE,TWOSTORE
-        DW SLICE_ID,STORE
-        DW BLK,STORE
-        DW TICKSOURCE_ID,STORE
+        DW SOURCE_ID,SOURCETOSOURCE_CTX,SOURCEDOTSETPOS,FETCHEXECUTE
+        DW SELECT
         DW REFETCH
         DW FALSE
         DW EXIT

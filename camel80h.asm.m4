@@ -934,7 +934,7 @@ TICKSOURCE_ID:
         call docon
         DW source_id_ptr
 
-;Z SET-SOURCE    ( source-ctx  -- )
+;Z SET-SOURCE    ( source  -- )
 ;   'SOURCE-ID  !   0 BLK !  ;
 XSET_SOURCE:
         call docolon
