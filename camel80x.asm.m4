@@ -2305,41 +2305,55 @@ LOAD_REFILL:
 LOAD_REFILL1:
         dw FALSE,EXIT
 
-;C LOAD   blk --                        load and evaluate block
+;C THRU   n1 n2 --            load and evaluate blocks n1 to n2
 ;    SAVE-INPUT N>R
+;    >R
 ;    0 'SOURCE-ID !
-;    DUP BLK !
-;    BLOCK B/BLK 'SOURCE 2!  0 >IN !
-;    INTERPRET
-;    NR> RESTORE-INPUT DROP  ;
-    head(LOAD,LOAD,docolon)
+;    BLK !   LOAD-REFETCH  0 >IN !
+;    BEGIN
+;      INTERPRET
+;      BLK @  R@ < IF
+;         REFILL
+;      ELSE
+;         FALSE
+;      THEN
+;    0= UNTIL
+;    R> DROP
+;    NR> RESTORE-INPUT DROP
+;;
+    head(THRU,THRU,docolon)
         dw SAVE_INPUT,NTOR
+        dw TOR
         dw ZERO,TICKSOURCE_ID,STORE
-        dw DUP,BLK,STORE
-        dw BLOCK,B_BLK,TICKSOURCE,TWOSTORE
+        dw BLK,STORE
+        dw LOAD_REFETCH
         dw ZERO,TOIN,STORE
+xloader1:
         dw INTERPRET
+        dw BLK,FETCH,RFETCH,LESS,qbranch,xloader2
+        dw LOAD_REFILL
+        dw branch,xloader3
+
+xloader2:
+        dw FALSE
+
+xloader3:
+        dw ZEROEQUAL,qbranch,xloader1
+
+        dw RFROM,DROP
         dw NRFROM,RESTORE_INPUT,DROP
+        dw EXIT
+
+;C LOAD   blk --                        load and evaluate block
+;   DUP THRU  ;
+    head(LOAD,LOAD,docolon)
+        dw DUP,THRU
         dw EXIT
 
 ;C +LOAD   n --                   load and evaluate block BLK+n
 ;     BLK @ + LOAD  ;
     head(PLUSLOAD,+LOAD,docolon)
         dw BLK,FETCH,PLUS,LOAD
-        dw EXIT
-
-;C THRU   n1 n2 --            load and evaluate blocks n1 to n2
-;   1+ SWAP
-;   ?DO  I LOAD  LOOP ;
-
-    head(THRU,THRU,docolon)
-        dw ONEPLUS,SWOP
-        dw TWODUP,EQUAL,qbranch,THRU1
-        dw TWODROP,EXIT
-THRU1:
-        dw xdo
-THRU2:
-        dw II,LOAD,xloop,THRU2
         dw EXIT
 
 ;C +THRU   n1 n2 --                load blocks BLK+n1 to BLK+n2
