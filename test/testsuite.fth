@@ -25,6 +25,7 @@ CR .( Starting Forth 2012 test suite... )
 \ 3174 CONSTANT TEST_FACILITY
 \ 3180 CONSTANT TEST_FILE
 3192 CONSTANT TEST_LOCALS
+3201 CONSTANT TEST_MEMORY
 3228 CONSTANT TEST_SEARCHORDER
 \ 3237 CONSTANT TEST_STRING
 
@@ -62,7 +63,7 @@ WORDSET_TOOLS_EXT LOAD
 
 [DEFINED] TEST_FILE [IF]
    MARKER <reset>
-   CR .( Starting file tests... )
+   CR BLK @ . CR .( Starting file tests... )
    180 LOAD     \ blkfs
    3300 ROOT!
    WORDSET_CORE_EXT LOAD
@@ -106,10 +107,10 @@ WORDSET_TOOLS_EXT LOAD
 
 [DEFINED] TEST_LOCALS [IF]
    MARKER <reset>
-   CR .( Starting locals tests... )
+   CR .( Starting locals tests... )  .BLKCTXS
    WORDSET_LOCALS LOAD
    TEST_LOCALS INCLUDE-BLKFILE
-   <reset>
+   .BLKCTXS <reset>  .BLKCTXS CR BLK @ . SOURCE-ID  .SOURCE
 [THEN]
 
 [DEFINED] TEST_MEMORY [IF]

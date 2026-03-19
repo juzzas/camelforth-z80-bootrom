@@ -133,7 +133,7 @@ BLK:
 
 ;Z R0       -- a-addr                       end of return stack
     head(R0,R0,douser)
-        dw 300h
+        dw 400h
 
 ; uinit    -- addr                 initial values for user area
 dnl        head(UINIT,UINIT,docreate)

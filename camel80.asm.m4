@@ -190,7 +190,7 @@ main_code_init:
 ; A task w/o terminal input requires 200h bytes.
 ; Double all except TIB and PAD for 32-bit CPUs.
 
-DEFC WRKSPC = 0x8C00
+DEFC WRKSPC = 0x8D00
 DEFC USER_STACK_TOP = WRKSPC      ; ( 128 bytes )
 DEFC SQUOTE_TOP = WRKSPC - 0x80  ; (512 bytes)
 
