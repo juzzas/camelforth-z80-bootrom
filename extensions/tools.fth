@@ -104,8 +104,8 @@ VARIABLE max-branch
             4 U.R TRUE ENDOF
       ['] LIT  OF  see@++ BL EMIT .ID TRUE ENDOF
       ['] (DOES>)  OF 3 see+! TRUE ENDOF
-      DROP  TRUE
-   ESAC ;
+      TRUE SWAP
+   ENDCASE ;
 
 : OF-STRCMP:   ( xt -- )    CREATE ,
    DOES>  ( xt -- xt f )     >R DUP R> @  3 STRCMP 0= ;

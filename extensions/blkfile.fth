@@ -6,7 +6,7 @@ CR .( Loading blkfile... )
 
 
 ONLY FORTH DEFINITIONS   ALSO SYSTEM
-1 28 +THRU
+1 29 +THRU
 ONLY FORTH DEFINITIONS
 
 
@@ -18,7 +18,7 @@ ONLY FORTH DEFINITIONS
 WORDLIST CONSTANT blkfile-private-wid
 blkfile-private-wid >ORDER   blkfile-private-wid SET-CURRENT
 4 CONSTANT #BLKFILE
-$0001 CONSTANT flag.binary
+$0001 CONSTANT flag.binary        $8000 CONSTANT flag.open
 $0002 CONSTANT flag.readable      $0004 CONSTANT flag.writable
 
 FORTH-WORDLIST SET-CURRENT
@@ -98,6 +98,7 @@ END-STRUCTURE
 BEGIN-STRUCTURE BLKFILE-CONTEXT%
    BLKF% +FIELD           blkfile.blkfid 
    FIELD:                 blkfile.flags
+   FIELD:                 blkfile.open
    blkfile.name% +FIELD   blkfile.name
    2 CELLS +FIELD         blkfile.filesize
 END-STRUCTURE
@@ -131,6 +132,7 @@ FORTH-WORDLIST SET-CURRENT
 : OPEN-BLKFILE ( blk fam -- blkfileid )
    blkfidpool-get ?DUP IF    ( blk fam blkfile-id )
      TUCK  blkfile.flags !     ( blk blkfile-id )
+     TRUE OVER blkfile.open !
      DUP -1 S>D ROT blkfile.filesize 2!     ( blk blkfile-id )
      TUCK /BLKF 
    ELSE   -69 THROW   THEN ;
@@ -161,6 +163,7 @@ FORTH-WORDLIST SET-CURRENT
    ( blkfile - extension to treat blocks as files      6 / n )
 blkfile-private-wid SET-CURRENT
 : (CLOSE-BLKFILE) ( blkfileid -- )
+   FALSE OVER blkfile.open !
    BLKF-FLUSH
    blkfidpool-free  ;
 
@@ -342,14 +345,13 @@ blkfile-private-wid SET-CURRENT
    R@ source.buffer  buff%   R> source>blkfile  (READ-LINE)
 
    IF
-      line-index 1+ TO line-index
       SOURCE-ID  source.buffer   SWAP  'SOURCE 2!
       0 >IN !  TRUE
    ELSE DROP  FALSE  THEN 
 ;
 
 : tload-refetch  ( -- )
-   CR ." tload refetch called"
+   CR ." tload refetch called: source-ctx: " SOURCE-ID U.
    SOURCE-ID  DUP >R source>blkfile IF
       R@  source>bufferpos@
             R@  source>blkfile BLKF>POSITION!
@@ -363,36 +365,54 @@ blkfile-private-wid SET-CURRENT
 : tload-setpos ( d -- )   SOURCE-ID  source>bufferpos! ;
 
    ( blkfile - extension to treat blocks as files     14 / n )
-: (INCLUDE-BLK) ( blk -- )
-   R/O  OPEN-BLKFILE  ( blkfile-id )
-   SOURCE-ID  source.blkfile !
+
+: new-blkfile-source ( -- source-ctx )
+   ['] tload-refill ['] tload-refetch
+   sourcepool-get DUP >R    /SOURCE
+   ['] tload-getpos   R@ source.source SOURCE.GETPOS !
+   ['] tload-setpos   R@ source.source SOURCE.SETPOS !
+   R>
+;
+
+: (do-interpret-blkfile)
+   line-index >R
+   0 TO line-index
    BEGIN
-     REFILL  IF
-       ( SOURCE TYPE  CR )  \ debug print of line
-       INTERPRET
-     ELSE  SOURCE-ID  source.blkfile
-           (CLOSE-BLKFILE)  EXIT
-     THEN
-   AGAIN  ;
+   REFILL  WHILE
+      line-index 1+ TO line-index
+      ( SOURCE TYPE  CR )  \ debug print of line
+      ['] INTERPRET CATCH ?DUP IF >R
+         CR ." Line: " line-index .
+      R> THROW THEN
+   REPEAT
+   R> TO line-index
+;
+
+
+: (include-blkfile) ( blkfile-id -- )
+   new-blkfile-source ( blkfile-id source-ctx )
+   TUCK source.blkfile !   ( source-ctx )
+   DUP >R
+   SAVE-INPUT N>R
+   SET-SOURCE
+   (do-interpret-blkfile)
+   NR> RESTORE-INPUT THROW
+   R>
+   sourcepool-free
+;
 
 
 
    ( blkfile - extension to treat blocks as files     15 / n )
 FORTH-WORDLIST SET-CURRENT
 : INCLUDE-BLKFILE ( blk -- )
-   SAVE-INPUT N>R
-   line-index >R
-   0 TO line-index
-   ['] tload-refill ['] tload-refetch
-   sourcepool-get DUP >R    /SOURCE
-   ['] tload-getpos   R@ source.source SOURCE.GETPOS !
-   ['] tload-setpos   R@ source.source SOURCE.SETPOS !
-   R>  SET-SOURCE
-   ['] (INCLUDE-BLK)  CATCH ?DUP IF
-       >R CR ." Line: " line-index .
-       R> THROW THEN
-   R> TO line-index 
-   NR> RESTORE-INPUT THROW  ;
+   CR  ." INCLUDING BLKFILE "  DUP U.
+   R/O  OPEN-BLKFILE  ( blkfile-id )
+   DUP >R
+   (include-blkfile)
+   R>
+   (CLOSE-BLKFILE)
+;
 
 blkfile-private-wid SET-CURRENT
 : blkofs>bytes  ( blk off -- ud )
@@ -417,24 +437,35 @@ FORTH-WORDLIST SET-CURRENT
    ( blkfile - extension to treat blocks as files     17 / n )
 SYSTEM-WORDLIST SET-CURRENT
 : .BLKF  ( blkfid -- )
-   ." BLKF:" DUP U. CR
-   ."  OFFSET : "  DUP BLKF.OFFSET @ U. CR
-   ."  BLK    : "  DUP BLKF.BLK    @ U. CR
-   ."  ORIGIN : "  DUP BLKF.ORIGIN @ U. CR
-   ."  SLICE  : "      BLKF.SLICE    U. CR  ;
+   CR ." BLKF:" DUP U.
+   CR ."  OFFSET : "  DUP BLKF.OFFSET @ U.
+   CR ."  BLK    : "  DUP BLKF.BLK    @ U.
+   CR ."  ORIGIN : "  DUP BLKF.ORIGIN @ U.
+   CR ."  SLICE  : "      BLKF.SLICE    U.
+;
 
 : .BLKFILE  ( blkfid -- )
    DUP .BLKF
-   ." BLKFILE:"       DUP U. CR
-   ."  FLAGS  : "     DUP blkfile.flags     @   U. CR
-   ."  NAME : "       DUP blkfile.name      COUNT TYPE CR
-   ."  FILESIZE : "       blkfile.filesize  2@  D. CR   ;
+   CR ." BLKFILE:"       DUP U. CR
+   CR ."  FLAGS  : "     DUP blkfile.flags     @   U.
+   CR ."  NAME : "       DUP blkfile.name      COUNT TYPE
+   CR ."  FILESIZE : "       blkfile.filesize  2@  D.
+;
 
    ( blkfile - extension to treat blocks as files     18 / n )
 : .SLICE   ( sliceid -- )
-   ." SLICE:" DUP U. CR
-   ."  DRIVE  : "  DUP SLICE.DRIVE   @ U. CR
-   ."  OFFSET : "  DUP SLICE.OFFSET 2@ D. CR
-   ."  LIMIT  : "      SLICE.LIMIT   @ U. CR   ;
+   CR ." SLICE:" DUP U.
+   CR ."  DRIVE  : "  DUP SLICE.DRIVE   @ U.
+   CR ."  OFFSET : "  DUP SLICE.OFFSET 2@ D.
+   CR ."  LIMIT  : "      SLICE.LIMIT   @ U.
+;
+
+: .SOURCE  ( source-id -- )
+   CR ." SOURCE: " DUP U.
+   CR ."  REFILL: " DUP  SOURCE.REFILL   @ DUP U.  .ID 
+   CR ."  REFETCH: " DUP  SOURCE.REFETCH   @ DUP U.  .ID 
+   CR ."  GETPOS " DUP  SOURCE.GETPOS   @ DUP U.  .ID 
+   CR ."  SETPOS " DUP  SOURCE.GETPOS   @ DUP U.  .ID 
+;
 
 CR  .( Blkfile loaded. )

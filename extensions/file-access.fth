@@ -56,7 +56,7 @@ FORTH-WORDLIST SET-CURRENT
    \ file-access wordset: CLOSE-FILE
 : (CLOSE-FILE)  ( fileid -- )
    DUP >R blkfile.filesize 2@
-   R@ blkfile.name COUNT .S CR  ($filesize!)
+   R@ blkfile.name COUNT  ($filesize!)
    R> (CLOSE-BLKFILE)  ;
 
 : CLOSE-FILE  ( fileid -- ior )
@@ -82,11 +82,11 @@ WORDLIST CONSTANT INCLUDED-WID
 
 FORTH-WORDLIST SET-CURRENT
 : INCLUDED ( i * x c-addr u -- j * x ) 
-   .S  2DUP ." included: " TYPE
+   2DUP ." included: " TYPE
    2DUP name-not-included?  IF
        2DUP add-included-name
-   THEN   .S
-   $open DROP  ( blk )  CR .S   INCLUDE-BLKFILE  ;
+   THEN
+   $open DROP  ( blk )    INCLUDE-BLKFILE  ;
 
 : INCLUDE ( i * x "name" -- j * x ) 
    PARSE-NAME INCLUDED ;
