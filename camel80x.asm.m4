@@ -3357,13 +3357,13 @@ DEFC SOURCECTX_SIZE = 8
     head_system(SOURCESIZE,SOURCE%,docon)
         dw SOURCECTX_SIZE
 
-;Z /SOURCE  xt-refill xt-refetch source-ctx --    set up a source-ctx
-;   TUCK  SOURCE.REFETCH !
-;   SOURCE.REFILL !  ;
-    head_system(SLASHSOURCE,/SOURCE,docolon)
-        dw TUCK,SOURCETOREFETCH,STORE
-        dw SOURCETOREFILL,STORE
-        dw EXIT
+dnl ;Z /SOURCE  xt-refill xt-refetch source-ctx --    set up a source-ctx
+dnl ;   TUCK  SOURCE.REFETCH !
+dnl ;   SOURCE.REFILL !  ;
+dnl     head_system(SLASHSOURCE,/SOURCE,docolon)
+dnl         dw TUCK,SOURCETOREFETCH,STORE
+dnl         dw SOURCETOREFILL,STORE
+dnl         dw EXIT
 
 dnl ;Z SOURCE:  xt-refill xt-refetch <name> --    set up a source-ctx
 dnl     head_system(SOURCECOLON,SOURCE:,docolon)
@@ -3411,7 +3411,7 @@ LOAD_SOURCE_CTX:
         dw LOAD_REFILL
         dw LOAD_REFETCH
         dw DEFAULT_GETPOS
-        dw DEFAULT_SETPOS
+        dw LOAD_SETPOS
 
 ;Z SOURCE>SOURCE-CTX  ( source-id -- source-ctx )
 ;   0 OVER = IF DROP 
@@ -3457,8 +3457,8 @@ STOSCTX3:
 
 SAVE_INPUT_16K:
         call docolon
-        DW SLICE
         DW SOURCE_ID,SOURCETOSOURCE_CTX,SOURCETOGETPOS,FETCHEXECUTE
+        DW SLICE
         DW TICKSOURCE,TWOFETCH
         DW TOIN,FETCH
         DW SOURCE_ID
@@ -3476,8 +3476,8 @@ RESTORE_INPUT_16K:
         DW XSET_SOURCE
         DW TOIN,STORE
         DW TICKSOURCE,TWOSTORE
-        DW SOURCE_ID,SOURCETOSOURCE_CTX,SOURCETOSETPOS,FETCHEXECUTE
         DW SELECT
+        DW SOURCE_ID,SOURCETOSOURCE_CTX,SOURCETOSETPOS,FETCHEXECUTE
         DW REFETCH
         DW FALSE
         DW EXIT
