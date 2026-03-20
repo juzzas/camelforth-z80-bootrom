@@ -1603,15 +1603,15 @@ DEFC DRIVECTX_SIZE = 8
 
 
 ;Z DRIVE>READ   drive-id -- a-addr'         address of  READ xt
-    head_system(DRIVETOREAD,DRIVE.READ,docode)
+    head_system(DRIVETOREAD,DRIVE>READ,docode)
         jp ctx_next
 
 ;Z DRIVE>WRITE   drive-id -- a-addr'        address of WRITE xt
-    head_system(DRIVETOWRITE,DRIVE.WRITE,docode)
+    head_system(DRIVETOWRITE,DRIVE>WRITE,docode)
         jp ctx_plus_2
 
 ;Z DRIVE>CAPACITY   drive-id -- a-addr'     addr of CAPACITY xt
-    head_system(DRIVETOCAPACITY,DRIVE.CAPACITY,docode)
+    head_system(DRIVETOCAPACITY,DRIVE>CAPACITY,docode)
         jp ctx_plus_4
 
 ;Z DRIVE%    -- u                        size of DRIVE stucture
@@ -1638,15 +1638,15 @@ DEFC SLICECTX_SIZE = 8
 
 
 ;Z SLICE>DRIVE   slice-id -- a-addr'           addr of drive ID
-    head_system(SLICETODRIVE,SLICE.DRIVE,docode)
+    head_system(SLICETODRIVE,SLICE>DRIVE,docode)
         jp ctx_next
 
 ;Z SLICE>OFFSET   slice-id -- a-addr'        addr of LBA OFFSET
-    head_system(SLICETOOFFSET,SLICE.OFFSET,docode)
+    head_system(SLICETOOFFSET,SLICE>OFFSET,docode)
         jp ctx_plus_2
 
 ;Z SLICE>LIMIT    slice-id -- a-addr'             addr of LIMIT
-    head_system(SLICETOLIMIT,SLICE.LIMIT,docode)
+    head_system(SLICETOLIMIT,SLICE>LIMIT,docode)
         jp ctx_plus_6
 
 ;Z SLICE%   -- u                 size of SLICE context stucture
@@ -2400,20 +2400,20 @@ dnl         DW EXIT
 DEFC BLKFCTX_SIZE = 6 + SLICECTX_SIZE
 
 
-;Z BLKF.OFFSET   blkfile-id -- a-addr'       addr of current blk
-    head_system(BLKFDOTOFFSET,BLKF.OFFSET,docode)
+;Z BLKF>OFFSET   blkfile-id -- a-addr'       addr of current blk
+    head_system(BLKFTOOFFSET,BLKF>OFFSET,docode)
         jp ctx_next
 
-;Z BLKF.BLK   blkfile-id -- a-addr'   addr of current offs.
-    head_system(BLKFDOTBLK,BLKF.BLK,docode)
+;Z BLKF>BLK   blkfile-id -- a-addr'   addr of current offs.
+    head_system(BLKFTOBLK,BLKF>BLK,docode)
         jp ctx_plus_2
 
-;Z BLKF.ORIGIN    blkfile-id -- a-addr'       addr of origin blk
-    head_system(BLKFDOTORIGIN,BLKF.ORIGIN,docode)
+;Z BLKF>ORIGIN    blkfile-id -- a-addr'       addr of origin blk
+    head_system(BLKFTOORIGIN,BLKF>ORIGIN,docode)
         jp ctx_plus_4
 
-;Z BLKF.SLICE    blkfile-id -- a-addr'       addr of slice
-    head_system(BLKFDOTSLICE,BLKF.SLICE,docode)
+;Z BLKF>SLICE    blkfile-id -- a-addr'       addr of slice
+    head_system(BLKFTOSLICE,BLKF>SLICE,docode)
         jp ctx_plus_6
 
 ;Z BLKF%   -- u              size of BLKFILE context stucture
@@ -2440,10 +2440,10 @@ SECTION code_16k
 ;   SLICE OVER BLKF.SLICE SLICE% MOVE  ( blkfile-id )
 ;   DROP ;
     head_system(SLASHBLKF,``/BLKF'',docolon)
-        DW TWODUP,BLKFDOTORIGIN,STORE
-        DW SWOP,OVER,BLKFDOTBLK,STORE
-        DW ZERO,OVER,BLKFDOTOFFSET,STORE
-        DW SLICE,OVER,BLKFDOTSLICE,SLICESIZE,MOVE
+        DW TWODUP,BLKFTOORIGIN,STORE
+        DW SWOP,OVER,BLKFTOBLK,STORE
+        DW ZERO,OVER,BLKFTOOFFSET,STORE
+        DW SLICE,OVER,BLKFTOSLICE,SLICESIZE,MOVE
         DW DROP,EXIT
 
 ;Z ?SET-BLKFILE  ( blkfile-id -- )
@@ -2487,7 +2487,7 @@ BYTES_TO_READ1:
 ;   SWAP BLKF.OFFSET @ +
 ;   R> SELECT    ;
     head_system(BLKFTOBUFFERIDX,BLKF>BUFFERIDX,docolon)
-        DW SLICE,TOR,DUP,BLKFDOTSLICE,SELECT
+        DW SLICE,TOR,DUP,BLKFTOSLICE,SELECT
         DW DUP,CELLPLUS,FETCH,BLOCK
         DW SWOP,FETCH,PLUS
         DW RFROM,SELECT
@@ -2497,7 +2497,7 @@ BYTES_TO_READ1:
 ;    DUP  BLKF.BLK @  OVER BLKF.ORIGIN @  -   1024 M*   ( blkfile-id d )
 ;    ROT  BLKF.OFFSET @   M+  ;
     head_system(BLKFTOPOSITIONFETCH,BLKF>POSITION@,docolon)
-        DW DUP,CELLPLUS,FETCH,OVER,BLKFDOTORIGIN,FETCH,MINUS,B_BLK,MSTAR
+        DW DUP,CELLPLUS,FETCH,OVER,BLKFTOORIGIN,FETCH,MINUS,B_BLK,MSTAR
         DW ROT,FETCH,MPLUS
         DW EXIT
 
@@ -2508,7 +2508,7 @@ BYTES_TO_READ1:
 ;    R>  BLKF.OFFSET !  ;
     head_system(BLKFTOPOSITIONSTOR,BLKF>POSITION!,docolon)
         DW TOR,B_BLK,FMSLASHMOD
-        DW RFETCH,BLKFDOTORIGIN,FETCH,PLUS
+        DW RFETCH,BLKFTOORIGIN,FETCH,PLUS
         DW RFETCH,CELLPLUS,STORE
         DW RFROM,STORE
         DW EXIT
@@ -2615,7 +2615,7 @@ BLKF_DOCHARS:
         call docolon
         DW BLKF_RW_FLAG,STORE
         DW DUP,QSET_BLKFILE
-        DW SLICE,TOR,DUP,BLKFDOTSLICE,SELECT
+        DW SLICE,TOR,DUP,BLKFTOSLICE,SELECT
         DW OVER,TOR
         DW XBLKF_DOCHARS
         DW NIP,RFROM,SWOP,MINUS
@@ -3337,20 +3337,20 @@ INTRP_NG9: DW CHECK_SP,DROP
 DEFC SOURCECTX_SIZE = 8
 
 
-;Z SOURCE.REFILL   source-id -- a-addr'       addr of current blk
-    head_system(SOURCEDOTREFILL,SOURCE.REFILL,docode)
+;Z SOURCE>REFILL   source-id -- a-addr'       addr of current blk
+    head_system(SOURCETOREFILL,SOURCE>REFILL,docode)
         jp ctx_next
 
-;Z SOURCE.REFETCH   source-id -- a-addr'   addr of current offs.
-    head_system(SOURCEDOTREFETCH,SOURCE.REFETCH,docode)
+;Z SOURCE>REFETCH   source-id -- a-addr'   addr of current offs.
+    head_system(SOURCETOREFETCH,SOURCE>REFETCH,docode)
         jp ctx_plus_2
 
-;Z SOURCE.GETPOS   source-id -- a-addr'       addr of current blk
-    head_system(SOURCEDOTGETPOS,SOURCE.GETPOS,docode)
+;Z SOURCE>GETPOS   source-id -- a-addr'       addr of current blk
+    head_system(SOURCETOGETPOS,SOURCE>GETPOS,docode)
         jp ctx_plus_4
 
-;Z SOURCE.SETPOS   source-id -- a-addr'   addr of current offs.
-    head_system(SOURCEDOTSETPOS,SOURCE.SETPOS,docode)
+;Z SOURCE>SETPOS   source-id -- a-addr'   addr of current offs.
+    head_system(SOURCETOSETPOS,SOURCE>SETPOS,docode)
         jp ctx_plus_6
 
 ;Z SOURCE%   -- u              size of SOURCEILE context stucture
@@ -3361,16 +3361,16 @@ DEFC SOURCECTX_SIZE = 8
 ;   TUCK  SOURCE.REFETCH !
 ;   SOURCE.REFILL !  ;
     head_system(SLASHSOURCE,/SOURCE,docolon)
-        dw TUCK,SOURCEDOTREFETCH,STORE
-        dw SOURCEDOTREFILL,STORE
+        dw TUCK,SOURCETOREFETCH,STORE
+        dw SOURCETOREFILL,STORE
         dw EXIT
 
-;Z SOURCE:  xt-refill xt-refetch <name> --    set up a source-ctx
-    head_system(SOURCECOLON,SOURCE:,docolon)
-        DW CREATE,HERE
-        DW SOURCESIZE,ALLOT
-        DW SLASHSOURCE
-        DW EXIT
+dnl ;Z SOURCE:  xt-refill xt-refetch <name> --    set up a source-ctx
+dnl     head_system(SOURCECOLON,SOURCE:,docolon)
+dnl         DW CREATE,HERE
+dnl         DW SOURCESIZE,ALLOT
+dnl         DW SLASHSOURCE
+dnl         DW EXIT
 
 ; SOURCE-CTX definitions
 
@@ -3384,6 +3384,12 @@ DEFAULT_SETPOS:
         call docolon
         DW SELECT
         DW BLK,STORE
+        DW EXIT
+
+LOAD_SETPOS:
+        call docolon
+        DW DEFAULT_SETPOS
+        DW LOAD_REFETCH
         DW EXIT
 
 TIB_SOURCE_CTX:
@@ -3452,7 +3458,7 @@ STOSCTX3:
 SAVE_INPUT_16K:
         call docolon
         DW SLICE
-        DW SOURCE_ID,SOURCETOSOURCE_CTX,SOURCEDOTGETPOS,FETCHEXECUTE
+        DW SOURCE_ID,SOURCETOSOURCE_CTX,SOURCETOGETPOS,FETCHEXECUTE
         DW TICKSOURCE,TWOFETCH
         DW TOIN,FETCH
         DW SOURCE_ID
@@ -3470,7 +3476,7 @@ RESTORE_INPUT_16K:
         DW XSET_SOURCE
         DW TOIN,STORE
         DW TICKSOURCE,TWOSTORE
-        DW SOURCE_ID,SOURCETOSOURCE_CTX,SOURCEDOTSETPOS,FETCHEXECUTE
+        DW SOURCE_ID,SOURCETOSOURCE_CTX,SOURCETOSETPOS,FETCHEXECUTE
         DW SELECT
         DW REFETCH
         DW FALSE
@@ -3486,7 +3492,7 @@ RESTORE_INPUT1:
 XREFILL_16K:
         call docolon
         dw SOURCE_ID,SOURCETOSOURCE_CTX
-        dw SOURCEDOTREFILL,FETCHEXECUTE
+        dw SOURCETOREFILL,FETCHEXECUTE
         dw EXIT
 
 ;: REFETCH   ( -- )   call RESTORE-INPUT source refetch
@@ -3494,7 +3500,7 @@ XREFILL_16K:
 REFETCH:
         call docolon
         dw SOURCE_ID,SOURCETOSOURCE_CTX
-        dw SOURCEDOTREFETCH,QFETCHEXECUTE
+        dw SOURCETOREFETCH,QFETCHEXECUTE
         dw EXIT
 
 

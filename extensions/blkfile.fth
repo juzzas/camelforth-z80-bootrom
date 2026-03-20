@@ -140,7 +140,7 @@ FORTH-WORDLIST SET-CURRENT
 : OPEN-LIMIT-BLKFILE ( blk nblks fam -- blkfileid )
    0 SWAP OPEN-BLKFILE     ( blk nblks  blkfile-id )
    DUP >R
-   ?DUP IF  BLKF.SLICE SUBSLICE  ELSE  2DROP  THEN
+   ?DUP IF  BLKF>SLICE SUBSLICE  ELSE  2DROP  THEN
    R>  ;
 
 
@@ -369,8 +369,8 @@ blkfile-private-wid SET-CURRENT
 : new-blkfile-source ( -- source-ctx )
    ['] tload-refill ['] tload-refetch
    sourcepool-get DUP >R    /SOURCE
-   ['] tload-getpos   R@ source.source SOURCE.GETPOS !
-   ['] tload-setpos   R@ source.source SOURCE.SETPOS !
+   ['] tload-getpos   R@ source.source SOURCE>GETPOS !
+   ['] tload-setpos   R@ source.source SOURCE>SETPOS !
    R>
 ;
 
@@ -438,10 +438,10 @@ FORTH-WORDLIST SET-CURRENT
 SYSTEM-WORDLIST SET-CURRENT
 : .BLKF  ( blkfid -- )
    CR ." BLKF:" DUP U.
-   CR ."  OFFSET : "  DUP BLKF.OFFSET @ U.
-   CR ."  BLK    : "  DUP BLKF.BLK    @ U.
-   CR ."  ORIGIN : "  DUP BLKF.ORIGIN @ U.
-   CR ."  SLICE  : "      BLKF.SLICE    U.
+   CR ."  OFFSET : "  DUP BLKF>OFFSET @ U.
+   CR ."  BLK    : "  DUP BLKF>BLK    @ U.
+   CR ."  ORIGIN : "  DUP BLKF>ORIGIN @ U.
+   CR ."  SLICE  : "      BLKF>SLICE    U.
 ;
 
 : .BLKFILE  ( blkfid -- )
@@ -455,17 +455,18 @@ SYSTEM-WORDLIST SET-CURRENT
    ( blkfile - extension to treat blocks as files     18 / n )
 : .SLICE   ( sliceid -- )
    CR ." SLICE:" DUP U.
-   CR ."  DRIVE  : "  DUP SLICE.DRIVE   @ U.
-   CR ."  OFFSET : "  DUP SLICE.OFFSET 2@ D.
-   CR ."  LIMIT  : "      SLICE.LIMIT   @ U.
+   CR ."  DRIVE  : "  DUP SLICE>DRIVE   @ U.
+   CR ."  OFFSET : "  DUP SLICE>OFFSET 2@ D.
+   CR ."  LIMIT  : "      SLICE>LIMIT   @ U.
 ;
 
 : .SOURCE  ( source-id -- )
    CR ." SOURCE: " DUP U.
-   CR ."  REFILL: " DUP  SOURCE.REFILL   @ DUP U.  .ID 
-   CR ."  REFETCH: " DUP  SOURCE.REFETCH   @ DUP U.  .ID 
-   CR ."  GETPOS " DUP  SOURCE.GETPOS   @ DUP U.  .ID 
-   CR ."  SETPOS " DUP  SOURCE.GETPOS   @ DUP U.  .ID 
+   CR ."  REFILL: " DUP  SOURCE>REFILL   @ DUP U.  .ID 
+   CR ."  GETPOS " DUP  SOURCE>GETPOS   @ DUP U.  .ID 
+   CR ."  SETPOS " DUP  SOURCE>GETPOS   @ DUP U.  .ID 
 ;
 
 CR  .( Blkfile loaded. )
+BLK @ U.
+SOURCE-ID .SOURCE
