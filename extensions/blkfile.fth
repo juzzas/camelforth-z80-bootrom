@@ -367,8 +367,9 @@ blkfile-private-wid SET-CURRENT
    ( blkfile - extension to treat blocks as files     14 / n )
 
 : new-blkfile-source ( -- source-ctx )
-   ['] tload-refill ['] tload-refetch
-   sourcepool-get DUP >R    /SOURCE
+   sourcepool-get >R
+   ['] tload-refill   R@ source.source SOURCE>REFILL !
+   ['] tload-refetch  R@ source.source SOURCE>REFETCH !
    ['] tload-getpos   R@ source.source SOURCE>GETPOS !
    ['] tload-setpos   R@ source.source SOURCE>SETPOS !
    R>
@@ -464,9 +465,7 @@ SYSTEM-WORDLIST SET-CURRENT
    CR ." SOURCE: " DUP U.
    CR ."  REFILL: " DUP  SOURCE>REFILL   @ DUP U.  .ID 
    CR ."  GETPOS " DUP  SOURCE>GETPOS   @ DUP U.  .ID 
-   CR ."  SETPOS " DUP  SOURCE>GETPOS   @ DUP U.  .ID 
+   CR ."  SETPOS "      SOURCE>GETPOS   @ DUP U.  .ID 
 ;
 
 CR  .( Blkfile loaded. )
-BLK @ U.
-SOURCE-ID .SOURCE

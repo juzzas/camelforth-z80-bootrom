@@ -1,14 +1,13 @@
 \ Forth-2012 test suite
 CR .( Starting Forth 2012 test suite... )
+: print-stack
+   CR ." SP: " SP@ U.  ." RP: " RP@  U.
+   CR ." STACK: " .S  ." (depth " DEPTH . ." )" ;
 
 150 LOAD     \ blkfile
 3012 LOAD     \ ttester
 30 LOAD      \ load Tools
 1 9 +THRU
-
-
-
-
 
 
 
@@ -38,12 +37,8 @@ CR .( Loading test utilities... )        3078 INCLUDE-BLKFILE
 CR .( Loading error reporting... )       3087 INCLUDE-BLKFILE
 300 LOAD     \ load Forth 2012 extenstion wordset loaders
 
-: print-stack
-   CR ." SP: " SP@ U.  ." RP: " RP@  U.
-   CR ." STACK: " .S  ;
-
 MARKER <reset>
-\ CR .( Starting core ext tests... )
+CR .( Starting core ext tests... )
 WORDSET_CORE_EXT LOAD
 TEST_COREEXT INCLUDE-BLKFILE
 CR .( free space: ) UNUSED U.
@@ -54,14 +49,12 @@ CR .( Starting tools tests... )
 MARKER <reset>
 WORDSET_TOOLS_EXT LOAD
 3207 INCLUDE-BLKFILE
-print-stack
 <reset>
 
 MARKER <reset>
 CR .( Starting exception tests... )
 \  WORDSET_EXCEPTION LOAD
 TEST_EXCEPTION INCLUDE-BLKFILE
-print-stack
 <reset>
 
 [DEFINED] TEST_LOCALS [IF]
@@ -69,7 +62,6 @@ print-stack
    CR .( Starting locals tests... )
    WORDSET_LOCALS LOAD
    TEST_LOCALS INCLUDE-BLKFILE
-print-stack
    <reset> 
 [THEN]
 
@@ -78,17 +70,12 @@ print-stack
    MARKER <reset>
    CR .( Starting block tests... )
    CR .( - loading assembler )
-print-stack
    90 LOAD    \ load assembler
-print-stack
    CR .( - loading pagedram )
    927 LOAD   \ load pagedram wordset
-print-stack
    CR .( - loading ramloader )
    3252 INCLUDE-BLKFILE  \ load ramloader
-print-stack
    TEST_BLOCK  RAMLOAD
-print-stack
    <reset>
 [THEN]
 
@@ -100,7 +87,6 @@ print-stack
    WORDSET_CORE_EXT LOAD
    WORDSET_FILEACCESS LOAD
    TEST_FILE INCLUDE-BLKFILE
-print-stack
    <reset>
 [THEN]
 

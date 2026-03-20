@@ -1,6 +1,3 @@
-90 LOAD    \ load assembler
-927 LOAD   \ load pagedram wordset
-
 ONLY FORTH ALSO SYSTEM
 blkfile-private-wid >ORDER
 
@@ -81,13 +78,13 @@ CREATE loadram-source  source-ctx% ALLOT
 
 
 : load-from-ram  ( -- )
-   ." LOADing from paged ram " CR
+   ." LOADing from paged ram " CR  .S CR
    ['] loadram-refill 0 loadram-source source-init
    ['] loadram-getpos  loadram-source SOURCE.GETPOS !
    ['] loadram-setpos  loadram-source SOURCE.SETPOS !
    0 TO pr-ptr
    loadram-source  source-input
-   ." LOADed from paged ram " CR
+   ." LOADed from paged ram " CR .S CR
 ;
 
 FORTH-WORDLIST SET-CURRENT
