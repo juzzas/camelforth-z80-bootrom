@@ -3330,28 +3330,23 @@ INTRP_NG9: DW CHECK_SP,DROP
 ; SOURCECTX structure
 ;   Each context struct is block file
 ;    REFILL xt  (1 cell)
-;    REFETCH xt  (1 cell)
 ;    GETPOS xt
 ;    SETPOS xt
 
-DEFC SOURCECTX_SIZE = 8
+DEFC SOURCECTX_SIZE = 6
 
 
 ;Z SOURCE>REFILL   source-id -- a-addr'       addr of current blk
     head_system(SOURCETOREFILL,SOURCE>REFILL,docode)
         jp ctx_next
 
-;Z SOURCE>REFETCH   source-id -- a-addr'   addr of current offs.
-    head_system(SOURCETOREFETCH,SOURCE>REFETCH,docode)
-        jp ctx_plus_2
-
 ;Z SOURCE>GETPOS   source-id -- a-addr'       addr of current blk
     head_system(SOURCETOGETPOS,SOURCE>GETPOS,docode)
-        jp ctx_plus_4
+        jp ctx_plus_2
 
 ;Z SOURCE>SETPOS   source-id -- a-addr'   addr of current offs.
     head_system(SOURCETOSETPOS,SOURCE>SETPOS,docode)
-        jp ctx_plus_6
+        jp ctx_plus_4
 
 ;Z SOURCE%   -- u              size of SOURCEILE context stucture
     head_system(SOURCESIZE,SOURCE%,docon)
@@ -3395,21 +3390,18 @@ LOAD_SETPOS:
 TIB_SOURCE_CTX:
         call docreate
         dw XREFILL8K
-        dw NOOP
         dw DEFAULT_GETPOS
         dw DEFAULT_SETPOS
 
 EVALUATE_SOURCE_CTX:
         call docreate
         dw FALSE
-        dw NOOP
         dw DEFAULT_GETPOS
         dw DEFAULT_SETPOS
 
 LOAD_SOURCE_CTX:
         call docreate
         dw LOAD_REFILL
-        dw LOAD_REFETCH
         dw DEFAULT_GETPOS
         dw LOAD_SETPOS
 
@@ -3491,14 +3483,6 @@ XREFILL_16K:
         call docolon
         dw SOURCE_ID,SOURCETOSOURCE_CTX
         dw SOURCETOREFILL,FETCHEXECUTE
-        dw EXIT
-
-;: REFETCH   ( -- )   call RESTORE-INPUT source refetch
-;   SOURCE-ID  SOURCE>SOURCE-CTX  SOURCE.REFETCH  ?@EXECUTE   ;
-REFETCH:
-        call docolon
-        dw SOURCE_ID,SOURCETOSOURCE_CTX
-        dw SOURCETOREFETCH,QFETCHEXECUTE
         dw EXIT
 
 

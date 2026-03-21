@@ -362,14 +362,16 @@ blkfile-private-wid SET-CURRENT
 ;
 
 : tload-getpos ( -- d )   SOURCE-ID  source>bufferpos@ ;
-: tload-setpos ( d -- )   SOURCE-ID  source>bufferpos! ;
+: tload-setpos ( d -- )
+   SOURCE-ID  source>bufferpos! 
+   tload-refetch 
+;
 
    ( blkfile - extension to treat blocks as files     14 / n )
 
 : new-blkfile-source ( -- source-ctx )
    sourcepool-get >R
    ['] tload-refill   R@ source.source SOURCE>REFILL !
-   ['] tload-refetch  R@ source.source SOURCE>REFETCH !
    ['] tload-getpos   R@ source.source SOURCE>GETPOS !
    ['] tload-setpos   R@ source.source SOURCE>SETPOS !
    R>

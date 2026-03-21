@@ -42,14 +42,6 @@ loadbuffer% BUFFER: loadbuffer
       0 FALSE
    THEN  ;
 
-BEGIN-STRUCTURE source-ctx%
-   SOURCE% +FIELD   source.source
-   FIELD:   source.handle
-END-STRUCTURE
-
-: source-init ( refill-xt refetch-xt ctx -- )
-   /SOURCE  ;
-
 
 : source-input  ( source-ctx -- )
    SAVE-INPUT N>R
@@ -61,8 +53,6 @@ END-STRUCTURE
        INTERPRET
    REPEAT
    NR> RESTORE-INPUT DROP  ;
-
-CREATE loadram-source  source-ctx% ALLOT
 
 : loadram-refill  ( -- f )
    loadbuffer  pr-to-string
@@ -76,15 +66,17 @@ CREATE loadram-source  source-ctx% ALLOT
 : loadram-getpos ( -- d )   pr-end pr-ptr ;
 : loadram-setpos ( d -- )   TO pr-ptr   TO pr-end ;
 
+CREATE loadram-source  SOURCE% ALLOT
+   ' loadram-refill loadram-source SOURCE>REFILL !
+   ' loadram-getpos loadram-source SOURCE>GETPOS !
+   ' loadram-setpos loadram-source SOURCE>SETPOS !
+
 
 : load-from-ram  ( -- )
-   ." LOADing from paged ram " CR  .S CR
-   ['] loadram-refill 0 loadram-source source-init
-   ['] loadram-getpos  loadram-source SOURCE.GETPOS !
-   ['] loadram-setpos  loadram-source SOURCE.SETPOS !
+   ." LOADing from paged ram " CR
    0 TO pr-ptr
    loadram-source  source-input
-   ." LOADed from paged ram " CR .S CR
+   ." LOADed from paged ram " CR
 ;
 
 FORTH-WORDLIST SET-CURRENT
