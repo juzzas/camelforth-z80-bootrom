@@ -1522,17 +1522,6 @@ roll_end:
         DW HERE,DUP,COMMADEST,TOL
         DW THEN,EXIT
 
-;Z ESAC   dest? --                   resolves branches for CASE
-;     BEGIN L> ?DUP WHILE POSTPONE THEN REPEAT
-;                                 resolve LEAVEs
-;     ; IMMEDIATE
-    immed(ESAC,ESAC,docolon)
-ESAC1:
-        DW LFROM,QDUP,qbranch,ESAC2
-        DW THEN,branch,ESAC1
-
-ESAC2:
-        DW EXIT
 
 ;X ENDCASE   dest? --   resolves branches for CASE dropping TOS 
 ;     POSTPONE DROP
@@ -1541,7 +1530,12 @@ ESAC2:
 ;     ; IMMEDIATE
     immed(ENDCASE,ENDCASE,docolon)
         DW lit,DROP,COMMAXT
-        DW ESAC,EXIT
+ESAC1:
+        DW LFROM,QDUP,qbranch,ESAC2
+        DW THEN,branch,ESAC1
+
+ESAC2:
+        DW EXIT
 
 
 ;X BEGIN-STRUCTURE                       ( -- addr 0 ; -- size )
@@ -1618,13 +1612,13 @@ DEFC DRIVECTX_SIZE = 8
     head_system(DRIVECTX,DRIVE%,docon)
         DW DRIVECTX_SIZE
 
-;Z DRIVE:  ( xt-read xt-write xt-capacity    "ccc" -- )
-;\          ( execution: -- drive-id )
-;\ Create a named DRIVE structure
-    head_system(DRIVECOLON,DRIVE:,docolon)
-        DW CREATE
-        DW ROT,COMMA,SWOP,COMMA,COMMA
-        DW EXIT
+dnl ;Z DRIVE:  ( xt-read xt-write xt-capacity    "ccc" -- )
+dnl ;\          ( execution: -- drive-id )
+dnl ;\ Create a named DRIVE structure
+dnl     head_system(DRIVECOLON,DRIVE:,docolon)
+dnl         DW CREATE
+dnl         DW ROT,COMMA,SWOP,COMMA,COMMA
+dnl         DW EXIT
 
 ; SLICE implementation ==========================
 
@@ -1686,13 +1680,13 @@ SLICE1:
         DW RESLICE
         DW EXIT
 
-;Z SLICE:   drive-id n "ccc" --           create named slice id
-;           execution:  -- slice-id )
-    head_system(SLICECOLON,SLICE:,docolon)
-        DW CREATE,HERE
-        DW SLICESIZE,ALLOT
-        DW SLASHSLICE
-        DW EXIT
+dnl ;Z SLICE:   drive-id n "ccc" --           create named slice id
+dnl ;           execution:  -- slice-id )
+dnl     head_system(SLICECOLON,SLICE:,docolon)
+dnl         DW CREATE,HERE
+dnl         DW SLICESIZE,ALLOT
+dnl         DW SLASHSLICE
+dnl         DW EXIT
 
 ;Z SLICE   -- slice-id          get currently selected slice id
     head_system(SLICE,SLICE,docolon)
@@ -2364,13 +2358,13 @@ xloader3:
         dw THRU
         dw EXIT
 
-;C COPY   n1 n2 --                          copy block n1 to n2
-;   SWAP BLOCK  ( n2 blk1 )
-;   SWAP BLOCK  ( blk1 blk2 )
-;   B/BLK MOVE UPDATE FLUSH ;
-    head(COPY,COPY,docolon)
-        dw SWOP,BLOCK,SWOP,BLOCK,B_BLK,MOVE,UPDATE,FLUSH
-        dw EXIT
+dnl ;C COPY   n1 n2 --                          copy block n1 to n2
+dnl ;   SWAP BLOCK  ( n2 blk1 )
+dnl ;   SWAP BLOCK  ( blk1 blk2 )
+dnl ;   B/BLK MOVE UPDATE FLUSH ;
+dnl     head(COPY,COPY,docolon)
+dnl         dw SWOP,BLOCK,SWOP,BLOCK,B_BLK,MOVE,UPDATE,FLUSH
+dnl         dw EXIT
 
 
 dnl ;: -->       \ -- ; LOAD NEXT screen
@@ -3515,7 +3509,9 @@ XREFILL_16K:
 ;  ENTRY ?@EXECUTE
 ;  ['] <SLEEP> U0 !  ( if we come back, the stop this thread )
 ;  (PAUSE)   ;
-    head_system(XINIT,<INIT>,docolon)
+dnl    head_system(XINIT,<INIT>,docolon)
+XINIT:
+        call docolon
        dw RFROM,CELLMINUS,UPSTORE
 XINIT1:
        dw S0,SPSTORE
@@ -3533,14 +3529,18 @@ XINIT1:
 ;Z <WAKE>   --                                "wake" task state
 ;  R> CELL- UP!
 ;  STACKTOP @ SP! RP!  ;
-    head_system(XWAKE,<WAKE>,docolon)
+dnl    head_system(XWAKE,<WAKE>,docolon)
+XWAKE:
+        call docolon
        dw RFROM,CELLMINUS,UPSTORE
        dw STACKTOP,FETCH,SPSTORE,RPSTORE
        dw EXIT
 
 ;Z <SLEEP>  --                            "sleeping" task state
 ;  R> CELL- UP! LINK @ >R  ;
-    head_system(XSLEEP,<SLEEP>,docolon)
+dnl    head_system(XSLEEP,<SLEEP>,docolon)
+XSLEEP:
+        call docolon
        dw RFROM,CELLMINUS,UPSTORE
        dw LINK,FETCH,TOR
        dw EXIT
@@ -3548,7 +3548,9 @@ XINIT1:
 ;Z (PAUSE)     --                                pause run-time
 ;  RP@ SP@ STACKTOP !
 ;  LINK @ >R ; COMPILE-ONLY
-    head_system(XPAUSE,(PAUSE),docolon)
+dnl    head_system(XPAUSE,(PAUSE),docolon)
+XPAUSE:
+        call docolon
         dw RPFETCH,SPFETCH,STACKTOP,STORE
         dw LINK,FETCH,TOR
         dw EXIT
@@ -3557,7 +3559,9 @@ XINIT1:
 ;  U0 OVER 256 MOVE   ( task-id )
 ;  DUP LINK !         ( task-id )
 ;  ['] <INIT>  SWAP !
-    head_system(INIT_TASK,INIT-TASK,docolon)
+dnl    head_system(INIT_TASK,INIT-TASK,docolon)
+INIT_TASK:
+        call docolon
        dw U0,OVER,lit,256,MOVE  ; copy USER variables
        dw DUP,LINK,STORE
        dw lit,XINIT,SWOP,STORE      ; set new task STATE to <INIT>
@@ -3567,6 +3571,57 @@ XINIT1:
 ;Z TASK%   -- u                      size of task control block
     head_system(TASKSIZE,TASK%,docon)
         dw 768
+
+;: TASK>LINK ( task-id -- addr ) LINK U0 - + ;
+
+;: TASK>STATUS ( task-id -- addr ) STATUS U0 - + ;
+
+;: TASK>ENTRY ( task-id -- addr ) ENTRY U0 - + ;
+TASKTOENTRY:
+        call docolon
+        DW lit,28,PLUS,EXIT
+
+;: START-TASK ( xt task-id -- ) 
+;    DUP INIT-TASK  TASK>ENTRY !  ;
+    head_system(START_TASK,START-TASK,docolon)
+        DW DUP,INIT_TASK,lit,28,PLUS,STORE
+        DW EXIT
+
+;: RESTART-TASK ( xt task-id -- ) 
+;    TUCK TASK>ENTRY !  ['] <INIT> SWAP !  ;
+    head_system(RESTART_TASK,RESTART-TASK,docolon)
+        DW TUCK,lit,28,PLUS,STORE
+        DW lit,XINIT,SWOP,STORE
+        DW EXIT
+
+;: STOP-TASK  ( task-id -- )
+;   TASK>STATUS ['] <SLEEP> SWAP ! ;
+    head_system(STOP_TASK,STOP-TASK,docolon)
+        DW lit,XSLEEP,SWOP,STORE
+        DW EXIT
+
+;: WAKE-TASK  ( task-id -- )
+;   TASK>STATUS  ['] <WAKE>  SWAP ! ;
+    head_system(WAKE_TASK,WAKE-TASK,docolon)
+        DW lit,XWAKE,SWOP,STORE
+        DW EXIT
+
+;: SLEEP ( -- ) ['] <SLEEP> STATUS ! PAUSE ;
+    head_system(SLEEP,SLEEP,docolon)
+        DW lit,XSLEEP,U0,STORE
+        DW PAUSE
+        DW EXIT
+
+;: MULTI ( -- )  ['] (PAUSE) 'PAUSE ! ;
+    head_system(MULTI,MULTI,docolon)
+        DW lit,XPAUSE,TICKPAUSE,STORE
+        DW EXIT
+
+;: SINGLE ( -- ) ['] NOOP 'PAUSE ! ;
+    head_system(SINGLE,SINGLE,docolon)
+        DW lit,NOOP,TICKPAUSE,STORE
+        DW EXIT
+
 
 ; RC2014 16K initialisation ====================
 

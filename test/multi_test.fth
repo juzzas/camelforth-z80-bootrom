@@ -1,5 +1,5 @@
 120 LOAD
-ONLY FORTH DEFINITIONS  ALSO UTILS
+ONLY FORTH DEFINITIONS  ALSO SYSTEM
 
 CR .( MultiTasking tests )
 CR .( Task "t1" updates task-count in the background. )
