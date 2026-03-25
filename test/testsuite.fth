@@ -10,6 +10,10 @@ CR .( Starting Forth 2012 test suite... )
 
 
 
+
+
+
+
 \ Forth-2012 test suite   1 / 2
 3021 CONSTANT TEST_PRELIM
 3033 CONSTANT TEST_CORE
@@ -26,9 +30,10 @@ CR .( Starting Forth 2012 test suite... )
 3237 CONSTANT TEST_STRING
 
 
-\ CR .( Starting preliminary tests... )  3015 INCLUDE-BLKFILE
-\ CR .( Starting core tests... )         3027 INCLUDE-BLKFILE
-\ CR .( Starting coreplustests )         3057 INCLUDE-BLKFILE
+\ CR .( Starting preliminary tests... )  3021 INCLUDE-BLKFILE
+CR .( Starting core tests... )         3033 INCLUDE-BLKFILE
+DECIMAL
+CR .( Starting coreplustests )         3063 INCLUDE-BLKFILE
 
 CR .( Loading test utilities... )        3078 INCLUDE-BLKFILE
 CR .( Loading error reporting... )       3087 INCLUDE-BLKFILE

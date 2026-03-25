@@ -111,10 +111,23 @@ VARIABLE SubstErr         \ Holds zero or an error code.
 
 
    \ forth2012 string wordlist                     jps  7 / 9
+: not-overlapped?    \ caddr1 len1 caddr2 len2 -- f
+\ *G Return true if the two strings do not overlap.
+  2OVER +  2 PICK U<   \ caddr1+len1 < caddr2
+  IF  2DROP 2DROP TRUE  EXIT  THEN
+  + ROT U<    \ caddr2+len2 < caddr1
+  NIP
+;
+: overlapped?  not-overlapped? 0= ;
+
 : SUBSTITUTE \ src slen dest dlen -- dest dlen' n
 \ Expand the source string using substitutions.
 \ Note that this version is simplistic, performs no error
 \ checking, and requires a global buffer and global variables.
+  2OVER 2OVER overlapped? IF
+    DROP NIP NIP  0 -78 EXIT
+  THEN
+
    DestLen ! 0 Dest 2! 0 -ROT \ -- 0 src slen
    0 SubstErr !
    BEGIN
