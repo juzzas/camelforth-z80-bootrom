@@ -39,7 +39,7 @@ loadbuffer% BUFFER: loadbuffer
       pr-ptr R@ + 1+  TO pr-ptr
       R> TRUE
    ELSE
-      0 FALSE
+      DROP 0 FALSE
    THEN  ;
 
 
@@ -73,25 +73,25 @@ CREATE loadram-source  SOURCE% ALLOT
 
 
 : load-from-ram  ( -- )
-   ." LOADing from paged ram " CR
+   CR ." LOADing from paged ram"
    0 TO pr-ptr
    loadram-source  source-input
-   ." LOADed from paged ram " CR
+   CR ." LOADed from paged ram"
 ;
 
 FORTH-WORDLIST SET-CURRENT
 
 : RAMLOAD  ( blk -- )
-   ." RAMLOADing from block " DUP U.  CR
+   CR ." RAMLOADing from block " DUP U.
    R/O OPEN-BLKFILE   ( blkfile-id )
    ?DUP IF 
       DUP copy-blkfile-to-ram
       CLOSE-BLKFILE  THROW
       load-from-ram
    ELSE
-      ." Unable to open file" CR
+      CR ." Unable to open file"
    THEN
-   ." RAMLOAD complete" CR
+   CR ." RAMLOAD complete"
 ;
 
 ONLY FORTH DEFINITIONS

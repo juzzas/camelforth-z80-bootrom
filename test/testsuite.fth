@@ -1,8 +1,5 @@
 \ Forth-2012 test suite
 CR .( Starting Forth 2012 test suite... )
-: print-stack
-   CR ." SP: " SP@ U.  ." RP: " RP@  U.
-   CR ." STACK: " .S  ." (depth " DEPTH . ." )" ;
 
 150 LOAD     \ blkfile
 3012 LOAD     \ ttester
@@ -51,11 +48,13 @@ WORDSET_TOOLS_EXT LOAD
 3207 INCLUDE-BLKFILE
 <reset>
 
+[DEFINED] TEST_EXCEPTION [IF]
 MARKER <reset>
 CR .( Starting exception tests... )
 \  WORDSET_EXCEPTION LOAD
 TEST_EXCEPTION INCLUDE-BLKFILE
 <reset>
+[THEN]
 
 [DEFINED] TEST_LOCALS [IF]
    MARKER <reset>
@@ -81,7 +80,7 @@ TEST_EXCEPTION INCLUDE-BLKFILE
 
 [DEFINED] TEST_FILE [IF]
    MARKER <reset>
-   CR BLK @ . CR .( Starting file tests... )
+   CR .( Starting file tests... )
    180 LOAD     \ blkfs
    3300 ROOT!
    WORDSET_CORE_EXT LOAD
@@ -97,7 +96,6 @@ TEST_EXCEPTION INCLUDE-BLKFILE
    WORDSET_STRING LOAD
    WORDSET_STRING_EXT LOAD
    TEST_STRING INCLUDE-BLKFILE
-print-stack
    <reset>
 [THEN]
 
@@ -106,7 +104,6 @@ print-stack
    CR .( Starting double tests... )
    WORDSET_DOUBLE_EXT LOAD
    TEST_DOUBLE INCLUDE-BLKFILE
-print-stack
    <reset>
 [THEN]
 
@@ -115,7 +112,6 @@ print-stack
    CR .( Starting facility tests... )
    WORDSET_FACILITY_EXT LOAD
    TEST_FACILITY INCLUDE-BLKFILE
-print-stack
    <reset>
 [THEN]
 
@@ -127,7 +123,6 @@ print-stack
    heap-size BUFFER: heap
    heap heap-size INIT-HEAP
    TEST_MEMORY INCLUDE-BLKFILE
-print-stack
    <reset>
 [THEN]
 
@@ -136,7 +131,6 @@ print-stack
    CR .( Starting search order tests... )
    WORDSET_SEARCHORDER LOAD
    TEST_SEARCHORDER INCLUDE-BLKFILE
-print-stack
    <reset>
 [THEN]
 

@@ -1,7 +1,7 @@
 \ forth2012 string wordlist                          jps  0 / 9
 CR .( Loading string-ext definitions... )
 FORTH DEFINITIONS
-1 9 +THRU
+1 10 +THRU
 
 
 
@@ -21,30 +21,30 @@ WORDLIST CONSTANT wid-subst
 \ Wordlist ID of the wordlist used to hold subst. names and
 \ replacement text.
 
+CREATE toupperbuf 32 ALLOT
+: toupper    ( c1 -- c2 = Convert the char. to upper case )
+  DUP [CHAR] a  [ CHAR z 1+ ] LITERAL  WITHIN IF
+    [ CHAR a CHAR A - ] LITERAL -
+  THEN
+;
 
-
-
-
-
-
-
-
+: upper ( addr len -- ) BOUNDS DO I C@ toupper I C! LOOP ;
 
    \ forth2012 string wordlist                     jps  2 / 9
 : makeSubst \ c-addr len -- c-addr
- wid-subst (CREATE-WID)  \ like CREATE but takes c-addr/len/wid
- HERE string-max ALLOT 0 OVER C! \ create buffer space
+   TUCK toupperbuf SWAP MOVE
+   toupperbuf SWAP   2DUP upper
+   wid-subst (CREATE-WID)
+   HERE string-max ALLOT 0 OVER C! \ create buffer space
 ;
 
 : findSubst \ c-addr len -- xt flag | 0
 \ Given a name string, find the substitution.
 \ Return xt and flag if found, or just zero if not found.
-\ Some systems may need to perform case conversion here.
+   TUCK toupperbuf SWAP MOVE
+   toupperbuf SWAP   2DUP upper
    wid-subst SEARCH-WORDLIST
 ;
-
-
-
 
    \ forth2012 string wordlist                     jps  3 / 9
 : REPLACES \ text tlen name nlen --
