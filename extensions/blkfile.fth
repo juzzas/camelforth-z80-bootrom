@@ -104,12 +104,14 @@ BEGIN-STRUCTURE BLKFILE-CONTEXT%
 END-STRUCTURE
 
 
+: binary?  ( blkfileid -- f )
+   blkfile.flags flag.binary AND 0<>  ;
 
+: readable?  ( blkfileid -- f )
+   blkfile.flags flag.readable AND 0<>  ;
 
-
-
-
-
+: writable?  ( blkfileid -- f )
+   blkfile.flags flag.writable AND 0<>  ;
 
    ( blkfile - extension to treat blocks as files      4 / n )
 BLKFILE-CONTEXT% create-pool:  blkfidpool
@@ -148,11 +150,11 @@ FORTH-WORDLIST SET-CURRENT
 : OPEN-FENCE-BLKFILE  ( blkstart blkend fam -- blkfileid )
    >R OVER  -  R>  OPEN-LIMIT-BLKFILE   ;
 : adjust-fpos  ( n  blkfileid -- )
-   DUP >R  BLKF>POSITION@  ( n d    r: blkfileid )
-   ROT M+  R>  BLKF>POSITION!  ;
+   DUP >R  BLKF-POSITION  ( n d    r: blkfileid )
+   ROT M+  R>  BLKF-POSITION!  ;
 
 : update-filesize  ( blkfileid -- )
-   DUP >R  BLKF>POSITION@ 
+   DUP >R  BLKF-POSITION 
    R@  blkfile.filesize 2@   DMAX
    R>  blkfile.filesize 2!  ;
 
@@ -188,23 +190,14 @@ CREATE eol$ 1 C, 13 C,
 : eof?   ( c-addr -- f )
    C@ 26 =   ;
 
-: binary?  ( blkfileid -- f )
-   blkfile.flags flag.binary AND 0<>  ;
-
-: readable?  ( blkfileid -- f )
-   blkfile.flags flag.readable AND 0<>  ;
-
-: readable?  ( blkfileid -- f )
-   blkfile.flags flag.writable AND 0<>  ;
-
 : ?calc-to-eof  ( u blkfileid --  u' )
    DUP blkfile.filesize 2@
-   ROT BLKF>POSITION@  D-
+   ROT BLKF-POSITION  D-
    IF   DROP ELSE UMIN  THEN  ;
 
 : at-eof?  ( blkfileid -- f )
    DUP blkfile.filesize 2@
-   ROT BLKF>POSITION@  D=  ;
+   ROT BLKF-POSITION  D=  ;
 
    ( blkfile - extension to treat blocks as files      8 / n )
 : (READ-FILE) ( c-addr u blkfileid -- u )
@@ -214,20 +207,20 @@ CREATE eol$ 1 C, 13 C,
    DUP >R ?calc-to-eof R>
    DUP at-eof? IF  DROP 2DROP 0 FALSE EXIT  THEN
 
-   DUP DUP >R  BLKF>POSITION@  2>R
+   DUP DUP >R  BLKF-POSITION  2>R
                       ( c-addr u blkfid  r: blkfid filepos )
    2>R DUP 2R>   ( c-addr c-addr u blkfid  r: blkfid filepos )
    BLKF-GETCHARS   ( c-addr c-addr u'  r: blkfid filepos )
 
    OVER eof? IF  
-      2R> R>  BLKF>POSITION!   2DROP 0 FALSE EXIT  THEN
+      2R> R>  BLKF-POSITION!   2DROP 0 FALSE EXIT  THEN
 
    scan-eof   ( c-addr u"   r: blkfid filepos )
    scan-eol   ( c-addr u"' f   r: blkfid filepos )
    ROT DROP   ( u"' f  r: blkfid filepos )
 
    OVER SWAP IF   1+   THEN
-       2R> ROT M+  R> BLKF>POSITION! 
+       2R> ROT M+  R> BLKF-POSITION! 
    TRUE  ;
 
    ( blkfile - extension to treat blocks as files      9 / n )
@@ -313,10 +306,10 @@ blkfile-private-wid SET-CURRENT
    source.blkfile @   ;
 
 : source>blkf-position@  ( source-ctx -- d )
-   source>blkfile BLKF>POSITION@  ;
+   source>blkfile BLKF-POSITION  ;
 
 : source>blkf-position!  ( d source-ctx -- )
-   source>blkfile BLKF>POSITION!  ;
+   source>blkfile BLKF-POSITION!  ;
 
 : source>bufferpos@  ( source-ctx -- d )
    source.bufferpos 2@  ;
@@ -324,21 +317,7 @@ blkfile-private-wid SET-CURRENT
 : source>bufferpos!  ( d source-ctx -- )
    source.bufferpos 2!  ;
 
-: TLIST ( blk -- )
-   R/O OPEN-BLKFILE   ( blkfile-id )
-   sourcepool-get DUP >R
-   source.blkfile !
-   BEGIN
-     R@ source.buffer  buff%
-     R@ source>blkfile (READ-LINE)   ( chrs f )
-   WHILE       ( chrs )
-     R@ source.buffer  SWAP TYPE CR
-   REPEAT   DROP
-   R@ source>blkfile  (CLOSE-BLKFILE)
-   R> sourcepool-free  ;
-
-
-: tload-refill  ( -- flag )
+: blkfile-refill  ( -- flag )
    SOURCE-ID  DUP >R      ( source-ctx   r: source-ctx )
    source>blkf-position@    R@ source>bufferpos!
 
@@ -350,30 +329,29 @@ blkfile-private-wid SET-CURRENT
    ELSE DROP  FALSE  THEN 
 ;
 
-: tload-refetch  ( -- )
-   CR ." tload refetch called: source-ctx: " SOURCE-ID U.
+: blkfile-refetch  ( -- )
    SOURCE-ID  DUP >R source>blkfile IF
       R@  source>bufferpos@
-            R@  source>blkfile BLKF>POSITION!
+            R@  source>blkfile BLKF-POSITION!
       R@  source.buffer buff%
             R@  source>blkfile (READ-LINE)
                     2DROP
    THEN  R> DROP
 ;
 
-: tload-getpos ( -- d )   SOURCE-ID  source>bufferpos@ ;
-: tload-setpos ( d -- )
+: blkfile-getpos ( -- d )   SOURCE-ID  source>bufferpos@ ;
+: blkfile-setpos ( d -- )
    SOURCE-ID  source>bufferpos! 
-   tload-refetch 
+   blkfile-refetch 
 ;
 
    ( blkfile - extension to treat blocks as files     14 / n )
 
 : new-blkfile-source ( -- source-ctx )
    sourcepool-get >R
-   ['] tload-refill   R@ source.source SOURCE>REFILL !
-   ['] tload-getpos   R@ source.source SOURCE>GETPOS !
-   ['] tload-setpos   R@ source.source SOURCE>SETPOS !
+   ['] blkfile-refill   R@ source.source SOURCE>REFILL !
+   ['] blkfile-getpos   R@ source.source SOURCE>GETPOS !
+   ['] blkfile-setpos   R@ source.source SOURCE>SETPOS !
    R>
 ;
 
@@ -423,10 +401,10 @@ blkfile-private-wid SET-CURRENT
    ( blkfile - extension to treat blocks as files     16 / n )
 FORTH-WORDLIST SET-CURRENT
 : FILE-POSITION  ( fileid -- ud ior )
-   BLKF>POSITION@   0 ;
+   BLKF-POSITION   0 ;
 
 : REPOSITION-FILE ( ud fileid -- ior )
-   BLKF>POSITION!   0 ;
+   BLKF-POSITION!   0 ;
 
 : FILE-SIZE ( fileid -- ud ior )
    blkfile.filesize 2@   0 ;
@@ -438,36 +416,4 @@ FORTH-WORDLIST SET-CURRENT
    DROP FLUSH   0 ;
 
    ( blkfile - extension to treat blocks as files     17 / n )
-SYSTEM-WORDLIST SET-CURRENT
-: .BLKF  ( blkfid -- )
-   CR ." BLKF:" DUP U.
-   CR ."  OFFSET : "  DUP BLKF>OFFSET @ U.
-   CR ."  BLK    : "  DUP BLKF>BLK    @ U.
-   CR ."  ORIGIN : "  DUP BLKF>ORIGIN @ U.
-   CR ."  SLICE  : "      BLKF>SLICE    U.
-;
-
-: .BLKFILE  ( blkfid -- )
-   DUP .BLKF
-   CR ." BLKFILE:"       DUP U. CR
-   CR ."  FLAGS  : "     DUP blkfile.flags     @   U.
-   CR ."  NAME : "       DUP blkfile.name      COUNT TYPE
-   CR ."  FILESIZE : "       blkfile.filesize  2@  D.
-;
-
-   ( blkfile - extension to treat blocks as files     18 / n )
-: .SLICE   ( sliceid -- )
-   CR ." SLICE:" DUP U.
-   CR ."  DRIVE  : "  DUP SLICE>DRIVE   @ U.
-   CR ."  OFFSET : "  DUP SLICE>OFFSET 2@ D.
-   CR ."  LIMIT  : "      SLICE>LIMIT   @ U.
-;
-
-: .SOURCE  ( source-id -- )
-   CR ." SOURCE: " DUP U.
-   CR ."  REFILL: " DUP  SOURCE>REFILL   @ DUP U.  .ID 
-   CR ."  GETPOS " DUP  SOURCE>GETPOS   @ DUP U.  .ID 
-   CR ."  SETPOS "      SOURCE>GETPOS   @ DUP U.  .ID 
-;
-
 CR  .( Blkfile loaded. )

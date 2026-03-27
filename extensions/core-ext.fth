@@ -32,6 +32,11 @@ ONLY FORTH DEFINITIONS
 
 \ Forth 2012 Core extensions for CamelForth BootROM       2 / n
 
+: BUFFER: ( u <name> -- )
+   HERE SWAP ALLOT  \ ram { b_0 | ... | b_u }
+   CREATE ,         \ rom { 'ram }
+  DOES> ( -- addr ) @ ;
+
 : EXTRACTNUM    ( c-addr len base -- c-addr' len' u )
 \ Extract a number in the given base from the start of the
 \ string, returning the remaining string starting at the first
@@ -39,11 +44,6 @@ ONLY FORTH DEFINITIONS
   BASE @ >R  BASE !
   0 0 2SWAP >NUMBER 2SWAP DROP
   R> BASE !  ;
-
-
-
-
-
 
 
 \ Forth 2012 Core extensions for CamelForth BootROM       3 / n

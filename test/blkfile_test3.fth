@@ -45,17 +45,18 @@ TESTING SET-SOURCE with SOURCE-ID
 
 T{ bf1  -> TRUE }T
 
-TESTING source calls refill and refetch
+TESTING source calls refill
 VARIABLE bf2-a   FALSE bf2-a !
-VARIABLE bf2-b   FALSE bf2-b !
 VARIABLE bf2-c   FALSE bf2-c !
 
 : bf2-refill  ( -- f )  TRUE bf2-a !  TRUE  ;
-: bf2-refetch  ( -- )  TRUE bf2-b !  ;
+: bf2-getpos ( -- d )   0. ;
+: bf2-setpos ( d -- )  2DROP  ;
 
 T{ sourcepool-get TO sid1  -> }T
-T{ ' bf2-refill  sid1 source.source SOURCE.REFILL !  -> }T
-T{ ' bf2-refetch  sid1 source.source SOURCE.REFETCH !  -> }T
+T{ ' bf2-refill  sid1 source.source SOURCE>REFILL ! -> }T
+T{ ' bf2-getpos  sid1 source.source SOURCE>GETPOS ! -> }T
+T{ ' bf2-setpos  sid1 source.source SOURCE>SETPOS ! -> }T
 
 : bf2  ( source-id -- )
    SAVE-INPUT N>R
@@ -66,14 +67,12 @@ T{ ' bf2-refetch  sid1 source.source SOURCE.REFETCH !  -> }T
 
 T{ bf2 -> }T
 T{ bf2-a @ -> TRUE }T
-T{ bf2-b @ -> TRUE }T
 T{ bf2-c @ -> TRUE }T
 
 T{ sid1 sourcepool-free -> }T
 
-CR .( before TLIST )
-3660 TLIST
-CR .( after TLIST )
+TESTING LIST-BLKFILE
+3660 LIST-BLKFILE
 
 
 TESTING include INCLUDE-BLKFILE

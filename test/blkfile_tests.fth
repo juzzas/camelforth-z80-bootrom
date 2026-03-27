@@ -1,8 +1,8 @@
 CR .( BLKFILE test suite )
-   3006 LOAD  \ load tester
+   3012 LOAD  \ load tester
    150 LOAD   \ load blkfile
+   810 INCLUDE-BLKFILE  \ load blkfile-tools
 ONLY FORTH ALSO SYSTEM
-
    3605 CONSTANT test-block   3675 CONSTANT ipsum-file
    3678 CONSTANT test-blkfile-inc
    3679 CONSTANT test-blkfile-nested
@@ -12,7 +12,7 @@ ONLY FORTH ALSO SYSTEM
 
 test-block WIPE FLUSH
 3615 LOAD  3630 LOAD  3645 LOAD  \ blkfile tests
-180 LOAD   570 LOAD    \ load blkfs
+570 LOAD    \ load blkfs + file access
 3660 INCLUDE-BLKFILE   \ start blkfs tests
 
 

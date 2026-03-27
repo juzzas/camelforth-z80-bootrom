@@ -613,16 +613,16 @@ DMIN1:
         DW lit,branch,COMMABRANCH
         DW HERE,DUP,COMMADEST,EXIT
 
-;X BUFFER:    u "name" --      create a named buffer of u bytes
-;\        execution:   -- addr 
-; For RAM-only and for RAM/ROM systems
-;     : BUFFER: ( u <name> -- )
-;        HERE SWAP ALLOT  \ ram { b_0 | ... | b_u }
-;        CREATE ,         \ rom { 'ram }
-;        DOES> ( -- addr ) @ ;
-    head(BUFFERCOLON,BUFFER:,docolon)
-        DW CREATE,ALLOT
-        DW EXIT
+dnl ;X BUFFER:    u "name" --      create a named buffer of u bytes
+dnl ;\        execution:   -- addr 
+dnl ; For RAM-only and for RAM/ROM systems
+dnl ;     : BUFFER: ( u <name> -- )
+dnl ;        HERE SWAP ALLOT  \ ram { b_0 | ... | b_u }
+dnl ;        CREATE ,         \ rom { 'ram }
+dnl ;        DOES> ( -- addr ) @ ;
+dnl     head(BUFFERCOLON,BUFFER:,docolon)
+dnl         DW CREATE,ALLOT
+dnl         DW EXIT
 
 ;: SKIP-SPACE   c-addr u -- c-addr' u'
 ;                          skip chars <32
@@ -1088,9 +1088,11 @@ dnl     head(UDOTW,U.W,docolon)
 dnl         dw XUDOTW,TYPE,SPACE
 dnl         dw EXIT
 dnl 
-;Z PRINTABLE?   n -- f                  is character printable?
+;: PRINTABLE?   n -- f                  is character printable?
 ;    20 7F WITHIN ;
-    head(PRINTABLEQ,PRINTABLE?,docolon)
+dnl    head(PRINTABLEQ,PRINTABLE?,docolon)
+PRINTABLEQ:
+        call docolon
         dw lit,0x20,lit,0x7f,WITHIN
         dw EXIT
 
@@ -1292,8 +1294,7 @@ QFIND_LOCALS:
 ;                         ( c-addr len nfa     if found )
 ;    THEN
 ;    NIP NIP ;
-FIND_NAME:
-        call docolon
+    head(FIND_NAME,FIND-NAME,docolon)
         DW QFIND_LOCALS,DUP,ZEROEQUAL,qbranch,FINDNAME1
         DW DROP
         DW lit,FIND_NAME_IN,WORDLISTS,STACK_BOUNDS,MAP_UNTIL
@@ -2344,6 +2345,14 @@ xloader3:
         dw DUP,THRU
         dw EXIT
 
+;Z ?LOAD   blk f --             load and evaluate block if true
+;   DUP THRU  ;
+    head(QLOAD,?LOAD,docolon)
+        dw qbranch,QLOAD1
+        dw LOAD,EXIT
+QLOAD1: dw DROP
+        dw EXIT
+
 ;C +LOAD   n --                   load and evaluate block BLK+n
 ;     BLK @ + LOAD  ;
     head(PLUSLOAD,+LOAD,docolon)
@@ -2703,10 +2712,10 @@ INDEX1:
         dw EXIT
 
 ;C WIPE   n --                                    erase block n 
-;    BUFFER 1024 BLANK
+;    BUFFER B/BLK BLANK
 ;    UPDATE ;
     head(WIPE,WIPE,docolon)
-        dw BUFFER,lit,1024,BLANK
+        dw BUFFER,B_BLK,BLANK
         dw UPDATE
         dw EXIT
 

@@ -1,17 +1,6 @@
-( blkfs - extension to treat blocks as a filesystem      0 / n)
-
 CR .( Loading blkfs "filesystem"... )
 
-
-
-
-
-
 ONLY FORTH DEFINITIONS
-1 16 +THRU
-ONLY FORTH DEFINITIONS
-
-
 
 
 \ blkfilefs

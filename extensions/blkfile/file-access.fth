@@ -1,18 +1,7 @@
 \ file-access wordset
 
 \ requires blkfile and blkfs wordsets
-CR .( Loading file access words... )
-
-ONLY FORTH DEFINITIONS
-1 7 +THRU
-ONLY FORTH DEFINITIONS
-
-
-
-
-
-
-
+CR .( Loading blkfile file words... )
 
    \ file-access wordset: OPEN-FILE CLOSE-FILE  CREATE-FILE
 blkfile-private-wid >ORDER   blkfile-private-wid SET-CURRENT

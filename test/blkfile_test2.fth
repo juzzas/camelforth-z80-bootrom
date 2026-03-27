@@ -36,7 +36,7 @@ T{ fid3 0 = -> FALSE }T
 T{ fid1 fid3 = -> FALSE }T
 T{ fid2 fid3 = -> FALSE }T
 
-128 BUFFER: read-buffer
+CREATE read-buffer 128 ALLOT
 
 
 TESTING OPEN-BLKFILE READ-FILE and CLOSE-BLKFILE
@@ -56,7 +56,7 @@ T{ read-block 1 R/O OPEN-LIMIT-BLKFILE TO fid1 -> }T
 T{ fid1 0 = -> FALSE }T
 T{ read-buffer 4 fid1 READ-FILE -> 4 0 }T
 fid1 .BLKFILE
-fid1 BLKF.SLICE  .SLICE
+fid1 BLKF>SLICE  .SLICE
 T{ fid1 CLOSE-BLKFILE -> 0 }T
 T{ read-buffer C@  -> 'T' }T
 T{ read-buffer 1 + C@  -> 'H' }T
@@ -88,19 +88,19 @@ T{ fid1 FILE-POSITION -> 6 S>D 0 }T
 T{ read-buffer 128 fid1 READ-LINE -> 5  -1 0 }T
 read-buffer 128 MEMDUMP
 fid1 .BLKFILE
-fid1 BLKF.SLICE  .SLICE
+fid1 BLKF>SLICE  .SLICE
 T{ fid1 CLOSE-BLKFILE -> 0 }T
 
 
 TESTING OPEN-BLKFILE WRITE-LINE and CLOSE-BLKFILE
-test-block WIPE
+test-block WIPE  FLUSH
 T{ test-block  R/W OPEN-BLKFILE TO fid1 -> }T
 T{ S" Write line 1"  fid1 WRITE-LINE -> 0 }T
 T{ fid1 FILE-POSITION -> 13 S>D 0 }T
 T{ S" Write line 2"  fid1 WRITE-LINE -> 0 }T
 T{ fid1 FILE-POSITION -> 26 S>D 0 }T
 fid1 .BLKFILE
-fid1 BLKF.SLICE  .SLICE
+fid1 BLKF>SLICE  .SLICE
 T{ fid1 CLOSE-BLKFILE -> 0 }T
 
 test-block LIST
@@ -112,12 +112,12 @@ T{ fid1 0 = -> FALSE }T
 T{ read-buffer 3 fid1 READ-LINE -> 3 -1 0 }T
 T{ fid1 FILE-POSITION  -> 3 S>D 0 }T
 fid1 .BLKFILE
-fid1 BLKF.SLICE  .SLICE
+fid1 BLKF>SLICE  .SLICE
 read-buffer 32 MEMDUMP
 T{ read-buffer 0 fid1 READ-LINE  -> 0  -1 0 }T
 T{ fid1 FILE-POSITION  -> 3 S>D 0 }T
 fid1 .BLKFILE
-fid1 BLKF.SLICE  .SLICE
+fid1 BLKF>SLICE  .SLICE
 T{ fid1 CLOSE-BLKFILE -> 0 }T
 
 CR .( Finished blkfile_test2 )
