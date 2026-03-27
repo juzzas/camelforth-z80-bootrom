@@ -2487,20 +2487,20 @@ BYTES_TO_READ1:
         DW RFROM,SELECT
         DW EXIT
 
-;Z BLKF>POSITION@ ( blkfile -- d )
+;Z BLKF-POSITION ( blkfile -- d )
 ;    DUP  BLKF.BLK @  OVER BLKF.ORIGIN @  -   1024 M*   ( blkfile-id d )
 ;    ROT  BLKF.OFFSET @   M+  ;
-    head_system(BLKFTOPOSITIONFETCH,BLKF>POSITION@,docolon)
+    head_system(BLKFTOPOSITIONFETCH,BLKF-POSITION,docolon)
         DW DUP,CELLPLUS,FETCH,OVER,BLKFTOORIGIN,FETCH,MINUS,B_BLK,MSTAR
         DW ROT,FETCH,MPLUS
         DW EXIT
 
-;Z BLKF>POSITION!  ( d blkfile -- )
+;Z BLKF-POSITION!  ( d blkfile -- )
 ;    >R 1024  FM/MOD   (  offset blk   r: blkfile-id )
 ;    R@  BLKF.ORIGIN @ +
 ;    R@  BLKF.BLK !
 ;    R>  BLKF.OFFSET !  ;
-    head_system(BLKFTOPOSITIONSTOR,BLKF>POSITION!,docolon)
+    head_system(BLKFTOPOSITIONSTOR,BLKF-POSITION!,docolon)
         DW TOR,B_BLK,FMSLASHMOD
         DW RFETCH,BLKFTOORIGIN,FETCH,PLUS
         DW RFETCH,CELLPLUS,STORE
