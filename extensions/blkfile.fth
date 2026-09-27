@@ -294,9 +294,6 @@ BLKFILE-SOURCE% create-pool:  sourcepool
    R> 0 ?DO sourcepool-free LOOP  ;
 8 sourcepool-reserve
 
-: source-file?  ( source-id -- f )
-   ?DUP IF  -1 <>  ELSE  FALSE  THEN ;
-
 FORTH-WORDLIST SET-CURRENT
 
    ( blkfile - extension to treat blocks as files     12 / n )
