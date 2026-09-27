@@ -17,7 +17,7 @@ PREVIOUS
    \ CamelForth BootROM multi-tasking wordset     1 / 4
 
 CODE [C  $F3 C, ( DI )  NEXT, ;CODE \ enter critical section
-CODE C}  $FB C, ( EI )  NEXT, ;CODE \ exit critical section
+CODE C]  $FB C, ( EI )  NEXT, ;CODE \ exit critical section
 
 
 : ATOMIC@ ( a-addr -- n )  [C @ C] ;
