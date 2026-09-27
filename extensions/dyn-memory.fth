@@ -71,8 +71,8 @@ CR .( Loading dynamic memory... )
 : FREE  ( a-addr -- ior )
     (FREE)  0  ( always succeeds )  ;
 
-
-
+: ?FREE   ( a-addr -- ior = Free the address if not nil )
+  DUP 0<>  IF   FREE   ELSE   DROP 0   THEN   ;
 
 
 
