@@ -24,13 +24,15 @@ CODE PRC@
    EI              \ EI
    0 B MVI         \ LD B, 0
    A C MOV         \ LD C, A
-
-\   <$  F3  D3 38  0A  D3 38  FB  06 00  4F  $>
    NEXT,
 ;CODE
 
+\ Fetch byte from paged RAM, increment address. Useful for memory walking.
+: PRC@+  ( addr -- addr' c )
+   DUP PRC@ >R 1+ R> ;
 
-\ Store byte from paged RAM   ( c addr -- )
+
+\ Store byte to paged RAM   ( c addr -- )
 CODE PRC!
    B PUSH      \ PUSH BC
    H POP       \ POP HL      ; addr 
@@ -41,29 +43,67 @@ CODE PRC!
    $38 OUT     \ OUT $38,A   ; page rom
    EI          \ EI
    B POP       \ POP BC      ; next TOS
-
-\   <$  C5  E1  C1  F3  D3 38  71  D3 38  FB  C1  $>
    NEXT,
 ;CODE
 
+\ Store byte into paged RAM, increment address. Useful for memory walking.
+: PRC!+  ( c addr -- addr' )
+   TUCK PRC! 1+ ;
 
-\ Copy block from paged RAM  ( src dest u -- )
-CODE PRMOVE
+\ Copy block from paged RAM (move from bottom)
+CODE PRCMOVE  ( src dest u -- )
    B PUSH           \ PUSH BC
    EXX              \ EXX
    B POP            \ POP BC   ; u
    D POP            \ POP DE   ; dest
    H POP            \ POP HL   ; src
-   DI               \ DI
-   $38 OUT          \ OUT $38,A   ; page ram
-   BEGIN
-     LDI                          \ LDI
-     B A MOV        \ LD A,B
-     C ORA          \ OR C
-   0= UNTIL         \ JP NZ, label
-   $38 OUT          \ OUT $38,A   ; page rom
-   EI               \ EI
+
+   B A MOV          \ LD A,B
+   C ORA            \ OR C
+   0<> IF
+      DI            \ DI
+      $38 OUT       \ OUT $38,A   ; page ram
+      LDIR          \ LDIR
+      $38 OUT       \ OUT $38,A   ; page rom
+      EI            \ EI
+   THEN
+
    EXX              \ EXX
    B POP            \ POP BC      ; next TOS
    NEXT,
 ;CODE
+
+\ Copy block from paged RAM (move from top)
+CODE PRCMOVE>  ( src dest u -- )
+   B PUSH           \ PUSH BC
+   EXX              \ EXX
+   B POP            \ POP BC   ; u
+   H POP            \ POP DE   ; dest
+   D POP            \ POP HL   ; src
+
+   B A MOV          \ LD A,B
+   C ORA            \ OR C
+   0<> IF
+      DI            \ DI
+      $38 OUT       \ OUT $38,A   ; page ram
+      B DAD         \ ADD HL, BC   \ last byte in destination
+      H DCX         \ DEC HL
+      XCHG          \ EX DE, HL
+      B DAD         \ ADD HL, BC   \ last byte in source
+      H DCX         \ DEC HL
+      LDDR
+      $38 OUT       \ OUT $38,A   ; page rom
+      EI            \ EI
+   THEN
+
+   EXX              \ EXX
+   B POP            \ POP BC      ; next TOS
+   NEXT,
+;CODE
+
+\ Smart paged ram move
+: PRMOVE    ( addr1 addr2 u -- )                         smart move
+  >R 2DUP SWAP DUP R@ +  \   -- ... dst src src+n
+  WITHIN IF  R> PRCMOVE>   \     src <= dst < src+n
+       ELSE  R> PRCMOVE  THEN ; \         otherwise
+
