@@ -35,61 +35,61 @@
 
 SECTION code
 
-;C BL      -- char                               an ASCII space
+;C BL   ( -- char )                                              an ASCII space
     head(BL,BL,docon)
         dw 20h
 
-;Z TIB%    -- n                                     size of TIB
+;Z TIB%   ( -- n )                                                  size of TIB
     head(TIBSIZE,TIB%,docon)
         dw 254          ; 2 chars safety zone
 
-;X TIB     -- a-addr                      Terminal Input Buffer
+;X TIB   ( -- a-addr )                                    Terminal Input Buffer
 ;  HEX 8400 CONSTANT TIB
     head(TIB,TIB,docon)
         dw $8400
 
 
-;Z U0      -- a-addr                     current user area adrs
+;Z U0   ( -- a-addr )                                    current user area adrs
 ;  0 USER U0
     head(U0,U0,douser)
         dw 0
 
-;C >IN     -- a-addr                      holds offset into TIB
+;C >IN   ( -- a-addr )                                    holds offset into TIB
 ;  2 USER >IN
     head(TOIN,>IN,douser)
         dw 2
 
-;C BASE    -- a-addr                     holds conversion radix
+;C BASE   ( -- a-addr )                                  holds conversion radix
 ;  4 USER BASE
     head(BASE,BASE,douser)
         dw 4
 
-;C STATE   -- a-addr                       holds compiler state
+;C STATE   ( -- a-addr )                                   holds compiler state
 ;  6 USER STATE
     head(STATE,STATE,douser)
         dw 6
 
-;Z DP      -- a-addr                       holds dictionary ptr
+;Z DP   ( -- a-addr )                                      holds dictionary ptr
 ;  8 USER DP
     head(DP,DP,douser)
         dw 8
 
-;Z 'SOURCE  -- a-addr                      two cells: len, adrs
+;Z 'SOURCE   ( -- a-addr )                                 two cells: len, adrs
 ; 10 USER 'SOURCE
     head(TICKSOURCE,'SOURCE,douser)
         dw 10
 
-;Z LATEST    -- a-addr                       last word in dict.
+;Z LATEST   ( -- a-addr )                                    last word in dict.
 ;   14 USER LATEST
     head(LATEST,LATEST,douser)
         dw 14
 
-;Z HP       -- a-addr                              HOLD pointer
+;Z HP   ( -- a-addr )                                              HOLD pointer
 ;   16 USER HP
     head(HP,HP,douser)
         dw 16
 
-;Z LP       -- a-addr                       Leave-stack pointer
+;Z LP   ( -- a-addr )                                       Leave-stack pointer
 ;   18 USER LP
     head(LP,LP,douser)
         dw 18
@@ -102,14 +102,14 @@ BLK:
 ;  22 USER SLICE-ID
 ;  24 USER SCR
 
-;Z HANDLER      -- a-addr       if set, use XT as THROW handler
+;Z HANDLER   ( -- a-addr )                      if set, use XT as THROW handler
 ;  26 USER HANDLER
     head(HANDLER,HANDLER,douser)
         dw 26
 
 ; 28 USER ENTRY
 
-;Z CURRENT      -- a-addr                address of CURRENT wid
+;Z CURRENT   ( -- a-addr )                               address of CURRENT wid
 ;  30 USER CURRENT
     head(CURRENT,CURRENT,douser)
         dw 30
@@ -118,20 +118,20 @@ BLK:
 ; 38 USER STACKTOP
 
 
-;Z S0       -- a-addr                    end of parameter stack
+;Z S0   ( -- a-addr )                                    end of parameter stack
     head(S0,S0,douser)
         dw 200h
 
-;X PAD       -- a-addr                          user PAD buffer
+;X PAD   ( -- a-addr )                                          user PAD buffer
 ;                                           = end of hold area!
     head(PAD,PAD,douser)
         dw 128h
 
-;Z L0       -- a-addr                     bottom of Leave stack
+;Z L0   ( -- a-addr )                                     bottom of Leave stack
     head(L0,L0,douser)
         dw 200h
 
-;Z R0       -- a-addr                       end of return stack
+;Z R0   ( -- a-addr )                                       end of return stack
     head(R0,R0,douser)
         dw 400h
 
@@ -153,51 +153,51 @@ UINIT:
         DW 1            ; CURRENT                    30
 
 
-;Z #INIT    -- n                  #bytes of user area init data
+;Z #INIT   ( -- n )                               #bytes of user area init data
     head(NINIT,``#INIT'',docon)
         DW 32
 
 ; ARITHMETIC OPERATORS ==========================
 
-;C S>D    n -- d                         single -> double prec.
+;C S>D   ( n -- d )                                      single -> double prec.
 ;   DUP 0< ;
     head(STOD,S>D,docolon)
         dw DUP,ZEROLESS,EXIT
 
-;C D>S   ( d -- s )                      double -> single prec.
+;C D>S   ( d -- s )                                      double -> single prec.
 ;   DROP ;
     head(DTOS,D>S,docolon)
         dw DROP,EXIT
 
-;Z ?NEGATE  n1 n2 -- n3                negate n1 if n2 negative
+;Z ?NEGATE   ( n1 n2 -- n3 )                           negate n1 if n2 negative
 ;   0< IF NEGATE THEN ;        ...a common factor
     head(QNEGATE,?NEGATE,docolon)
         DW ZEROLESS,qbranch,QNEG1,NEGATE
 QNEG1:  DW EXIT
 
-;C ABS     n1 -- +n2                             absolute value
+;C ABS   ( n1 -- +n2 )                                           absolute value
 ;   DUP ?NEGATE ;
     head(ABS,ABS,docolon)
         DW DUP,QNEGATE,EXIT
 
-;X DNEGATE   d1 -- d2                   negate double precision
+;X DNEGATE   ( d1 -- d2 )                               negate double precision
 ;   SWAP INVERT SWAP INVERT 1 M+ ;
     head(DNEGATE,DNEGATE,docolon)
         DW SWOP,INVERT,SWOP,INVERT,lit,1,MPLUS
         DW EXIT
 
-;Z ?DNEGATE  d1 n -- d2                 negate d1 if n negative
+;Z ?DNEGATE   ( d1 n -- d2 )                            negate d1 if n negative
 ;   0< IF DNEGATE THEN ;       ...a common factor
     head(QDNEGATE,?DNEGATE,docolon)
         DW ZEROLESS,qbranch,DNEG1,DNEGATE
 DNEG1:  DW EXIT
 
-;X DABS     d1 -- +d2                  absolute value dbl.prec.
+;X DABS   ( d1 -- +d2 )                                absolute value dbl.prec.
 ;   DUP ?DNEGATE ;
     head(DABS,DABS,docolon)
         DW DUP,QDNEGATE,EXIT
 
-;C M*     n1 n2 -- d                  signed 16*16->32 multiply
+;C M*   ( n1 n2 -- d )                                signed 16*16->32 multiply
 ;   2DUP XOR >R        carries sign of the result
 ;   SWAP ABS SWAP ABS UM*
 ;   R> ?DNEGATE ;
@@ -206,7 +206,7 @@ DNEG1:  DW EXIT
         DW SWOP,ABS,SWOP,ABS,UMSTAR
         DW RFROM,QDNEGATE,EXIT
 
-;C SM/REM   d1 n1 -- n-rem n-quot.        symmetric signed div
+;C SM/REM   ( d1 n1 -- n-rem n-quot. )                     symmetric signed div
 ;   2DUP XOR >R              sign of quotient
 ;   OVER >R                  sign of remainder
 ;   ABS >R DABS R> UM/MOD
@@ -219,7 +219,7 @@ DNEG1:  DW EXIT
         DW SWOP,RFROM,QNEGATE,SWOP,RFROM,QNEGATE
         DW EXIT
 
-;C FM/MOD   d1 n1 -- n-rem n-quot.        floored signed div'n
+;C FM/MOD   ( d1 n1 -- n-rem n-quot. )                     floored signed div'n
 ;   DUP >R              divisor
 ;   2DUP XOR >R         sign of quotient
 ;   >R                  divisor
@@ -245,43 +245,43 @@ DNEG1:  DW EXIT
 FMMOD1: DW RFROM,DROP
         DW EXIT
 
-;C *      n1 n2 -- n3                           signed multiply
+;C *   ( n1 n2 -- n3 )                                          signed multiply
 ;   M* DROP ;
     head(STAR,*,docolon)
         dw MSTAR,DROP,EXIT
 
-;C /MOD   n1 n2 -- n3 n4                   signed divide/rem'dr
+;C /MOD   ( n1 n2 -- n3 n4 )                               signed divide/rem'dr
 ;   >R S>D R> FM/MOD ;
     head(SLASHMOD,/MOD,docolon)
         dw TOR,STOD,RFROM,SMSLASHREM,EXIT
 
-;C /      n1 n2 -- n3                             signed divide
+;C /   ( n1 n2 -- n3 )                                            signed divide
 ;   /MOD nip ;
     head(SLASH,/,docolon)
         dw SLASHMOD,NIP,EXIT
 
-;C MOD    n1 n2 -- n3                          signed remainder
+;C MOD   ( n1 n2 -- n3 )                                       signed remainder
 ;   /MOD DROP ;
     head(MOD,MOD,docolon)
         dw SLASHMOD,DROP,EXIT
 
-;C */MOD  n1 n2 n3 -- n4 n5                  n1*n2/n3, rem&quot
+;C */MOD   ( n1 n2 n3 -- n4 n5 )                             n1*n2/n3, rem&quot
 ;   >R M* R> FM/MOD ;
     head(SSMOD,*/MOD,docolon)
         dw TOR,MSTAR,RFROM,SMSLASHREM,EXIT
 
-;C */     n1 n2 n3 -- n4                               n1*n2/n3
+;C */   ( n1 n2 n3 -- n4 )                                             n1*n2/n3
 ;   */MOD nip ;
     head(STARSLASH,*/,docolon)
         dw SSMOD,NIP,EXIT
 
-;C MAX    n1 n2 -- n3                            signed maximum
+;C MAX   ( n1 n2 -- n3 )                                         signed maximum
 ;   2DUP < IF SWAP THEN DROP ;
     head(MAX,MAX,docolon)
         dw TWODUP,LESS,qbranch,MAX1,SWOP
 MAX1:   dw DROP,EXIT
 
-;C MIN    n1 n2 -- n3                            signed minimum
+;C MIN   ( n1 n2 -- n3 )                                         signed minimum
 ;   2DUP > IF SWAP THEN DROP ;
     head(MIN,MIN,docolon)
         dw TWODUP,GREATER,qbranch,MIN1,SWOP
@@ -289,34 +289,34 @@ MIN1:   dw DROP,EXIT
 
 ; DOUBLE OPERATORS ==============================
 
-;C 2@    a-addr -- x1 x2                          fetch 2 cells
+;C 2@   ( a-addr -- x1 x2 )                                       fetch 2 cells
 ;   DUP CELL+ @ SWAP @ ;
 ;   the lower address will appear on top of stack
     head(TWOFETCH,2@,docolon)
         dw DUP,CELLPLUS,FETCH,SWOP,FETCH,EXIT
 
-;C 2!    x1 x2 a-addr --                          store 2 cells
+;C 2!   ( x1 x2 a-addr -- )                                       store 2 cells
 ;   SWAP OVER ! CELL+ ! ;
 ;   the top of stack is stored at the lower adrs
     head(TWOSTORE,2!,docolon)
         dw SWOP,OVER,STORE,CELLPLUS,STORE,EXIT
 
-;C 2DROP  x1 x2 --                                 drop 2 cells
+;C 2DROP   ( x1 x2 -- )                                            drop 2 cells
 ;   DROP DROP ;
     head(TWODROP,2DROP,docolon)
         dw DROP,DROP,EXIT
 
-;C 2DUP   x1 x2 -- x1 x2 x1 x2                  dup top 2 cells
+;C 2DUP   ( x1 x2 -- x1 x2 x1 x2 )                              dup top 2 cells
 ;   OVER OVER ;
     head(TWODUP,2DUP,docolon)
         dw OVER,OVER,EXIT
 
-;C 2SWAP  x1 x2 x3 x4 -- x3 x4 x1 x2                per diagram
+;C 2SWAP   ( x1 x2 x3 x4 -- x3 x4 x1 x2 )                           per diagram
 ;   ROT >R ROT R> ;
     head(TWOSWAP,2SWAP,docolon)
         dw ROT,TOR,ROT,RFROM,EXIT
 
-;C 2OVER  x1 x2 x3 x4 -- x1 x2 x3 x4 x1 x2          per diagram
+;C 2OVER   ( x1 x2 x3 x4 -- x1 x2 x3 x4 x1 x2 )                     per diagram
 ;   >R >R 2DUP R> R> 2SWAP ;
     head(TWOOVER,2OVER,docolon)
         dw TOR,TOR,TWODUP,RFROM,RFROM
@@ -325,12 +325,12 @@ MIN1:   dw DROP,EXIT
 
 ; INPUT/OUTPUT ==================================
 
-;C PAUSE ( -- )                               call idle routine
+;C PAUSE   ( -- )                                             call idle routine
     head(PAUSE,PAUSE,dodeferv)
         DW xt_pause
 
 
-;C KEY    -- char                               input character
+;C KEY   ( -- char )                                            input character
 ;   BEGIN KEY? UNTIL
 ;   'KEY @ EXECUTE ;
     head(KEY,KEY,docolon)
@@ -340,14 +340,14 @@ KEY1:
         dw RX
         dw EXIT
 
-;C KEY?   -- flag                     input character available
+;C KEY?   ( -- flag )                                 input character available
 ;   'KEY? @ EXECUTE ;
     head(KEYQ,KEY?,docolon)
         dw PAUSE
         dw RXQ
         dw EXIT
 
-;C EMIT   char --                              output character
+;C EMIT   ( char -- )                                          output character
 ;   'EMIT @ EXECUTE ;
     head(EMIT,EMIT,docolon)
         ; dw PAUSE
@@ -355,7 +355,7 @@ KEY1:
         dw EXIT
 
 
-;C COUNT   c-addr1 -- c-addr2 u       counted string -> adr/len
+;C COUNT   ( c-addr1 -- c-addr2 u )                   counted string -> adr/len
 ;   DUP CHAR+ SWAP C@ ;
     head(COUNT,COUNT,docode)
         inc bc
@@ -367,30 +367,30 @@ KEY1:
         ld b,a
         next
 
-;C CR      --                                    output newline
+;C CR   ( -- )                                                   output newline
 ;   0D EMIT 0A EMIT ;
     head(CR,CR,docolon)
         dw lit,0dh,EMIT,lit,0ah,EMIT,EXIT
 
-;C SPACE   --                                    output a space
+;C SPACE   ( -- )                                                output a space
 ;   BL EMIT ;
     head(SPACE,SPACE,docolon)
         dw BL,EMIT,EXIT
 
-;C SPACES   n --                                output n spaces
+;C SPACES   ( n -- )                                            output n spaces
 ;   BEGIN DUP WHILE SPACE 1- REPEAT DROP ;
     head(SPACES,SPACES,docolon)
 SPCS1:  DW DUP,qbranch,SPCS2
         DW SPACE,ONEMINUS,branch,SPCS1
 SPCS2:  DW DROP,EXIT
 
-;Z UMIN     u1 u2 -- u                         unsigned minimum
+;Z UMIN   ( u1 u2 -- u )                                       unsigned minimum
 ;   2DUP U> IF SWAP THEN DROP ;
     head(UMIN,UMIN,docolon)
         DW TWODUP,UGREATER,qbranch,UMIN1,SWOP
 UMIN1:  DW DROP,EXIT
 
-;Z UMAX    u1 u2 -- u                          unsigned maximum
+;Z UMAX   ( u1 u2 -- u )                                       unsigned maximum
 ;   2DUP U< IF SWAP THEN DROP ;
     head(UMAX,UMAX,docolon)
         DW TWODUP,ULESS,qbranch,UMAX1,SWOP
@@ -438,7 +438,7 @@ last_key_ptr:
 
 SECTION code
 
-;C ACCEPT  c-addr +n -- +n'              get line from terminal
+;C ACCEPT   ( c-addr +n -- +n' )                         get line from terminal
 ;   OVER + 1- OVER      -- sa ea a
 ;   BEGIN DO_KEY        -- sa ea a c
 ;   DUP 0D <> WHILE
@@ -461,7 +461,7 @@ ACC3:   DW OVER,CSTORE,ONEPLUS,OVER,UMIN
 ACC4:   DW branch,ACC1
 ACC5:   DW DROP,NIP,SWOP,MINUS,EXIT
 
-;C TYPE    c-addr +n --                   type line to terminal
+;C TYPE   ( c-addr +n -- )                                type line to terminal
 ;   ?DUP IF
 ;     OVER + SWAP DO I C@ EMIT LOOP
 ;   ELSE DROP THEN ;
@@ -473,7 +473,7 @@ TYP3:   DW II,CFETCH,EMIT,xloop,TYP3
 TYP4:   DW DROP
 TYP5:   DW EXIT
 
-;Z (S")     -- c-addr u                    run-time code for S"
+;Z (S")   ( -- c-addr u )                                  run-time code for S"
 ;   R> COUNT 2DUP + ALIGNED >R  ;
     head(XSQUOTE,(S"),docolon)
         DW RFROM,COUNT,TWODUP,PLUS,ALIGNED,TOR
@@ -481,7 +481,7 @@ TYP5:   DW EXIT
 
 ; allocate a system PAD buffer for S"
 ;     supports 4 x 128byte strings at SQUOTE_TOP
-;Z SPAD        -- c-addr                         get PAD buffer
+;Z SPAD   ( -- c-addr )                                          get PAD buffer
 ;   sbuffer_index @ 3 AND    ( index )
 ;   1+ 7 LSHIFT
 ;   SQUOTE_TOP -         ( addr )
@@ -493,7 +493,7 @@ TYP5:   DW EXIT
         DW lit,1,SBUFFER_INDEX,PLUSSTORE
         DW EXIT
 
-;Z >SPAD    addr u -- addr' u'   get SPAD and copy string to it
+;Z >SPAD   ( addr u -- addr' u' )                get SPAD and copy string to it
 ;   SPAD               ( addr u addr' )
 ;   SWAP 2DUP >R >R    ( addr addr' u   r: u addr' )
 ;   MOVE R> R>         ( addr' u )
@@ -501,8 +501,8 @@ TYP5:   DW EXIT
        DW SPAD,SWOP,TWODUP,TOR,TOR,MOVE,RFROM,RFROM
        DW EXIT
 
-;C S"       --                           compile in-line string
-;\          -- addr u                  interpret in-line string
+;C S"   ( -- )                                           compile in-line string
+;\        -- addr u                                    interpret in-line string
 ;   22 PARSE       ( addr u )
 ;  STATE @ IF
 ;   COMPILE (S")  [ HEX ]
@@ -532,7 +532,7 @@ sbuffer_index_ptr:
 
 SECTION code
 
-;C ."       --                          compile string to print
+;C ."   ( -- )                                          compile string to print
 ;   POSTPONE S"  POSTPONE TYPE ; IMMEDIATE
     immed(DOTQUOTE,.",docolon)
         DW SQUOTE
@@ -546,98 +546,98 @@ SECTION code
 ; Some double-precision arithmetic operators are
 ; needed to implement ANSI numeric conversion.
 
-;Z UD/MOD   ud1 u2 -- u3 ud4                   32/16->32 divide
+;Z UD/MOD   ( ud1 u2 -- u3 ud4 )                               32/16->32 divide
 ;   >R 0 R@ UM/MOD  ROT ROT R> UM/MOD ROT ;
     head(UDSLASHMOD,UD/MOD,docolon)
         DW TOR,ZERO,RFETCH,UMSLASHMOD,ROT,ROT
         DW RFROM,UMSLASHMOD,ROT,EXIT
 
-;Z UD*      ud1 u2 -- ud3                    32*16->32 multiply
+;Z UD*   ( ud1 u2 -- ud3 )                                   32*16->32 multiply
 ;   DUP >R UM* DROP  SWAP R> UM* ROT + ;
     head(UDSTAR,UD*,docolon)
         DW DUP,TOR,UMSTAR,DROP
         DW SWOP,RFROM,UMSTAR,ROT,PLUS,EXIT
 
-;C HOLD  char --                      add char to output string
+;C HOLD   ( char -- )                                 add char to output string
 ;   -1 HP +!  HP @ C! ;
     head(HOLD,HOLD,docolon)
         DW ALLONES,HP,PLUSSTORE
         DW HP,FETCH,CSTORE,EXIT
 
-;C <#    --                            begin numeric conversion
+;C <#   ( -- )                                         begin numeric conversion
 ;   PAD HP ! ;          (initialize Hold Pointer)
     head(LESSNUM,``<#'',docolon)
         DW PAD,HP,STORE,EXIT
 
-;Z >DIGIT   n -- c                          convert to 0..9A..Z
+;Z >DIGIT   ( n -- c )                                      convert to 0..9A..Z
 ;   [ HEX ] DUP 9 > 7 AND + 30 + ;
     head(TODIGIT,>DIGIT,docolon)
         DW DUP,lit,9,GREATER,lit,7,AND,PLUS
         DW lit,30H,PLUS,EXIT
 
-;C #     ud1 -- ud2                   convert 1 digit of output
+;C #   ( ud1 -- ud2 )                                 convert 1 digit of output
 ;   BASE @ UD/MOD ROT >digit HOLD ;
     head(NUM,``#'',docolon)
         DW BASE,FETCH,UDSLASHMOD,ROT,TODIGIT
         DW HOLD,EXIT
 
-;C #S    ud1 -- ud2                    convert remaining digits
+;C #S   ( ud1 -- ud2 )                                 convert remaining digits
 ;   BEGIN # 2DUP OR 0= UNTIL ;
     head(NUMS,``#S'',docolon)
 NUMS1:  DW NUM,TWODUP,OR,ZEROEQUAL,qbranch,NUMS1
         DW EXIT
 
-;C #>    ud1 -- c-addr u                  end conv., get string
+;C #>   ( ud1 -- c-addr u )                               end conv., get string
 ;   2DROP HP @ PAD OVER - ;
     head(NUMGREATER,``#>'',docolon)
         DW TWODROP,HP,FETCH,PAD,OVER,MINUS,EXIT
 
-;C SIGN  n --                             add minus sign if n<0
+;C SIGN   ( n -- )                                        add minus sign if n<0
 ;   0< IF 2D HOLD THEN ;
     head(SIGN,SIGN,docolon)
         DW ZEROLESS,qbranch,SIGN1,lit,2DH,HOLD
 SIGN1:  DW EXIT
 
-;Z (U.)    u -- c-addr +n          u unsigned to counted string
+;Z (U.)   ( u -- c-addr +n )                       u unsigned to counted string
 ;   <# 0 #S #> ;
     head(XUDOT,(U.),docolon)
         DW LESSNUM,ZERO,NUMS,NUMGREATER
         DW EXIT
 
-;C U.    u --                                display u unsigned
+;C U.   ( u -- )                                             display u unsigned
 ;   (U.) TYPE SPACE ;
     head(UDOT,U.,docolon)
         DW XUDOT,TYPE,SPACE,EXIT
 
-;Z (.)   n -- c-addr +n              n signed to counted string
+;Z (.)   ( n -- c-addr +n )                          n signed to counted string
 ;   <# DUP ABS 0 #S ROT SIGN #> ;
     head(XDOT,(.),docolon)
         DW LESSNUM,DUP,ABS,ZERO,NUMS
         DW ROT,SIGN,NUMGREATER,EXIT
 
-;C .     n --                                  display n signed
+;C .   ( n -- )                                                display n signed
 ;   (.) TYPE SPACE ;
     head(DOT,.,docolon)
         DW XDOT,TYPE,SPACE,EXIT
 
-;C DECIMAL  --                       set number base to decimal
+;C DECIMAL   ( -- )                                  set number base to decimal
 ;   10 BASE ! ;
     head(DECIMAL,DECIMAL,docolon)
         DW lit,10,BASE,STORE,EXIT
 
-;X HEX     --                            set number base to hex
+;X HEX   ( -- )                                          set number base to hex
 ;   16 BASE ! ;
     head(HEX,HEX,docolon)
         DW lit,16,BASE,STORE,EXIT
 
 ; DICTIONARY MANAGEMENT =========================
 
-;C HERE    -- addr                       returns dictionary ptr
+;C HERE   ( -- addr )                                    returns dictionary ptr
 ;   DP @ ;
     head(HERE,HERE,docolon)
         dw DP,FETCH,EXIT
 
-;C ALLOT   n --                        allocate n bytes in dict
+;C ALLOT   ( n -- )                                    allocate n bytes in dict
 ;   DP +! ;
     head(ALLOT,ALLOT,docolon)
         dw DP,PLUSSTORE,EXIT
@@ -645,17 +645,17 @@ SIGN1:  DW EXIT
 ; Note: , and C, are only valid for combined
 ; Code and Data spaces.
 
-;C ,    x --                                append cell to dict
+;C ,   ( x -- )                                             append cell to dict
 ;   HERE ! 1 CELLS ALLOT ;
     head(COMMA,``,'',docolon)
         dw HERE,STORE,lit,1,CELLS,ALLOT,EXIT
 
-;C C,   char --                             append char to dict
+;C C,   ( char -- )                                         append char to dict
 ;   HERE C! 1 CHARS ALLOT ;
     head(CCOMMA,``C,'',docolon)
         dw HERE,CSTORE,lit,1,CHARS,ALLOT,EXIT
 
-;Z TO-STATE  -- a-addr              state variable used with TO
+;Z TO-STATE   ( -- a-addr )                         state variable used with TO
     head(TO_STATE,TO-STATE,docon)
         DW to_flag
 
@@ -666,8 +666,8 @@ to_flag:
 
 SECTION code
 
-;C VALUE  x "<spaces>name" --  create defenition for value name
-;\                   execution:  ( -- x )  place value on stack
+;C VALUE   ( x "<spaces>name" -- )             create defenition for value name
+;\                               execution: ( -- x )       place value on stack
 ;  CREATE ,
 ;   DOES> TO-STATE @ IF !  FALSE TO-STATE ! ELSE @ THEN  ;
     head(VALUE,VALUE,docolon)
@@ -681,7 +681,7 @@ SECTION code
     VALUE1:
         DW FETCH,EXIT
 
-;C TO   x --                             assign x to value name
+;C TO   ( x -- )                                         assign x to value name
     head(TO,TO,docolon)
         DW TRUE,TO_STATE,STORE,EXIT
 
@@ -691,22 +691,22 @@ SECTION code
 ; header.  This may be common across many CPUs,
 ; or it may be different.
 
-;C SOURCE   -- adr n                       current input buffer
+;C SOURCE   ( -- adr n )                                   current input buffer
 ;   'SOURCE 2@ ;        length is at lower adrs
     head(SOURCE,SOURCE,docolon)
         DW TICKSOURCE,TWOFETCH,EXIT
 
-;X /STRING  a u n -- a+n u-n                        trim string
+;X /STRING   ( a u n -- a+n u-n )                                   trim string
 ;   ROT OVER + ROT ROT - ;
     head(SLASHSTRING,/STRING,docolon)
         DW ROT,OVER,PLUS,ROT,ROT,MINUS,EXIT
 
-;C PLACE src n dst --                       copy to counted str
+;C PLACE   ( src n dst -- )                                 copy to counted str
 ;   2DUP C! CHAR+ SWAP CMOVE ;
     head(PLACE,PLACE,docolon)
         DW TWODUP,CSTORE,CHARPLUS,SWOP,CMOVE,EXIT
 
-;C WORD   char -- c-addr                   word delim'd by char
+;C WORD   ( char -- c-addr )                               word delim'd by char
 ;   DUP  SOURCE >IN @ /STRING   -- c c adr n
 ;   DUP >R   ROT SKIP           -- c adr' n'
 ;   OVER >R  ROT SCAN           -- adr" n"
@@ -726,7 +726,7 @@ WORD1:  DW RFROM,RFROM,ROT,MINUS,TOIN,PLUSSTORE
         DW HERE,PLACE,HERE
         DW BL,OVER,COUNT,PLUS,CSTORE,EXIT
 
-;X PARSE   char -- c-addr u             parse the word in input
+;X PARSE   ( char -- c-addr u )                         parse the word in input
 ;   SOURCE >IN @ /STRING   -- c adr n
 ;   DUP >R     -- c adr n  ; n
 ;   OVER >R  ROT SCAN           -- adr" n"  ; n addr
@@ -742,7 +742,7 @@ PARSE1: DW RFROM,RFROM,ROT,MINUS,TOIN,PLUSSTORE
         DW TUCK,MINUS
         DW EXIT
 
-;Z NFA>LFA   nfa -- lfa                  name adr -> link field
+;Z NFA>LFA   ( nfa -- lfa )                              name adr -> link field
 ;   3 - ;
     head(NFATOLFA,NFA>LFA,docode)
         dec bc
@@ -750,19 +750,19 @@ PARSE1: DW RFROM,RFROM,ROT,MINUS,TOIN,PLUSSTORE
         dec bc
         next
 
-;Z NFA>CFA   nfa -- cfa                  name adr -> code field
+;Z NFA>CFA   ( nfa -- cfa )                              name adr -> code field
 ;   COUNT 7F AND + ;       mask off 'smudge' bit
     head(NFATOCFA,NFA>CFA,docolon)
         DW COUNT,lit,07FH,AND,PLUS,EXIT
 
-;Z IMMED?    nfa -- f                      fetch immediate flag
+;Z IMMED?   ( nfa -- f )                                   fetch immediate flag
 ;   1- C@ ;                     nonzero if ``immed''
     head(IMMEDQ,IMMED?,docolon)
         DW ONEMINUS,CFETCH,EXIT
 
-;C FIND   c-addr -- c-addr 0                       if not found
-;\                  xt  1                          if immediate
-;\                  xt -1                           if "normal"
+;C FIND   ( c-addr -- c-addr 0 )                                   if not found
+;\                    xt 1                                         if immediate
+;\                    xt -1                                         if "normal"
 ;   LATEST @ BEGIN             -- a nfa
 ;       2DUP OVER C@ CHAR+     -- a nfa a nfa n+1
 ;       STRCMP                 -- a nfa f
@@ -791,7 +791,7 @@ FIND2:  DW ZEROEQUAL,qbranch,FIND1
         DW SWOP,IMMEDQ,ZEROEQUAL,lit,1,OR
 FIND3:  DW EXIT
 
-;C LITERAL  x --                         append numeric literal
+;C LITERAL   ( x -- )                                    append numeric literal
 ;   STATE @ IF ['] LIT ,XT , THEN ; IMMEDIATE
 ; This tests STATE so that it can also be used
 ; interpretively.  (ANSI doesn't require this.)
@@ -800,8 +800,8 @@ FIND3:  DW EXIT
         DW lit,lit,COMMAXT,COMMA
 LITER1: DW EXIT
 
-;Z DIGIT?   c -- n -1                     if c is a valid digit
-;\            -- x  0                     otherwise
+;Z DIGIT?   ( c -- n -1 )                                 if c is a valid digit
+;\              -- x 0                                                otherwise
 ;   [ HEX ] DUP 39 > 100 AND +     silly looking
 ;   DUP 140 > 107 AND -   30 -     but it works!
 ;   DUP BASE @ U< ;
@@ -832,8 +832,8 @@ end_digit_val:
         ld b,a
         next
 
-;Z ?SIGN   adr n -- adr' n' f                 get optional sign
-;\                 advance adr/n if sign; return NZ if negative
+;Z ?SIGN   ( adr n -- adr' n' f )                             get optional sign
+;\                                 advance adr/n if sign; return NZ if negative
 ;   OVER C@                 -- adr n c
 ;   2C - DUP ABS 1 = AND    -- +=-1, -=+1, else 0
 ;   DUP IF 1+               -- +=0, -=+2
@@ -845,7 +845,7 @@ end_digit_val:
         DW ONEPLUS,TOR,lit,1,SLASHSTRING,RFROM
 QSIGN1: DW EXIT
 
-;C >NUMBER  ud adr u -- ud' adr' u'    convert string to number
+;C >NUMBER   ( ud adr u -- ud' adr' u' )               convert string to number
 ;   BEGIN
 ;   DUP WHILE
 ;       OVER C@ DIGIT?
@@ -863,8 +863,8 @@ TONUM2: DW TOR,TWOSWAP,BASE,FETCH,UDSTAR
         DW lit,1,SLASHSTRING,branch,TONUM1
 TONUM3: DW EXIT
 
-;Z ?NUMBER  c-addr -- n -1                       string->number
-;\                 -- c-addr 0                 if convert error
+;Z ?NUMBER   ( c-addr -- n -1 )                                  string->number
+;\                    -- c-addr 0                              if convert error
 ;   DUP  0 0 ROT COUNT      -- ca ud adr n
 ;   ?SIGN >R  >NUMBER       -- ca ud adr' n'
 ;   IF   R> 2DROP 2DROP FALSE   -- ca 0   (error)
@@ -881,7 +881,7 @@ QNUM1:  DW TWODROP,NIP,RFROM,qbranch,QNUM2
 QNUM2:  DW TRUE
 QNUM3:  DW EXIT
 
-;Z INTERPRET    i*x  -- j*x         interpret buffer at 'SOURCE
+;Z INTERPRET   ( i*x -- j*x )                       interpret buffer at 'SOURCE
 ; This is a common factor of EVALUATE and QUIT.
 ; ref. dpANS-6, 3.4 The Forth Text Interpreter
 ;   BEGIN
@@ -924,17 +924,17 @@ XREFILL8K:
         DW ZERO,TOIN,STORE,SPACE,TRUE
         DW EXIT
 
-;X REFILL      -- f                         refill input buffer
+;X REFILL   ( -- f )                                        refill input buffer
 ;   xt_refill @ EXECUTE   ;
     head(REFILL,REFILL,dodeferv)
         DW xt_refill
 
-;X 'SOURCE-ID      -- addr                      address for SOURCE-ID
+;X 'SOURCE-ID   ( -- addr )                               address for SOURCE-ID
 TICKSOURCE_ID:
         call docon
         DW source_id_ptr
 
-;Z SET-SOURCE    ( source  -- )
+;Z SET-SOURCE   ( source -- )
 ;   'SOURCE-ID  !   0 BLK !  ;
 XSET_SOURCE:
         call docolon
@@ -984,7 +984,7 @@ RESTORE_INPUT_8K:
         DW EXIT
 
 
-;C EVALUATE  i*x c-addr u -- j*x               interpret string
+;C EVALUATE   ( i*x c-addr u -- j*x )                          interpret string
 ;   SAVE-INPUT  N>R
 ;   -1 'SOURCE-ID !
 ;   'SOURCE 2!
@@ -1020,7 +1020,7 @@ RESTORE_INPUT_8K:
         DW EXIT
 
 
-;C THROW                   ( ??? exception# -- ??? exception# )
+;C THROW   ( ??? exception# -- ??? exception# )
 ;    ?DUP IF          ( exc# )     \ 0 THROW is no-op
 ;      HANDLER @ RP!   ( exc# )     \ restore prev return stack
 ;      R> HANDLER !    ( exc# )     \ restore prev handler
@@ -1046,7 +1046,7 @@ CHECK_SP:
 CHECK_SP1:
         DW EXIT
 
-;C QUIT     --    R: i*x --                  interpret from kbd
+;C QUIT   ( -- )                                   R: i*x -- interpret from kbd
 ;   L0 LP !  R0 RP!   0 STATE ! 0 HANDLER !  0 'SOURCE-ID !
 ;   BEGIN
 ;     CHECK_SP
@@ -1114,26 +1114,26 @@ QUITX:
         DW branch,QUIT1
 
 
-;C ABORT    i*x --   R: j*x --                 clear stk & QUIT
+;C ABORT   ( i*x -- )                                R: j*x -- clear stk & QUIT
     head(ABORT,ABORT,docolon)
         DW lit,-1,THROW
 
-;Z ?ABORT   f c-addr u --                     abort & print msg
+;Z ?ABORT   ( f c-addr u -- )                                 abort & print msg
 ;   ROT IF exception_msg >COUNTED -2 THROW THEN 2DROP ;
     head(QABORT,?ABORT,docolon)
         DW ROT,qbranch,QABO1
         DW lit,exception_msg,PLACE,lit,-2,THROW
 QABO1:  DW TWODROP,EXIT
 
-;C ABORT"  i*x 0  -- i*x   R: j*x -- j*x  x1=0
-;\         i*x x1 --       R: j*x --      x1<>0
+;C ABORT"   ( i*x 0 -- i*x )  ( R: j*x -- j*x )                when TOS is zero
+;\          ( i*x x1 -- )     ( R: j*x -- )           when TOS (x1) is not zero
 ;   POSTPONE S" POSTPONE ?ABORT ; IMMEDIATE
     immed(ABORTQUOTE,ABORT",docolon)
         DW SQUOTE
         DW lit,QABORT,COMMAXT
         DW EXIT
 
-;C '    -- xt                           find word in dictionary
+;C '   ( -- xt )                                        find word in dictionary
 ;   BL WORD FIND
 ;   0= IF COUNT exception_msg >COUNTED -13 THROW THEN  ;
      head(TICK,',docolon)
@@ -1142,26 +1142,26 @@ QABO1:  DW TWODROP,EXIT
 TICK1:
         DW EXIT
 
-;C CHAR   -- char                         parse ASCII character
+;C CHAR   ( -- char )                                     parse ASCII character
 ;   BL WORD 1+ C@ ;
     head(CHAR,CHAR,docolon)
         DW BL,WORD,ONEPLUS,CFETCH,EXIT
 
-;C [CHAR]   --                        compile character literal
+;C [CHAR]   ( -- )                                    compile character literal
 ;   CHAR  ['] LIT ,XT  , ; IMMEDIATE
     immed(BRACCHAR,[CHAR],docolon)
         DW CHAR
         DW lit,lit,COMMAXT
         DW COMMA,EXIT
 
-;C (    --                                   skip input until )
+;C (   ( -- )                                                skip input until )
 ;   [ HEX ] 29 WORD DROP ; IMMEDIATE
     immed(PAREN,``('',docolon)
         DW lit,29H,WORD,DROP,EXIT
 
 ; COMPILER ======================================
 
-;C CREATE   --                       create an empty definition
+;C CREATE   ( -- )                                   create an empty definition
 ;   CURRENT @ WID>NFA , 0 C,         link & `immed' field
 ;   HERE CURRENT @ WID>NFA!           new "latest" link
 ;   BL WORD C@ 1+ ALLOT         name field
@@ -1172,7 +1172,7 @@ TICK1:
         DW BL,WORD,CFETCH,ONEPLUS,ALLOT
         DW lit,docreate,COMMACF,EXIT
         
-;Z (DOES>)  --                         run-time action of DOES>
+;Z (DOES>)   ( -- )                                    run-time action of DOES>
 ;   R>              adrs of headless DOES> def'n
 ;   CURRENT @ WID>NFA NFA>CFA    code field to fix up
 ;   !CF ;
@@ -1180,54 +1180,54 @@ TICK1:
         DW RFROM,CURRENT,FETCH,WIDTONFA,NFATOCFA,STORECF
         DW EXIT
 
-;C DOES>    --                    change action of latest def'n
+;C DOES>   ( -- )                                 change action of latest def'n
 ;   COMPILE (DOES>)
 ;   dodoes ,CF ; IMMEDIATE
     immed(DOES,DOES>,docolon)
         DW lit,XDOES,COMMAXT
         DW lit,dodoes,COMMACF,EXIT
 
-;C RECURSE  --                       recurse current definition
+;C RECURSE   ( -- )                                  recurse current definition
 ;   CURRENT @ WID>NFA NFA>CFA ,XT ; IMMEDIATE
     immed(RECURSE,RECURSE,docolon)
         DW CURRENT,FETCH,WIDTONFA,NFATOCFA,COMMAXT,EXIT
 
-;C [        --                         enter interpretive state
+;C [   ( -- )                                          enter interpretive state
 ;   0 STATE ! ; IMMEDIATE
     immed(LEFTBRACKET,[,docolon)
         DW FALSE,STATE,STORE,EXIT
 
-;C ]        --                            enter compiling state
+;C ]   ( -- )                                             enter compiling state
 ;   -1 STATE ! ;
     head(RIGHTBRACKET,],docolon)
         DW TRUE,STATE,STORE,EXIT
 
-;Z HIDE     --                         "hide" latest definition
+;Z HIDE   ( -- )                                       "hide" latest definition
 ;   CURRENT @ WID>NFA DUP C@ 80 OR SWAP C! ;
     head(HIDE,HIDE,docolon)
         DW CURRENT,FETCH,WIDTONFA,DUP,CFETCH,lit,80H,OR
         DW SWOP,CSTORE,EXIT
 
-;Z REVEAL   --                       "reveal" latest definition
+;Z REVEAL   ( -- )                                   "reveal" latest definition
 ;   CURRENT @ WID>NFA DUP C@ 7F AND SWAP C! ;
     head(REVEAL,REVEAL,docolon)
         DW CURRENT,FETCH,WIDTONFA,DUP,CFETCH,lit,7FH,AND
         DW SWOP,CSTORE,EXIT
 
-;C IMMEDIATE   --                     make last def'n immediate
+;C IMMEDIATE   ( -- )                                 make last def'n immediate
 ;   1 CURRENT @ WID>NFA 1- C! ;   set immediate flag
     head(IMMEDIATE,IMMEDIATE,docolon)
         DW lit,1,CURRENT,FETCH,WIDTONFA,ONEMINUS,CSTORE
         DW EXIT
 
-;C :        --                         begin a colon definition
+;C :   ( -- )                                          begin a colon definition
 ;   CREATE HIDE ] !COLON ;
     head(COLON,:,docode)
         CALL docolon    ; code fwd ref explicitly
         DW CREATE,HIDE,RIGHTBRACKET,STORCOLON
         DW EXIT
 
-;C ;       --                            end a colon definition
+;C ;   ( -- )                                            end a colon definition
 ;   REVEAL  ,EXIT
 ;   POSTPONE [  ; IMMEDIATE
     immed(SEMICOLON,;,docolon)
@@ -1247,7 +1247,7 @@ dnl ; be put on the stack.  (All xt's are one cell.)
         DW lit,lit,COMMAXT    ; append LIT action
         DW COMMA,EXIT         ; append xt literal
 
-;C POSTPONE  --                 postpone compile action of word
+;C POSTPONE   ( -- )                            postpone compile action of word
 ;   BL WORD FIND
 ;   DUP 0= ABORT" ?"
 ;   0< IF   -- xt  non `immed': add code to current
@@ -1282,19 +1282,19 @@ POST2:  DW EXIT
 
 ; CONTROL STRUCTURES ============================
 
-;C IF       -- orig                  conditional forward branch
+;C IF   ( -- orig )                                  conditional forward branch
 ;   ['] qbranch ,BRANCH  HERE DUP ,DEST ;
 ;   IMMEDIATE
     immed(IF,IF,docolon)
         DW lit,qbranch,COMMABRANCH
         DW HERE,DUP,COMMADEST,EXIT
 
-;C THEN     orig --                      resolve forward branch
+;C THEN   ( orig -- )                                    resolve forward branch
 ;   HERE SWAP !DEST ; IMMEDIATE
     immed(THEN,THEN,docolon)
         DW HERE,SWOP,STOREDEST,EXIT
 
-;C ELSE     orig1 -- orig2                  branch for IF..ELSE
+;C ELSE   ( orig1 -- orig2 )                                branch for IF..ELSE
 ;   ['] branch ,BRANCH  HERE DUP ,DEST
 ;   SWAP  POSTPONE THEN ; IMMEDIATE
     immed(ELSE,ELSE,docolon)
@@ -1302,43 +1302,43 @@ POST2:  DW EXIT
         DW HERE,DUP,COMMADEST
         DW SWOP,THEN,EXIT
 
-;C BEGIN    -- dest                      target for bwd. branch
+;C BEGIN   ( -- dest )                                   target for bwd. branch
 ;   HERE ; IMMEDIATE
     immed(BEGIN,BEGIN,docode)
         jp HERE
 
-;C UNTIL    dest --                 conditional backward branch
+;C UNTIL   ( dest -- )                              conditional backward branch
 ;   ['] qbranch ,BRANCH  ,DEST ; IMMEDIATE
 ;   conditional backward branch
     immed(UNTIL,UNTIL,docolon)
         DW lit,qbranch,COMMABRANCH
         DW COMMADEST,EXIT
 
-;X AGAIN    dest --                    uncond'l backward branch
+;X AGAIN   ( dest -- )                                 uncond'l backward branch
 ;   ['] branch ,BRANCH  ,DEST ; IMMEDIATE
 ;   unconditional backward branch
     immed(AGAIN,AGAIN,docolon)
         DW lit,branch,COMMABRANCH
         DW COMMADEST,EXIT
 
-;C WHILE   dest -- orig dest              branch for WHILE loop
+;C WHILE   ( dest -- orig dest )                          branch for WHILE loop
 ;   ['] qbranch ,BRANCH  HERE DUP ,DEST SWAP  ; IMMEDIATE
     immed(WHILE,WHILE,docolon)
         DW lit,qbranch,COMMABRANCH
         DW HERE,DUP,COMMADEST,SWOP
         DW EXIT
 
-;C REPEAT   orig dest --                     resolve WHILE loop
+;C REPEAT   ( orig dest -- )                                 resolve WHILE loop
 ;   POSTPONE AGAIN POSTPONE THEN ; IMMEDIATE
     immed(REPEAT,REPEAT,docolon)
         DW AGAIN,THEN,EXIT
 
-;Z >L   x --   L: -- x                      move to leave stack
+;Z >L   ( x -- )   ( L: -- x )                              move to leave stack
 ;   CELL LP +!  LP @ ! ;      (L stack grows up)
     head(TOL,>L,docolon)
         DW CELL,LP,PLUSSTORE,LP,FETCH,STORE,EXIT
 
-;Z L>   -- x   L: x --                    move from leave stack
+;Z L>   ( -- x )  ( L: x -- )                             move from leave stack
 ;   LP @ @  CELL NEGATE LP +! ;
     head(LFROM,L>,docolon)
         DW LP,FETCH,FETCH
@@ -1349,7 +1349,7 @@ DO_COMMON:
         DW lit,xdo,COMMAXT,HERE
         DW ZERO,TOL,EXIT
 
-;C DO       -- 0 adrs   L: -- 0
+;C DO   ( -- 0 adrs )   ( L: -- 0 )                             start a DO loop
 ;   0           flag to distiguish this from ?DO
 ;   ['] xdo ,XT   HERE     target for bwd branch
 ;   0 >L ; IMMEDIATE           marker for LEAVEs
@@ -1357,7 +1357,7 @@ DO_COMMON:
         DW ZERO
         DW DO_COMMON,EXIT
 
-;Z ENDLOOP  f adrs xt --   L: 0 a1 a2 .. aN --
+;Z ENDLOOP   ( f adrs xt -- )   ( L: 0 a1 a2 .. aN -- )   common factor of loop
 ;   ,BRANCH  ,DEST                backward loop
 ;   BEGIN L> ?DUP WHILE POSTPONE THEN REPEAT
 ;                                 resolve LEAVEs
@@ -1376,17 +1376,17 @@ LOOP2:  DW qbranch,LOOP3
         DW THEN
 LOOP3:  DW EXIT
 
-;C LOOP    adrs --   L: 0 a1 a2 .. aN --
+;C LOOP   ( adrs -- )   ( L: 0 a1 a2 .. aN -- )                     end of loop
 ;   ['] xloop ENDLOOP ;  IMMEDIATE
     immed(LOOP,LOOP,docolon)
         DW lit,xloop,ENDLOOP,EXIT
 
-;C +LOOP   adrs --   L: 0 a1 a2 .. aN --
+;C +LOOP   ( adrs -- )   ( L: 0 a1 a2 .. aN -- )            end of stepped loop
 ;   ['] xplusloop ENDLOOP ;  IMMEDIATE
     immed(PLUSLOOP,+LOOP,docolon)
         DW lit,xplusloop,ENDLOOP,EXIT
 
-;C LEAVE    --    L: -- adrs
+;C LEAVE   ( -- )   ( L: -- adrs )                                 leave a loop
 ;   ['] UNLOOP ,XT
 ;   ['] branch ,BRANCH   HERE DUP ,DEST  >L
 ;   ; IMMEDIATE      unconditional forward branch
@@ -1397,25 +1397,25 @@ LOOP3:  DW EXIT
 
 ; OTHER OPERATIONS ==============================
 
-;C TRUE   --  -1            leave value for "true" on the stack
+;C TRUE   ( -- -1 )                         leave value for "true" on the stack
     head(TRUE,TRUE,docode)
 ALLONES:
         push bc
         jp tostrue
 
-;C FALSE   --  0           leave value for "false" on the stack
+;C FALSE   ( -- 0 )                        leave value for "false" on the stack
     head(FALSE,FALSE,docode)
 ZERO:
         push bc
         jp tosfalse
 
 
-;X WITHIN   n1|u1 n2|u2 n3|u3 -- f                   n2<=n1<n3?
+;X WITHIN   ( n1|u1 n2|u2 n3|u3 -- f )                               n2<=n1<n3?
 ;  OVER - >R - R> U< ;          per ANS document
     head(WITHIN,WITHIN,docolon)
         DW OVER,MINUS,TOR,MINUS,RFROM,ULESS,EXIT
 
-;C MOVE    addr1 addr2 u --                          smart move
+;C MOVE   ( addr1 addr2 u -- )                                       smart move
 ;             VERSION FOR 1 ADDRESS UNIT = 1 CHAR
 ;  >R 2DUP SWAP DUP R@ +     -- ... dst src src+n
 ;  WITHIN IF  R> CMOVE>        src <= dst < src+n
@@ -1427,13 +1427,13 @@ ZERO:
 MOVE1:  DW RFROM,CMOVE
 MOVE2:  DW EXIT
 
-;C DEPTH    -- +n                      number of items on stack
+;C DEPTH   ( -- +n )                                   number of items on stack
 ;   SP@ S0 SWAP - 2/ ;   16-BIT VERSION!
     head(DEPTH,DEPTH,docolon)
         DW SPFETCH,S0,SWOP,MINUS,TWOSLASH,EXIT
 
-;C ENVIRONMENT?  c-addr u -- false                 system query
-;\                        -- i*x true
+;C ENVIRONMENT?   ( c-addr u -- false    )                         system query
+;\                (          -- i*x true )
 ;   ROM16K? IF
 ;      ENVIRONMENT-WORDLIST SEARCH-WORDLIST
 ;      IF EXECUTE TRUE ELSE FALSE THEN
@@ -1458,7 +1458,7 @@ HIDDENQ: ;  ( nfa -- nfa f )
     jp tosfalse
 
 
-; (WORDS)  wid  --          list all words in wordlist.
+; (WORDS)  ( wid  -- )                               list all words in wordlist
 ;   WID>NFA DUP 0= IF DROP EXIT THEN
 ;   BEGIN
 ;       DUP WHILE
@@ -1488,12 +1488,12 @@ WORDS_8K:
         DW CONTEXT,XWORDS
         DW EXIT
 
-;C WORDS    --              list all words in current wordlist.
+;C WORDS   ( -- )                            list all words in current wordlist
 ;   xt_words @ EXECUTE ;
     head(WORDS,WORDS,dodeferv)
         DW xt_words
 
-;X .S      --                              print stack contents
+;X .S   ( -- )                                             print stack contents
 ;   SP@ S0 - IF
 ;       SP@ S0 2 - DO I @ U. -2 +LOOP
 ;   THEN ;
@@ -1503,16 +1503,16 @@ WORDS_8K:
 DOTS1:  DW II,FETCH,UDOT,lit,-2,xplusloop,DOTS1
 DOTS2:  DW EXIT
 
-;Z (D.)    d -- c-addr +n            d signed to counted string
+;Z (D.)   ( d -- c-addr +n )                         d signed to counted string
     head(XDDOT,(D.),docolon)
         DW LESSNUM,DUP,TOR,DABS,NUMS
         DW RFROM,SIGN,NUMGREATER,EXIT
 
-;C D.    d --                                  display d signed
+;C D.   ( d -- )                                               display d signed
     head(DDOT,D.,docolon)
         DW XDDOT,TYPE,SPACE,EXIT
 
-;X D+   d1 d2 -- d1+d2                       Add double numbers
+;X D+   ( d1 d2 -- d1+d2 )                                   Add double numbers
     head(DPLUS,D+,docode)
         exx
         pop bc          ; BC'=d2lo
@@ -1528,12 +1528,12 @@ DOTS2:  DW EXIT
         ld c,l
         next
 
-;X M+       d n -- d                       add single to double
+;X M+   ( d n -- d )                                       add single to double
     head(MPLUS,M+,docolon)
         DW STOD,DPLUS,EXIT
 
 
-;C M*/  ( d1 n1 +n2 -- d2 )          mixed star-slash  d1*n1/n2
+;C M*/   ( d1 n1 +n2 -- d2 )                          mixed star-slash d1*n1/n2
 ;       ABS >R 2DUP XOR SWAP ABS >R -ROT
 ;       DABS SWAP R@ UM* ROT R> UM* ROT 0 D+
 ;       R@ UM/MOD -ROT R> UM/MOD NIP SWAP
@@ -1548,7 +1548,7 @@ MSTARSLASH1:
         DW EXIT
 
 
-;Z ?ROM16K    -- f                             is it a 16K ROM?
+;Z ?ROM16K   ( -- f )                                          is it a 16K ROM?
 ;
     head(ROM16KQ,ROM16K?,docolon)
         DW lit,rom_16k_signature
@@ -1568,7 +1568,7 @@ DOTSIGNON:
         DW lit,signon_msg_len
         DW TYPE,EXIT
 
-;Z COLD     --                          cold start Forth system
+;Z COLD   ( -- )                                        cold start Forth system
 ;   UINIT U0 #INIT CMOVE      init user area
 ;   80 COUNT INTERPRET       interpret CP/M cmd
 ;   ." Z80 CamelForth etc."
@@ -1587,7 +1587,7 @@ COLD1:  DW lit,lastword8k,LATEST,STORE
         DW lit,default_xt_start,lit,default_xt,lit,default_xt_len,MOVE
         DW QUIT
 
-;Z WARM     --                          warm start Forth system
+;Z WARM   ( -- )                                        warm start Forth system
 ;   ." Z80 CamelForth etc."
 ;   QUIT ;
     head(WARM,WARM,docolon)
@@ -1602,8 +1602,9 @@ WARM1:
         DW QUIT
 
 
-;Z WID>NFA ( wid -- nfa )             get first NFA of wordlist
-;\ Return the address of the first name field in the word list identified by wid.
+;Z WID>NFA   ( wid -- nfa )                           get first NFA of wordlist
+;\                  Return the address of the first name field in the word list
+;\                                                           identified by wid.
 ;       WORDLISTS DUP @ + @    ;
         head(WIDTONFA,WID>NFA,docolon)
             dw FLAG_ROM16K,FETCH,qbranch,WIDTONFA1
@@ -1613,7 +1614,7 @@ WIDTONFA1:
             dw DROP,LATEST,FETCH
             dw EXIT
 
-;Z WID>NFA! ( nfa wid -- )     store address of NFA to wordlist
+;Z WID>NFA!   ( nfa wid -- )                   store address of NFA to wordlist
 ; Store the address of the first name field in the word list identified by wid.
 ;       CELLS,WORDLISTS DUP @ CELLS + !    ;
         head(WIDTONFASTORE,WID>NFA!,docolon)
@@ -1624,7 +1625,7 @@ WIDTONFASTOR1:
             dw DROP,LATEST,STORE
             dw EXIT
 
-;Z CONTEXT      ( -- wid )                 get context wordlist
+;Z CONTEXT   ( -- wid )                                    get context wordlist
 ;    STACK_WORDLIST STACK@
         head(CONTEXT,CONTEXT,docolon)
             dw FLAG_ROM16K,FETCH,qbranch,CONTEXT1

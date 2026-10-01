@@ -198,7 +198,7 @@ DEFC SQUOTE_TOP = WRKSPC - 0x80  ; (512 bytes)
 ; INTERPRETER LOGIC =============================
 ; See also "defining words" at end of this file
 
-;C EXIT   --                            exit a colon definition
+;C EXIT   ( -- )                                        exit a colon definition
     head(EXIT,EXIT,docode)
         ld e,(ix+0)    ; pop old IP from ret stk
         inc ix
@@ -208,8 +208,8 @@ nextcomma_block:
         next
 defc nextcomma_block_len = 7
 
-;Z LIT   -- x                     fetch inline literal to stack
-;\ This is the primtive compiled by LITERAL.
+;Z LIT   ( -- x )                                 fetch inline literal to stack
+;\                                    This is the primtive compiled by LITERAL.
     head(lit,LIT,docode)
         push bc        ; push old TOS
         ld a,(de)      ; fetch cell at IP to TOS,
@@ -220,9 +220,9 @@ defc nextcomma_block_len = 7
         inc de
         next
 
-;Z dlit   -- d             fetch inline double literal to stack
-;\ MS-word on top of stack
-;\ This is the primtive compiled by 2LITERAL.
+;Z DLIT   ( -- d )                         fetch inline double literal to stack
+;\                                                      MS-word on top of stack
+;\                                   This is the primtive compiled by 2LITERAL.
     head(dlit,DLIT,docode)
         push bc        ; push old TOS
         ld a,(de)      ; fetch cell at IP to TOS (MS-word),
@@ -241,14 +241,14 @@ defc nextcomma_block_len = 7
         push hl        ; Tuck HL under TOS
         next
 
-;C EXECUTE   i*x xt -- j*x           execute Forth word at 'xt'
+;C EXECUTE   ( i*x xt -- j*x )                       execute Forth word at 'xt'
     head(EXECUTE,EXECUTE,docode)
         ld h,b          ; address of word -> HL
         ld l,c
         pop bc          ; get new TOS
         jp (hl)         ; go do Forth word
 
-;Z ?EXECUTE   i*x xt -- j*x     execute word at 'xt', if not 0
+;Z ?EXECUTE   ( i*x xt -- j*x )                  execute word at 'xt', if not 0
     head(QEXECUTE,?EXECUTE,docode)
         ld a, b
         or c
@@ -271,7 +271,7 @@ enter:  dec ix         ; push old IP on ret stack
         pop hl         ; param field adrs -> IP
         nexthl
 
-;C VARIABLE  ( -- )   define a Forth variable
+;C VARIABLE   ( -- )                                    define a Forth variable
 ;   CREATE 1 CELLS ALLOT ;
 ; Action of RAM variable is identical to CREATE,
 ; so we don't need a DOES> clause to change it.
@@ -288,7 +288,7 @@ dovar:  ; -- a-addr
         next
 
 
-;C CONSTANT   n --                      define a Forth constant
+;C CONSTANT   ( n -- )                                  define a Forth constant
 ;   CREATE , DOES> (machine code fragment)
     head(CONSTANT,CONSTANT,docolon)
         DW CREATE,COMMA,XDOES
@@ -303,7 +303,7 @@ docon:  ; -- x
         ld b,(hl)
         next
 
-;Z USER     n --                       define user variable 'n'
+;Z USER   ( n -- )                                     define user variable 'n'
 ;   CREATE , DOES> (machine code fragment)
     head(USER,USER,docolon)
         DW CREATE,COMMA,XDOES
@@ -385,7 +385,7 @@ dodeferv:
 
 ; TERMINAL I/O ==================================
 
-;Z TX     c --                      output character to console
+;: TX   ( c -- )                                    output character to console
 dnl ;   head(TX,TX,docode)
 TX:
         ld a,c
@@ -393,7 +393,7 @@ TX:
         pop bc
         next
 
-;Z RX?     -- f                     return true if char waiting
+;: RX?   ( -- f )                                   return true if char waiting
 dnl ;   head(RXQ,RX?,docode)
 RXQ:
         push bc
@@ -403,7 +403,7 @@ RXQ:
         jp tosfalse
 
 
-;Z RX      -- c                      get character from console
+;: RX   ( -- c )                                     get character from console
 dnl ;    head(RX,RX,docode)
 RX:
         push bc
@@ -414,24 +414,24 @@ RX:
 
 ; STACK OPERATIONS ==============================
 
-;C DUP      x -- x x                     duplicate top of stack
+;C DUP   ( x -- x x )                                    duplicate top of stack
     head(DUP,DUP,docode)
 pushtos: push bc
         next
 
-;C ?DUP     x -- 0 | x x                         DUP if nonzero
+;C ?DUP   ( x -- 0 | x x )                                       DUP if nonzero
     head(QDUP,?DUP,docode)
         ld a,b
         or c
         jr nz,pushtos
         next
 
-;C DROP     x --                              drop top of stack
+;C DROP   ( x -- )                                            drop top of stack
     head(DROP,DROP,docode)
 poptos: pop bc
         next
 
-;C SWAP     x1 x2 -- x2 x1                   swap top two items
+;C SWAP   ( x1 x2 -- x2 x1 )                                 swap top two items
     head(SWOP,SWAP,docode)
         pop hl
         push bc
@@ -439,7 +439,7 @@ poptos: pop bc
         ld c,l
         next
 
-;C OVER    x1 x2 -- x1 x2 x1                  per stack diagram
+;C OVER   ( x1 x2 -- x1 x2 x1 )                               per stack diagram
     head(OVER,OVER,docode)
         pop hl
         push hl
@@ -448,7 +448,7 @@ poptos: pop bc
         ld c,l
         next
 
-;C ROT    x1 x2 x3 -- x2 x3 x1                per stack diagram
+;C ROT   ( x1 x2 x3 -- x2 x3 x1 )                             per stack diagram
     head(ROT,ROT,docode)
         ; x3 is in TOS
         pop hl          ; x2
@@ -458,15 +458,15 @@ poptos: pop bc
         ld c,l
         next
 
-;X NIP    x1 x2 -- x2                         per stack diagram
+;X NIP   ( x1 x2 -- x2 )                                      per stack diagram
     head(NIP,NIP,docolon)
         DW SWOP,DROP,EXIT
 
-;X TUCK   x1 x2 -- x2 x1 x2                   per stack diagram
+;X TUCK   ( x1 x2 -- x2 x1 x2 )                               per stack diagram
     head(TUCK,TUCK,docolon)
         DW SWOP,OVER,EXIT
 
-;Z NDROP  i*x n -- j*x        drop n items from stack
+;Z NDROP   ( i*x n -- j*x )                             drop n items from stack
     head(NDROP,NDROP,docode)
 ndrop_loop:
         ld a,b
@@ -479,7 +479,7 @@ ndrop_end:
         pop bc
         next
 
-;C >R    x --   R: -- x                    push to return stack
+;C >R   ( x -- )  ( R: -- x )                              push to return stack
     head(TOR,>R,docode)
         dec ix          ; push TOS onto rtn stk
         ld (ix+0),b
@@ -488,7 +488,7 @@ ndrop_end:
         pop bc          ; pop new TOS
         next
 
-;C R>    -- x    R: x --                  pop from return stack
+;C R>   ( -- x )  ( R: x -- )                             pop from return stack
     head(RFROM,R>,docode)
         push bc         ; push old TOS
         ld c,(ix+0)     ; pop top rtn stk item
@@ -497,14 +497,14 @@ ndrop_end:
         inc ix
         next
 
-;C R@    -- x     R: x -- x                  fetch from rtn stk
+;C R@   ( -- x )  ( R: x -- x )                              fetch from rtn stk
     head(RFETCH,R@,docode)
         push bc         ; push old TOS
         ld c,(ix+0)     ; fetch top rtn stk item
         ld b,(ix+1)     ;       to TOS
         next
 
-;X N>R    ( i * n +n -- ) ( R: -- j * x +n )       n cells to R
+;X N>R   ( i * n +n -- )  ( R: -- j * x +n )                       n cells to R
     head(NTOR,N>R,docode)
         push bc
         exx
@@ -529,7 +529,7 @@ ntor_done:
         pop bc
         next
 
-;X NR>   ( -- i * x +n ) ( R: j * x +n -- )      n cells from R
+;X NR>   ( -- i * x +n )  ( R: j * x +n -- )                     n cells from R
     head(NRFROM,NR>,docode)
         push bc
         exx
@@ -556,7 +556,7 @@ nrfrom_done:
         pop bc
         next
 
-;Z SP@  -- a-addr                        get data stack pointer
+;Z SP@   ( -- a-addr )                                   get data stack pointer
     head(SPFETCH,SP@,docode)
         push bc
         ld hl,0
@@ -565,7 +565,7 @@ nrfrom_done:
         ld c,l
         next
 
-;Z SP!  a-addr --                        set data stack pointer
+;Z SP!   ( a-addr -- )                                   set data stack pointer
     head(SPSTORE,SP!,docode)
         ld h,b
         ld l,c
@@ -573,14 +573,14 @@ nrfrom_done:
         pop bc          ; get new TOS
         next
 
-;Z RP@  -- a-addr                      get return stack pointer
+;Z RP@   ( -- a-addr )                                 get return stack pointer
     head(RPFETCH,RP@,docode)
         push bc
         push ix
         pop bc
         next
 
-;Z RP!  a-addr --                      set return stack pointer
+;Z RP!   ( a-addr -- )                                 set return stack pointer
     head(RPSTORE,RP!,docode)
         push bc
         pop ix
@@ -589,7 +589,7 @@ nrfrom_done:
 
 ; MEMORY AND I/O OPERATIONS =====================
 
-;C !        x a-addr --                    store cell in memory
+;C !   ( x a-addr -- )                                     store cell in memory
     head(STORE,!,docode)
         ld h,b          ; address in hl
         ld l,c
@@ -600,7 +600,7 @@ nrfrom_done:
         pop bc          ; pop new TOS
         next
 
-;C C!      char c-addr --                  store char in memory
+;C C!   ( char c-addr -- )                                 store char in memory
     head(CSTORE,C!,docode)
         ld h,b          ; address in hl
         ld l,c
@@ -609,7 +609,7 @@ nrfrom_done:
         pop bc          ; pop new TOS
         next
 
-;C @       a-addr -- x                   fetch cell from memory
+;C @   ( a-addr -- x )                                   fetch cell from memory
     head(FETCH,@,docode)
         ld h,b          ; address in hl
         ld l,c
@@ -618,21 +618,21 @@ nrfrom_done:
         ld b,(hl)
         next
 
-;C C@     c-addr -- char                 fetch char from memory
+;C C@   ( c-addr -- char )                               fetch char from memory
     head(CFETCH,C@,docode)
         ld a,(bc)
         ld c,a
         ld b,0
         next
 
-;Z PC!     char c-addr --                   output char to port
+;Z PC!   ( char c-addr -- )                                 output char to port
     head(PCSTORE,PC!,docode)
         pop hl          ; char in L
         out (c),l       ; to port (BC)
         pop bc          ; pop new TOS
         next
 
-;Z PC@     c-addr -- char                  input char from port
+;Z PC@   ( c-addr -- char )                                input char from port
     head(PCFETCH,PC@,docode)
         in c,(c)        ; read port (BC) to C
         ld b,0
@@ -640,7 +640,7 @@ nrfrom_done:
 
 ; ARITHMETIC AND LOGICAL OPERATIONS =============
 
-;C +       n1/u1 n2/u2 -- n3/u3                       add n1+n2
+;C +   ( n1/u1 n2/u2 -- n3/u3 )                                       add n1+n2
     head(PLUS,+,docode)
         pop hl
         add hl,bc
@@ -648,7 +648,7 @@ nrfrom_done:
         ld c,l
         next
 
-;C -      n1/u1 n2/u2 -- n3/u3                   subtract n1-n2
+;C -   ( n1/u1 n2/u2 -- n3/u3 )                                  subtract n1-n2
     head(MINUS,-,docode)
         pop hl
         or a
@@ -657,7 +657,7 @@ nrfrom_done:
         ld c,l
         next
 
-;C AND    x1 x2 -- x3                               logical AND
+;C AND   ( x1 x2 -- x3 )                                            logical AND
     head(AND,AND,docode)
         pop hl
         ld a,b
@@ -668,7 +668,7 @@ nrfrom_done:
         ld c,a
         next
 
-;C OR     x1 x2 -- x3                                logical OR
+;C OR   ( x1 x2 -- x3 )                                              logical OR
     head(OR,OR,docode)
         pop hl
         ld a,b
@@ -679,7 +679,7 @@ nrfrom_done:
         ld c,a
         next
 
-;C XOR    x1 x2 -- x3                               logical XOR
+;C XOR   ( x1 x2 -- x3 )                                            logical XOR
     head(XOR,XOR,docode)
         pop hl
         ld a,b
@@ -690,7 +690,7 @@ nrfrom_done:
         ld c,a
         next
 
-;C INVERT   x1 -- x2                          bitwise inversion
+;C INVERT   ( x1 -- x2 )                                      bitwise inversion
     head(INVERT,INVERT,docode)
         ld a,b
         cpl
@@ -700,7 +700,7 @@ nrfrom_done:
         ld c,a
         next
 
-;C NEGATE   x1 -- x2                           two's complement
+;C NEGATE   ( x1 -- x2 )                                       two's complement
     head(NEGATE,NEGATE,docode)
         ld a,b
         cpl
@@ -711,36 +711,36 @@ nrfrom_done:
         inc bc
         next
 
-;C 1+      n1/u1 -- n2/u2                          add 1 to TOS
+;C 1+   ( n1/u1 -- n2/u2 )                                         add 1 to TOS
     head(ONEPLUS,1+,docode)
         inc bc
         next
 
-;C 1-      n1/u1 -- n2/u2                   subtract 1 from TOS
+;C 1-   ( n1/u1 -- n2/u2 )                                  subtract 1 from TOS
     head(ONEMINUS,1-,docode)
         dec bc
         next
 
-;Z ><      x1 -- x2                       swap bytes (not ANSI)
+;Z ><   ( x1 -- x2 )                                      swap bytes (not ANSI)
     head(swapbytes,><,docode)
         ld a,b
         ld b,c
         ld c,a
         next
 
-;C 2*      x1 -- x2                       arithmetic left shift
+;C 2*   ( x1 -- x2 )                                      arithmetic left shift
     head(TWOSTAR,2*,docode)
         sla c
         rl b
         next
 
-;C 2/      x1 -- x2                      arithmetic right shift
+;C 2/   ( x1 -- x2 )                                     arithmetic right shift
     head(TWOSLASH,2/,docode)
         sra b
         rr c
         next
 
-;C LSHIFT  x1 u -- x2                  logical L shift u places
+;C LSHIFT   ( x1 u -- x2 )                             logical L shift u places
     head(LSHIFT,LSHIFT,docode)
         ld b,c        ; b = loop counter
         pop hl        ;   NB: hi 8 bits ignored!
@@ -752,7 +752,7 @@ lsh2:   djnz lsh1
         ld c,l
         next
 
-;C RSHIFT  x1 u -- x2                  logical R shift u places
+;C RSHIFT   ( x1 u -- x2 )                             logical R shift u places
     head(RSHIFT,RSHIFT,docode)
         ld b,c        ; b = loop counter
         pop hl        ;   NB: hi 8 bits ignored!
@@ -765,7 +765,7 @@ rsh2:   djnz rsh1
         ld c,l
         next
 
-;C +!     n/u a-addr --                      add cell to memory
+;C +!   ( n/u a-addr -- )                                    add cell to memory
     head(PLUSSTORE,+!,docode)
         pop hl
         ld a,(bc)       ; low byte
@@ -780,7 +780,7 @@ rsh2:   djnz rsh1
 
 ; COMPARISON OPERATIONS =========================
 
-;C 0=     n/u -- flag                      return true if TOS=0
+;C 0=   ( n/u -- flag )                                    return true if TOS=0
     head(ZEROEQUAL,0=,docode)
         ld a,b
         or c            ; result=0 if bc was 0
@@ -790,7 +790,7 @@ rsh2:   djnz rsh1
         ld c,a
         next
 
-;C 0<     n -- flag                        true if TOS negative
+;C 0<   ( n -- flag )                                      true if TOS negative
     head(ZEROLESS,0<,docode)
         sla b           ; sign bit -> cy flag
         sbc a,a         ; propagate cy through A
@@ -798,7 +798,7 @@ rsh2:   djnz rsh1
         ld c,a
         next
 
-;C =      x1 x2 -- flag                              test x1=x2
+;C =   ( x1 x2 -- flag )                                             test x1=x2
     head(EQUAL,=,docode)
         pop hl
         or a
@@ -807,11 +807,11 @@ rsh2:   djnz rsh1
 tosfalse: ld bc,0
         next
 
-;X <>     x1 x2 -- flag               test not equal (not ANSI)
+;X <>   ( x1 x2 -- flag )                             test not equal (not ANSI)
     head(NOTEQUAL,<>,docolon)
         DW EQUAL,ZEROEQUAL,EXIT
 
-;C <      n1 n2 -- flag                      test n1<n2, signed
+;C <   ( n1 n2 -- flag )                                     test n1<n2, signed
     head(LESS,<,docode)
         pop hl
         or a
@@ -828,11 +828,11 @@ tostrue: ld bc,0ffffh   ;   if -ve, result true
 revsense: jp m,tosfalse ; OV: if -ve, reslt false
         jr tostrue      ;     if +ve, result true
 
-;C >     n1 n2 -- flag                       test n1>n2, signed
+;C >   ( n1 n2 -- flag )                                     test n1>n2, signed
     head(GREATER,>,docolon)
         DW SWOP,LESS,EXIT
 
-;C U<    u1 u2 -- flag                     test u1<n2, unsigned
+;C U<   ( u1 u2 -- flag )                                  test u1<n2, unsigned
     head(ULESS,U<,docode)
         pop hl
         or a
@@ -842,13 +842,13 @@ revsense: jp m,tosfalse ; OV: if -ve, reslt false
         ld c,a
         next
 
-;X U>    u1 u2 -- flag               u1>u2 unsignedd (not ANSI)
+;X U>   ( u1 u2 -- flag )                            u1>u2 unsignedd (not ANSI)
     head(UGREATER,U>,docolon)
         DW SWOP,ULESS,EXIT
 
 ; LOOP AND BRANCH OPERATIONS ====================
 
-;Z branch   --                                    branch always
+;Z branch   ( -- )                                                branch always
     head(branch,branch,docode)
 dobranch: ld a,(de)     ; get inline value => IP
         ld l,a
@@ -857,7 +857,7 @@ dobranch: ld a,(de)     ; get inline value => IP
         ld h,a
         nexthl
 
-;Z ?branch   x --                            branch if TOS zero
+;Z ?branch   ( x -- )                                        branch if TOS zero
     head(qbranch,?branch,docode)
         ld a,b
         or c            ; test old TOS
@@ -867,7 +867,7 @@ dobranch: ld a,(de)     ; get inline value => IP
         inc de
         next
 
-;Z (do)    n1|u1 n2|u2 --  R: -- sys1 sys2      run-time for DO
+;Z (do)   ( n1|u1 n2|u2 -- )  ( R: -- sys1 sys2 )               run-time for DO
 ; '83 and ANSI standard loops terminate when the
 ; boundary of limit-1 and limit is crossed, in
 ; either direction.  This can be conveniently
@@ -896,7 +896,7 @@ dobranch: ld a,(de)     ; get inline value => IP
         pop bc       ; pop new TOS
         next
 
-;Z (loop)   R: sys1 sys2 --  | sys1 sys2      run-time for LOOP
+;Z (loop)   ( R: sys1 sys2 -- | sys1 sys2 )                   run-time for LOOP
 ; Add 1 to the loop index.  If loop terminates,
 ; clean up the return stack and skip the branch.
 ; Else take the inline branch.  Note that LOOP
@@ -922,7 +922,7 @@ loopterm: ; terminate the loop
         inc de
         next
 
-;Z (+loop)   n --   R: sys1 sys2 -- | sys1 sys2  run-time +LOOP
+;Z (+loop)   ( n -- )  ( R: sys1 sys2 -- | sys1 sys2 )           run-time +LOOP
 ; Add n to the loop index.  If loop terminates,
 ; clean up the return stack and skip the branch.
 ; Else take the inline branch.
@@ -935,8 +935,7 @@ loopterm: ; terminate the loop
         pop bc      ; old TOS = loop increment
         jr looptst
 
-;C I        -- n   R: sys1 sys2 -- sys1 sys2
-;\                  get the innermost loop index
+;C I   ( -- n )  ( R: sys1 sys2 -- sys1 sys2 )     get the innermost loop index
     head(II,I,docode)
         push bc     ; push old TOS
         ld l,(ix+0) ; get current loop index
@@ -949,8 +948,7 @@ loopterm: ; terminate the loop
         ld c,l
         next
 
-;C J        -- n   R: 4*sys -- 4*sys
-;\                  get the second loop index
+;C J   ( -- n )  ( R: 4*sys -- 4*sys )                get the second loop index
     head(JJ,J,docode)
         push bc     ; push old TOS
         ld l,(ix+4) ; get current loop index
@@ -963,7 +961,7 @@ loopterm: ; terminate the loop
         ld c,l
         next
 
-;C UNLOOP   --   R: sys1 sys2 --                drop loop parms
+;C UNLOOP   ( -- )  ( R: sys1 sys2 -- )                         drop loop parms
     head(UNLOOP,UNLOOP,docode)
         inc ix
         inc ix
@@ -973,7 +971,7 @@ loopterm: ; terminate the loop
 
 ; MULTIPLY AND DIVIDE ===========================
 
-;C UM*     u1 u2 -- ud                 unsigned 16x16->32 mult.
+;C UM*   ( u1 u2 -- ud )                               unsigned 16x16->32 mult.
     head(UMSTAR,UM*,docode)
         push bc
         exx
@@ -996,7 +994,7 @@ noadd:  dec a
         pop bc      ; put TOS back in BC
         next
 
-;C UM/MOD   ud u1 -- u2 u3                   unsigned 32/16->16
+;C UM/MOD   ( ud u1 -- u2 u3 )                               unsigned 32/16->16
     head(UMSLASHMOD,UM/MOD,docode)
         push bc
         exx
@@ -1038,7 +1036,7 @@ udiv4:  rl e        ; rotate result bit into DE,
 
 ; BLOCK AND STRING OPERATIONS ===================
 
-;C FILL   c-addr u char --                fill memory with char
+;C FILL   ( c-addr u char -- )                            fill memory with char
     head(FILL,FILL,docode)
         ld a,c          ; character in a
         exx             ; use alt. register set
@@ -1059,7 +1057,7 @@ filldone: exx           ; back to main reg set
         pop bc          ; pop new TOS
         next
 
-;X CMOVE   c-addr1 c-addr2 u --                move from bottom
+;X CMOVE   ( c-addr1 c-addr2 u -- )                            move from bottom
 ; as defined in the ANSI optional String word set
 ; On byte machines, CMOVE and CMOVE> are logical
 ; factors of MOVE.  They are easy to implement on
@@ -1078,7 +1076,7 @@ cmovedone: exx
         pop bc      ; pop new TOS
         next
 
-;X CMOVE>  c-addr1 c-addr2 u --                   move from top
+;X CMOVE>   ( c-addr1 c-addr2 u -- )                              move from top
 ; as defined in the ANSI optional String word set
     head(CMOVEUP,CMOVE>,docode)
         push bc
@@ -1099,7 +1097,7 @@ umovedone: exx
         pop bc      ; pop new TOS
         next
 
-;Z SKIP   c-addr u c -- c-addr' u'          skip matching chars
+;Z SKIP   ( c-addr u c -- c-addr' u' )                      skip matching chars
 ; Although SKIP, SCAN, and S= are perhaps not the
 ; ideal factors of WORD and FIND, they closely
 ; follow the string operations available on many
@@ -1126,7 +1124,7 @@ skipdone: push hl   ; updated address
         pop bc      ; TOS in bc
         next
 
-;Z SCAN    c-addr u c -- c-addr' u'          find matching char
+;Z SCAN   ( c-addr u c -- c-addr' u' )                       find matching char
     head(scan,SCAN,docode)
         ld a,c      ; scan character
         exx
@@ -1147,8 +1145,8 @@ scandone: push hl   ; updated address
         pop bc      ; TOS in bc
         next
 
-;Z STRCMP    c-addr1 c-addr2 u -- n              string compare
-;\             n<0: s1<s2, n=0: s1=s2, n>0: s1>s2
+;Z STRCMP   ( c-addr1 c-addr2 u -- n )                           string compare
+;\                                    where: n<0: s1<s2, n=0: s1=s2, n>0: s1>s2
     head(STRCMP,STRCMP,docode)
         push bc
         exx

@@ -37,7 +37,7 @@ SECTION code
 
 EXTERN jp_hl
 
-;Z CODE   --                    create an empty code definition
+;Z CODE   ( -- )                                create an empty code definition
 ;   CREATE
 ;   -3 ALLOT  ;
     head(CODE,CODE,docolon)
@@ -46,11 +46,11 @@ EXTERN jp_hl
         DW EXIT
 
 
-;X ;CODE   --                             end a code definition
+;X ;CODE   ( -- )                                         end a code definition
     head(SEMICODE,;CODE,docolon)
         DW EXIT
 
-;X NEXT,   --        compile forth NEXT word to code definition
+;X NEXT,   ( -- )                    compile forth NEXT word to code definition
     head(NEXTCOMMA,``NEXT,'',docolon)
         DW lit,nextcomma_block,HERE
         DW lit,nextcomma_block_len,MOVE
@@ -59,7 +59,7 @@ EXTERN jp_hl
 
 
 
-;Z CALL       a-addr --            call machine code at address
+;Z CALL   ( a-addr -- )                            call machine code at address
     head(CALL,CALL,docode)
         ; protect against some stack abuse
         ld (forth_stack_save), sp
@@ -157,7 +157,7 @@ SECTION code
 
 
 ; RC2014 EXTENSION misc ======================
-;X \    --                               comment to end of line
+;X \   ( -- )                                            comment to end of line
 ;   SOURCE >IN ! DROP ;   IMMEDIATE
 dnl   head(BACKSLASH,``\'',docolon)
     ; macro doesn't like the \ character, so manually build this word
@@ -175,7 +175,7 @@ BACKSLASH1:
     DW SOURCE,TOIN,STORE,DROP
     DW EXIT
 
-;X (SLITERAL)    c-addr u --             compile string literal
+;X (SLITERAL)   ( c-addr u -- )                          compile string literal
 ;    ['] (S")
 ;    HERE PLACE  HERE C@ 1+
 ;    ALIGNED ALLOT
@@ -186,7 +186,7 @@ XSLITERAL:
         DW ALIGNED,ALLOT,EXIT
 
 
-;X DUMP   caddr len --                              dump memory
+;X DUMP   ( caddr len -- )                                          dump memory
 ;   OVER + SWAP DO I C@ . LOOP ;
     head(DUMP,DUMP,docolon)
         DW OVER,PLUS,SWOP,xdo
@@ -194,7 +194,7 @@ DUMP1:
         DW II,CFETCH,DOT,xloop,DUMP1
         DW EXIT
 
-;X AT-XY   x y --                            move cursor to x,y
+;X AT-XY   ( x y -- )                                        move cursor to x,y
 ;    VT-ESC 1+ (.) TYPE ." ;" 1+ (.) TYPE ." H" ;
     head(AT_XY,AT-XY,docolon)
         dw lit,0x1b,EMIT
@@ -205,7 +205,7 @@ DUMP1:
         dw lit,'H',EMIT
         dw EXIT
 
-;X PAGE   --                                       clear screen
+;X PAGE   ( -- )                                                   clear screen
 ;    VT-ESC ." 2J"
     head(PAGE,PAGE,docolon)
         dw XSQUOTE
@@ -215,7 +215,7 @@ DUMP1:
         dw EXIT
 
 
-;Z C+!  c c-addr --                    add c to value at c-addr
+;Z C+!   ( c c-addr -- )                               add c to value at c-addr
     head(CPLUSSTORE,C+!,docode)
         ld a,(bc)
         pop hl
@@ -224,7 +224,7 @@ DUMP1:
         pop bc
         next
 
-;Z -ROT    x1 x2 x3  -- x3 x1 x2              per stack diagram
+;Z -ROT   ( x1 x2 x3 -- x3 x1 x2 )                            per stack diagram
     head(MINUSROT,-ROT,docode)
         push bc         ; x3 is in bc
         exx
@@ -402,7 +402,7 @@ XIHEX1:
         DW MOVE
         DW EXIT
 
-;Z HEXLOAD   -- c-addr len            start parsing intel hex dump
+;Z HEXLOAD   ( -- c-addr len )                     start parsing intel hex dump
 ;    0 IHEX_START !
 ;    0 IHEX_LENGTH !   
 ;    BEGIN

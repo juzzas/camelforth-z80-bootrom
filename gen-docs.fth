@@ -20,5 +20,5 @@ output-glossary-private
 
 close-glossary
 
-
+bye
 

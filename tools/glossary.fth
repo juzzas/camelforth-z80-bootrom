@@ -28,7 +28,8 @@ end-structure
 : strnode-new      ( c-addr u -- strnode = Create a new node on the heap with cell data x )
    strnode% allocate  throw  dup >r strnode-init
    r@  strnode>str   str-set
-   r>  ;
+   r>
+;
 
 
 : strnode-free     ( strnode -- = Free the node from the heap )
@@ -36,8 +37,10 @@ end-structure
   free throw
 ;
 
+
 : strnode-compare  ( strnode strnode -- -1, 0, 1 = compare node )
-   >r strnode>str   r> strnode>str    str^icompare  ;
+   >r strnode>str   r> strnode>str    str^icompare
+;
 
 
 \ string list definitions
@@ -103,23 +106,17 @@ strlist-new value glossary-ext-list
 strlist-new value glossary-utils-list
 strlist-new value glossary-private-list
 
+0 VALUE last-list
+
 source-files sni-create source-file-iter
-0 VALUE stream-in
 
 
-: tis-reader  ( fileid -- c-addr u | 0 )
-  line-buffer MaxLine ROT READ-FILE THROW
-  DUP IF
-    line-buffer SWAP
-  THEN
+: open-input ( str-filename -- )
+   str-get R/O OPEN-FILE THROW DUP TO fd-in
 ;
 
-: open-input ( str-filename -- )  
-   str-get R/O OPEN-FILE THROW DUP TO fd-in
-   tis-new TO stream-in
-   ['] tis-reader   stream-in tis-set-reader  ;
-: close-input ( -- )  stream-in tis-free fd-in CLOSE-FILE THROW 
-   0 TO stream-in ;
+
+: close-input ( -- )  fd-in CLOSE-FILE THROW ;
 
 : open-output ( addr u -- )  W/O CREATE-FILE THROW TO fd-out ;
 : close-output ( -- )  fd-out CLOSE-FILE THROW ;
@@ -129,6 +126,7 @@ source-files sni-create source-file-iter
    >R  S" ;C " R@ tis-scan-string
    IF
       2DROP r@ tis-get   glossary-core-list strlist-append
+      glossary-core-list TO last-list
    THEN
    R> DROP
 ;
@@ -137,6 +135,7 @@ source-files sni-create source-file-iter
    >R  S" ;X " R@ tis-scan-string
    IF
       2DROP r@ tis-get   glossary-ext-list strlist-append
+      glossary-ext-list TO last-list
    THEN
    R> DROP
 ;
@@ -145,6 +144,7 @@ source-files sni-create source-file-iter
    >R  S" ;U " R@ tis-scan-string
    IF
       2DROP r@ tis-get   glossary-utils-list strlist-append
+      glossary-utils-list TO last-list
    THEN
    R> DROP
 ;
@@ -153,12 +153,33 @@ source-files sni-create source-file-iter
    >R  S" ;Z " R@ tis-scan-string
    IF
       2DROP r@ tis-get   glossary-private-list strlist-append
+      glossary-private-list TO last-list
    THEN
    R> DROP
 ;
 
+: ?slurp-glossary-continuation  ( tis -- )
+   >R  S" ;\ " R@ tis-scan-string
+   IF
+      2DROP r@ tis-get  ( 0 | c-addr u )
+      ?DUP IF
+         last-list  snl-last@  strnode>str  ( c-addr u str )
+         chr.lf OVER str-append-char
+         str-append-string
+      THEN
+   THEN
+   R> DROP
+;
+
+
+: dnl-line?  ( c-addr u -- flag = line starts with the m4 comment dnl )
+   S" dnl" string-prefix?
+;
+
 : (slurp-glossary-line) ( c-addr u -- )
+   2DUP dnl-line? IF 2DROP EXIT THEN
    tis-new DUP >R tis-set
+   R@ ?slurp-glossary-continuation
    R@ ?slurp-glossary-core
    R@ ?slurp-glossary-ext
    R@ ?slurp-glossary-utils
@@ -168,11 +189,10 @@ source-files sni-create source-file-iter
 
 : (slurp-glossary)   ( -- )
    BEGIN
-      stream-in  tis-eof?  0=
+      line-buffer MaxLine fd-in READ-LINE THROW  ( u flag )
    WHILE
-      stream-in tis-read-line 
-      ?dup   IF (slurp-glossary-line) THEN
-   REPEAT
+      line-buffer SWAP (slurp-glossary-line)
+   REPEAT DROP
 ;
 
 : open-glossary:  ( "filename" -- )
@@ -268,5 +288,4 @@ source-files sni-create source-file-iter
 : close-glossary  ( -- )
    close-output 
 ;
-
 
