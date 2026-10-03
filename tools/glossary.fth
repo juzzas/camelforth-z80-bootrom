@@ -239,7 +239,8 @@ source-files sni-create source-file-iter
    sni-new DUP >R  sni-first
    ?DUP IF
       BEGIN
-         strnode>str str-get TYPE CR
+         strnode>str str-get
+         fd-out WRITE-LINE THROW
          R@  sni-next
          ?DUP 0=
       UNTIL
@@ -284,6 +285,11 @@ source-files sni-create source-file-iter
    glossary-private-list output-glossary
    glossary-private-list clear-glossary
 ;
+
+: output-text"
+   [CHAR] " PARSE
+   fd-out WRITE-LINE THROW
+;  IMMEDIATE
 
 : close-glossary  ( -- )
    close-output 
