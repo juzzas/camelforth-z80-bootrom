@@ -1590,9 +1590,9 @@ ESAC2:
 
 ; DRIVECTX structure
 ;   Each context struct is drive device "driver"
-;    XT READ sector (1 cell)
-;    XT WRITE sector BLOCK number (1 cell)
-;    XT CAPACITY number of sectores (1 cell)
+;    XT READ 1024byte block at block number LBN (1 cell)
+;    XT WRITE 1024byte block at block number LBN (1 cell)
+;    XT CAPACITY number of 1024byte blocks (1 cell)
 
 DEFC DRIVECTX_SIZE = 8
 
@@ -1626,7 +1626,7 @@ dnl         DW EXIT
 ; SLICECTX structure
 ;   Each context struct is drive device "driver"
 ;    DRIVE-ID sector (1 cell)
-;    LBA OFFSET  (2 cells)
+;    BLOCK OFFSET  (2 cells)
 ;    LIMIT number of blocks (1 cell)
 
 DEFC SLICECTX_SIZE = 8
@@ -1636,7 +1636,7 @@ DEFC SLICECTX_SIZE = 8
     head_system(SLICETODRIVE,SLICE>DRIVE,docode)
         jp ctx_next
 
-;Z SLICE>OFFSET   ( slice-id -- a-addr' )                    addr of LBA OFFSET
+;Z SLICE>OFFSET   ( slice-id -- a-addr' )                  addr of block OFFSET
     head_system(SLICETOOFFSET,SLICE>OFFSET,docode)
         jp ctx_plus_2
 
@@ -1649,24 +1649,24 @@ DEFC SLICECTX_SIZE = 8
         dw SLICECTX_SIZE
 
 
-        DEFC SLICE_SECTORS = 8192*2
-;Z RESLICE   ( n slice-id -- )                 set n*8MB LBA offset to slice-id
-;  >R SLICE_SECTORS UM*                ( lba-offset ; slice-id )
-;  2DUP R@ SLICE>DRIVE @ DRIVE>CAPACITY @EXECUTE  ( lba-offset lba-offset capacity )
-;  2OVER 2OVER  D<  IF                            ( lba-offset lba-offset capacity )
-;  2SWAP SLICE_SECTORS M+  DMIN                   ( lba-offset lba-end )
-;  2OVER  D-  D2/  D>S                            ( lba-offset limit )
+        DEFC SLICE_BLOCKS = 8192
+;Z RESLICE   ( n slice-id -- )              set n*8MB block offset to slice-id
+;  >R SLICE_BLOCKS UM*                 ( lbn-offset ; slice-id )
+;  2DUP R@ SLICE>DRIVE @ DRIVE>CAPACITY @EXECUTE  ( lbn-offset lbn-offset capacity )
+;  2OVER 2OVER  D<  IF                            ( lbn-offset lbn-offset capacity )
+;  2SWAP SLICE_BLOCKS M+  DMIN                    ( lbn-offset lbn-end )
+;  2OVER  D-  D>S                                 ( lbn-offset limit )
 ;  R@ SLICE>LIMIT !
 ;  R> SLICE>OFFSET 2!
 ;  ELSE  -257 THROW THEN   ;
     head_system(RESLICE,RESLICE,docolon)
         DW FLUSH
-        DW TOR,lit,SLICE_SECTORS,UMSTAR
+        DW TOR,lit,SLICE_BLOCKS,UMSTAR
         DW TWODUP,RFETCH,SLICETODRIVE,FETCH,DRIVETOCAPACITY,FETCHEXECUTE
         DW TWOOVER,TWOOVER,DLESS,qbranch,SLICE1
-        DW TWOSWAP,lit,SLICE_SECTORS,MPLUS
+        DW TWOSWAP,lit,SLICE_BLOCKS,MPLUS
         DW DMIN
-        DW TWOOVER,DMINUS,DTWOSLASH,DROP
+        DW TWOOVER,DMINUS,DROP
         DW RFETCH,SLICETOLIMIT,STORE
         DW RFROM,SLICETOOFFSET,TWOSTORE,EXIT
 SLICE1:
@@ -1699,11 +1699,11 @@ dnl         DW EXIT
 
 ;Z SUBSLICE   ( blk len slice-id -- )       reduce slice to len blocks from blk
 ;     DUP >R SLICE>LIMIT !        ( blk ; r: slice-id )
-;     R@  BLK2LBA          ( d ; r: slice-id )
+;     R@  BLK2LBN          ( d ; r: slice-id )
 ;     R> SLICE>OFFSET 2!  ;
     head_system(SUBSLICE,SUBSLICE,docolon)
        DW DUP,TOR,SLICETOLIMIT,STORE
-       DW RFETCH,BLK2LBA
+       DW RFETCH,BLK2LBN
        DW RFROM,SLICETOOFFSET,TWOSTORE
        DW EXIT
 
@@ -1726,15 +1726,15 @@ BLKLIMIT:
         dw SLICE,SLICETOLIMIT,FETCH
         dw EXIT
 
-;: BLK2LBA   ( blk slice-id -- LBA-L LBA-H )
+;: BLK2LBN   ( blk slice-id -- LBN-L LBN-H )
 ;   SLICE>OFFSET  >R
-;   S>D D2*   ( LBA-L LBA-H )
-;   R>       ( LBA-L LBA-H  slice-to-offset )
-;   2@ D+ ;  ( LBA-L' LBA-H' )
-BLK2LBA:
+;   S>D       ( LBN-L LBN-H )
+;   R>       ( LBN-L LBN-H  slice-to-offset )
+;   2@ D+ ;  ( LBN-L' LBN-H' )
+BLK2LBN:
         call docolon
         DW SLICETOOFFSET,TOR
-        dw STOD,DTWOSTAR
+        dw STOD
         dw RFROM,TWOFETCH,DPLUS
         dw EXIT
 
@@ -1759,7 +1759,7 @@ EXTERN cflash_identify
 SLASHCFLASH1:
         dw XSQUOTE
         db 11,"CFLASH OK ("
-        dw TYPE,CF_CAPACITY,DTWOSLASH,DDOT
+        dw TYPE,CF_CAPACITY,DDOT
         dw XSQUOTE
         db 7,"blocks)"
         dw TYPE,CR
@@ -1767,12 +1767,13 @@ SLASHCFLASH1:
         dw EXIT
 
 
-;Z CF-CAPACITY   ( -- d )                Fetch Compact Flash capacity (sectors)
+;Z CF-CAPACITY   ( -- ud )               Fetch Compact Flash capacity (blocks)
     head_system(CF_CAPACITY,CF-CAPACITY,docolon)
         dw lit,512,HERE,PLUS,DUP,TOR,lit,cflash_identify,CALL
 ;        dw RFETCH,lit,256,MEMDUMP
-        dw RFETCH,lit,120,PLUS,FETCH      ; low word of max LBA
+        dw RFETCH,lit,120,PLUS,FETCH      ; low word of max LBA (sectors)
         dw RFROM,lit,122,PLUS,FETCH       ; high word of max LBA
+        DW DTWOSLASH                      ; sectors -> 1024byte blocks
         DW EXIT
 
 
@@ -1783,28 +1784,31 @@ CF_CAPACITY_DATA:
 SECTION code_16k
 
 EXTERN cflash_read_sector
-;Z CF-SECTOR-READ   ( lba-l lba-h adrs -- ior )
-;\                                             Compact Flash read sector at LBA
-; Reads the sector from the Compact Flash card into memory
-; address found at 'adrs'. 'slice-id' and 'blk' are the disk
-; and block numbers respectively
-;   clash_read_sector CALL ;
-    head_system(CF_SECTOR_READ,CF-SECTOR-READ,docolon)
+;Z CF-BLOCK-READ   ( lbn-l lbn-h adrs -- ior )
+;\                                           Compact Flash read 1024byte block
+; Reads 1024byte logical block number 'lbn' (two consecutive 512byte
+; sectors) from the Compact Flash card into memory at 'adrs'.
+; ior is -33 on failure.
+;   cflash_read_sector CALL ;
+    head_system(CF_BLOCK_READ,CF-BLOCK-READ,docolon)
         dw lit,cflash_read_sector,CALL
         dw EXIT
 
 EXTERN cflash_write_sector
-;Z CF-SECTOR-WRITE   ( lba-l lba-h adrs -- ior )
-;\                                            Compact Flash write sector at LBA
-;   clash_write_sector CALL ;
-    head_system(CF_SECTOR_WRITE,CF-SECTOR-WRITE,docolon)
+;Z CF-BLOCK-WRITE   ( lbn-l lbn-h adrs -- ior )
+;\                                          Compact Flash write 1024byte block
+; Writes 1024byte logical block number 'lbn' (two consecutive 512byte
+; sectors) to the Compact Flash card from memory at 'adrs'.
+; ior is -34 on failure.
+;   cflash_write_sector CALL ;
+    head_system(CF_BLOCK_WRITE,CF-BLOCK-WRITE,docolon)
         dw lit,cflash_write_sector,CALL
         dw EXIT
 
 ;Z CF-DRIVE-ID   ( -- drive-id )                      drive-id of compact flash
     head_system(CF_DRIVE_ID,CF-DRIVE-ID,docreate)
-        dw CF_SECTOR_READ
-        dw CF_SECTOR_WRITE
+        dw CF_BLOCK_READ
+        dw CF_BLOCK_WRITE
         dw CF_CAPACITY
 
 
@@ -2164,18 +2168,12 @@ dnl         DW EXIT
 ; Reads the block from the Compact Flash card into memory
 ; address found at 'adrs'. 'slice-id' and 'blk' are the disk
 ; and block numbers respectively
-;     >R BLK2LBA 2DUP R@   ( LBA-L LBA-H LBA-L LBA-H adrs ;  R: adrs )
-;     CF-SECTOR-READ       ( LBA-L LBA-H ;  R: adrs )
-;     1 M+                 ( LBA-L' LBA-H' ;  R: adrs )
-;     R>  512 +            ( LBA-L' LBA-H' adrs' )
-;     CF-SECTOR-READ  THROW     ( )
+;     >R BLK2LBN R>        ( LBN-L LBN-H adrs )
+;     drive-read-xt EXECUTE  THROW     ( )
 ;     EXIT
 BLOCK_READ:
         call docolon
-        dw TOR,BLK2LBA,TWODUP,RFETCH    ; convert block to LBA
-        dw SECTRDVEC,FETCHEXECUTE,THROW
-        dw lit,1,MPLUS
-        dw RFROM,lit,512,PLUS
+        dw TOR,BLK2LBN,RFROM            ; convert block to LBN
         dw SECTRDVEC,FETCHEXECUTE,THROW
         dw EXIT
 
@@ -2185,10 +2183,7 @@ BLOCK_READ:
 ; and block numbers respectively
 BLOCK_WRITE:
         call docolon
-        dw TOR,BLK2LBA,TWODUP,RFETCH    ; convert block to LBA
-        dw SECTWRVEC,FETCHEXECUTE,THROW
-        dw SWOP,ONEPLUS,SWOP
-        dw RFROM,lit,512,PLUS
+        dw TOR,BLK2LBN,RFROM            ; convert block to LBN
         dw SECTWRVEC,FETCHEXECUTE,THROW
         dw EXIT
 

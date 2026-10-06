@@ -29,7 +29,7 @@ output-text" "
 output-text" ANS Forth Core words"
 output-text" --------------------"
 output-text" These are required words whose definitions are"
-output-text" specified by the ANS Forth document.""
+output-text" specified by the ANS Forth document."
 output-text" Supported in CamelForth 8K and 16K ROM."
 output-text" "
 output-glossary-core

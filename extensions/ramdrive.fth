@@ -15,19 +15,19 @@ ONLY FORTH ALSO SYSTEM DEFINITIONS
 PREVIOUS DEFINITIONS
 
 \ CamelForth BootROM RC2014 32k Paged RAM drive
-\   Fetch Compact Flash capacity (sectors)
-: RAM-CAPACITY  ( d -- )
-    64. ;
+\   Fetch RAM drive capacity (1024byte blocks)
+: RAM-CAPACITY  ( -- ud )
+    32. ;
 
-\ Paged RAM read sector at LBA
-: RAM-SECTOR-READ  ( lba-l lba-h adrs -- ior )
-   >R  DROP 512 *   R>  512  PRMOVE 0 ;
+\ Paged RAM read 1024byte block number LBN
+: RAM-BLOCK-READ  ( lbn-l lbn-h adrs -- ior )
+   >R  DROP 1024 *   R>  1024  PRMOVE 0 ;
 
-\ Paged RAM  write sector at LBA
-: RAM-SECTOR-WRITE  ( lba-l lba-h adrs -- ior )
-   >R  DROP 512 *   R>  SWAP  512  PRMOVE 0 ;
+\ Paged RAM write 1024byte block number LBN
+: RAM-BLOCK-WRITE  ( lbn-l lbn-h adrs -- ior )
+   >R  DROP 1024 *   R>  SWAP  1024  PRMOVE 0 ;
 
-' RAM-SECTOR-READ  ' RAM-SECTOR-WRITE  ' RAM-CAPACITY
+' RAM-BLOCK-READ  ' RAM-BLOCK-WRITE  ' RAM-CAPACITY
     DRIVE: RAM-DRIVE-ID
 RAM-DRIVE-ID 0 SLICE: RAM-SLICE-ID
 

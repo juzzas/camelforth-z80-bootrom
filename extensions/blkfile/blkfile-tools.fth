@@ -1,4 +1,4 @@
-\ BLKFILE tools 
+\ BLKFILE tools
 
 ONLY FORTH ALSO SYSTEM
 
@@ -44,10 +44,10 @@ SYSTEM-WORDLIST SET-CURRENT
 ;
 
 : .SOURCE  ( source-id -- )
-   CR ." SOURCE: " DUP U.
-   CR ."  REFILL: " DUP  SOURCE>REFILL   @ DUP U.  .ID 
-   CR ."  GETPOS " DUP  SOURCE>GETPOS   @ DUP U.  .ID 
-   CR ."  SETPOS "      SOURCE>GETPOS   @ DUP U.  .ID 
+   CR ." SOURCE:" DUP U.
+   CR ."  REFILL : " DUP  SOURCE>REFILL   @ DUP U.  .ID 
+   CR ."  GETPOS : " DUP  SOURCE>GETPOS   @ DUP U.  .ID 
+   CR ."  SETPOS : "      SOURCE>GETPOS   @ DUP U.  .ID 
 ;
 
 ONLY FORTH

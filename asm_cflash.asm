@@ -55,7 +55,7 @@ cflash_read_sector:
 
     and a
     call ide_read_sector
-    jr nc, read_write_error
+    jr nc, read_error
     jp read_write_ok
 
 PUBLIC cflash_write_sector
@@ -80,7 +80,12 @@ read_write_ok:
     rst 0x20
     ret
 
-read_write_error:
+read_error:
+    ld bc, -33                  ; block read exception
+    rst 0x20
+    ret
+
+read_write_error:               ; (write path) block write exception
     ld bc, -34
     rst 0x20
     ret
@@ -211,9 +216,14 @@ idByte:
 
 ; set up the drive LBA registers
 ; Uses AF, BC, DE
-; LBA is contained in BCDE registers
+; 1024byte block number is contained in BCDE registers; it is converted
+; to the 512byte sector LBA of the block's first sector (shift left 1)
 
 ide_setup_lba:
+    sla e                       ;LBN * 2 = LBA of first 512byte sector
+    rl d
+    rl c
+    rl b
     ld a,e
     out (__IO_CF_IDE_LBA0),a    ;set LBA0 0:7
     ld a,d
@@ -225,8 +235,8 @@ ide_setup_lba:
     or  11100000b               ;to enable LBA address master mode
     out (__IO_CF_IDE_LBA3),a    ;set LBA3 24:27 + bits 5:7=111
 
-    ld a,1
-    out (__IO_CF_IDE_SEC_CNT),a ;set sector count to 1
+    ld a,2
+    out (__IO_CF_IDE_SEC_CNT),a ;set sector count to 2 (1024byte block)
 
     ret
 
@@ -274,12 +284,12 @@ ide_wait_drq:
 ; Routines that talk with the IDE drive, these should not be called by
 ; the main program.
 
-; read a sector
-; LBA specified by the 4 bytes in BCDE
+; read a block (two sectors)
+; 1024byte block number specified by the 4 bytes in BCDE
 ; the address of the buffer to fill is in HL
-; HL is left incremented by 512 bytes
+; HL is left incremented by 1024 bytes
 ; uses AF, BC, DE, HL
-; return carry on success
+; return carry on success, clear on failure (nothing more is read)
 
 ide_read_sector:
     call ide_wait_ready         ;make sure drive is ready
@@ -289,14 +299,15 @@ ide_read_sector:
     out (__IO_CF_IDE_COMMAND),a ;ask the drive to read it
 
     call ide_wait_ready         ;make sure drive is ready to proceed
+    ret nc
     call ide_wait_drq           ;wait until it's got the data
+    ret nc                      ;first sector failed: no second read
 
-    ;Read a block of 512 bytes (one sector) from the drive
+    ;Read two sectors of 512 bytes from the drive
     ;8 bit data register and store it in memory at (HL++)
 
-;    ld bc,__IO_CF_IDE_DATA&0xFF ;keep iterative count in b, I/O port in c
-;    inir
-;    inir
+    ld d,2                      ;two 512byte sectors
+rdSec:
     ld c,4
 rd4secs:
     ld b,128
@@ -309,6 +320,12 @@ rdByte:
     dec c
     jr nz, rd4secs
 
+    dec d
+    jr z,rdDone
+    call ide_wait_drq           ;wait for DRQ for the second sector
+    jr c,rdSec                  ;carry = ready, go read it
+    ret                         ;NC = drive error, propagate failure
+rdDone:
     scf                         ;carry = 1 on return = operation ok
     ret
 
@@ -316,12 +333,12 @@ rdByte:
 ; Routines that talk with the IDE drive, these should not be called by
 ; the main program.
 
-; write a sector
-; specified by the 4 bytes in BCDE
+; write a block (two sectors)
+; 1024byte block number specified by the 4 bytes in BCDE
 ; the address of the origin buffer is in HL
-; HL is left incremented by 512 bytes
+; HL is left incremented by 1024 bytes
 ; uses AF, BC, DE, HL
-; return carry on success
+; return carry on success, clear on failure (nothing more is written)
 
 ide_write_sector:
     call ide_wait_ready         ;make sure drive is ready
@@ -331,13 +348,14 @@ ide_write_sector:
     out (__IO_CF_IDE_COMMAND),a ;instruct drive to write a sector
 
     call ide_wait_ready         ;make sure drive is ready to proceed
+    ret nc
     call ide_wait_drq           ;wait until it wants the data
+    ret nc                      ;first sector failed: no second write
 
-    ;Write a block of 512 bytes (one sector) from (HL++) to
+    ;Write two sectors of 512 bytes from (HL++) to
     ;the drive 8 bit data register
-    ; ld bc,__IO_CF_IDE_DATA&0xFF ;keep iterative count in b, I/O port in c
-    ;otir
-    ;otir
+    ld d,2                      ;two 512byte sectors
+wrSec:
     ld c,4
 wr4secs:
     ld b,128
@@ -351,4 +369,11 @@ wrByte:
     dec c
     jr nz,wr4secs
 
+    dec d
+    jr z,wrDone
+    call ide_wait_drq           ;wait for DRQ for the second sector
+    jr c,wrSec                  ;carry = ready, go write it
+    ret                         ;NC = drive error, propagate failure
+wrDone:
     jp ide_wait_ready           ;wait until the write is complete
+
