@@ -40,56 +40,6 @@ defc __CF_NOCACHE =	0x82
 
 EXTERN asm_z80_delay_ms
 
-PUBLIC cflash_read_sector
-cflash_read_sector:
-    rst 0x28    ; read buffer_ptr from TOS
-    ld hl, bc
-
-    rst 0x28    ; read LBA-high from TOS
-    push bc
-
-    rst 0x28    ; read LBA-low from TOS to BC
-    ld de,bc
-
-    pop bc      ; bcde = LBA
-
-    and a
-    call ide_read_sector
-    jr nc, read_error
-    jp read_write_ok
-
-PUBLIC cflash_write_sector
-cflash_write_sector:
-    rst 0x28    ; read buffer_ptr from TOS
-    ld hl, bc
-
-    rst 0x28    ; read LBA-high from TOS
-    push bc
-
-    rst 0x28    ; read LBA-low from TOS
-    ld de,bc
-
-    pop bc      ; bcde = LBA
-
-    and a
-    call ide_write_sector
-    jr nc, read_write_error
-
-read_write_ok:
-    ld bc, 0x0000
-    rst 0x20
-    ret
-
-read_error:
-    ld bc, -33                  ; block read exception
-    rst 0x20
-    ret
-
-read_write_error:               ; (write path) block write exception
-    ld bc, -34
-    rst 0x20
-    ret
-
 
 ;------------------------------------------------------------------------------
 ; start of common area driver - Compact Flash IDE functions
@@ -281,8 +231,7 @@ ide_wait_drq:
 
 
 ;------------------------------------------------------------------------------
-; Routines that talk with the IDE drive, these should not be called by
-; the main program.
+; Routines that talk with the IDE drive
 
 ; read a block (two sectors)
 ; 1024byte block number specified by the 4 bytes in BCDE
@@ -291,8 +240,10 @@ ide_wait_drq:
 ; uses AF, BC, DE, HL
 ; return carry on success, clear on failure (nothing more is read)
 
-ide_read_sector:
+PUBLIC cflash_read_block
+cflash_read_block:
     call ide_wait_ready         ;make sure drive is ready
+    ret nc
     call ide_setup_lba          ;tell it which sector we want in BCDE
 
     ld a,__IDE_CMD_READ
@@ -330,8 +281,7 @@ rdDone:
     ret
 
 ;------------------------------------------------------------------------------
-; Routines that talk with the IDE drive, these should not be called by
-; the main program.
+; Routines that talk with the IDE drive
 
 ; write a block (two sectors)
 ; 1024byte block number specified by the 4 bytes in BCDE
@@ -340,8 +290,10 @@ rdDone:
 ; uses AF, BC, DE, HL
 ; return carry on success, clear on failure (nothing more is written)
 
-ide_write_sector:
+PUBLIC cflash_write_block
+cflash_write_block:
     call ide_wait_ready         ;make sure drive is ready
+    ret nc
     call ide_setup_lba          ;tell it which sector we want in BCDE
 
     ld a,__IDE_CMD_WRITE
@@ -360,9 +312,9 @@ wrSec:
 wr4secs:
     ld b,128
 wrByte:
-	ld a,(hl)
+    ld a,(hl)
     out (__IO_CF_IDE_DATA),a
-    inc hL
+    inc hl
     dec b
     jr nz, wrByte
 

@@ -1783,27 +1783,55 @@ CF_CAPACITY_DATA:
 
 SECTION code_16k
 
-EXTERN cflash_read_sector
+EXTERN cflash_read_block
 ;Z CF-BLOCK-READ   ( lbn-l lbn-h adrs -- ior )
 ;\                                           Compact Flash read 1024byte block
 ; Reads 1024byte logical block number 'lbn' (two consecutive 512byte
 ; sectors) from the Compact Flash card into memory at 'adrs'.
 ; ior is -33 on failure.
-;   cflash_read_sector CALL ;
-    head_system(CF_BLOCK_READ,CF-BLOCK-READ,docolon)
-        dw lit,cflash_read_sector,CALL
-        dw EXIT
+    head_system(CF_BLOCK_READ,CF-BLOCK-READ,docode)
+        push bc
+        exx
+        pop hl    ; read buffer_ptr from TOS
+        pop bc    ; read LBA-high from TOS
+        pop de    ; read LBA-low from TOS
+                  ; bcde = LBA
 
-EXTERN cflash_write_sector
+        call cflash_read_block
+
+        exx
+        ld bc, 0
+        jr c, read_ok
+
+        ld bc, -33                  ; else block-read exception
+read_ok:
+        next
+
+
+EXTERN cflash_write_block
 ;Z CF-BLOCK-WRITE   ( lbn-l lbn-h adrs -- ior )
 ;\                                          Compact Flash write 1024byte block
 ; Writes 1024byte logical block number 'lbn' (two consecutive 512byte
 ; sectors) to the Compact Flash card from memory at 'adrs'.
 ; ior is -34 on failure.
-;   cflash_write_sector CALL ;
-    head_system(CF_BLOCK_WRITE,CF-BLOCK-WRITE,docolon)
-        dw lit,cflash_write_sector,CALL
-        dw EXIT
+    head_system(CF_BLOCK_WRITE,CF-BLOCK-WRITE,docode)
+        push bc
+        exx
+        pop hl    ; read buffer_ptr from TOS
+        pop bc    ; read LBA-high from TOS
+        pop de    ; read LBA-low from TOS
+                  ; bcde = LBA
+
+        call cflash_write_block
+
+        exx
+        ld bc, 0
+        jr c, write_ok
+
+        ld bc, -34                  ; else block-write exception
+write_ok:
+        next
+
 
 ;Z CF-DRIVE-ID   ( -- drive-id )                      drive-id of compact flash
     head_system(CF_DRIVE_ID,CF-DRIVE-ID,docreate)
