@@ -804,6 +804,7 @@ rsh2:   djnz rsh1
         or a
         sbc hl,bc       ; x1-x2 in HL, SZVC valid
         jr z,tostrue
+toszero:
 tosfalse: ld bc,0
         next
 

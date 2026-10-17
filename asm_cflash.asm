@@ -122,15 +122,11 @@ cflash_init:
     out (__IO_CF_IDE_COMMAND),a
 
     call ide_wait_ready
-
-init_ok:
-    ld bc, 0
-    rst 0x20
+    scf
     ret
 
 init_error:
-    ld bc, -21
-    rst 0x20
+    and a   ; clear carry flag
     ret
 
 

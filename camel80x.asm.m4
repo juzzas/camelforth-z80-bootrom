@@ -1739,7 +1739,21 @@ BLK2LBN:
         dw EXIT
 
 
+;: CFLASH_INIT   ( -- ior )      initialise the Compact Flash driver (low level)
 EXTERN cflash_init
+CFLASH_INIT:
+        push bc
+
+        exx
+        call cflash_init
+        exx
+
+        jp c, toszero
+
+        ld bc, -21
+        next
+
+
 EXTERN cflash_identify
 ;Z /CFLASH   ( -- drive-id )                initialise the Compact Flash driver
 ;   clash_init CALL    ( ior )
@@ -1748,7 +1762,7 @@ EXTERN cflash_identify
 ;       CF-DRIVE-ID
 ;   ELSE ." NO CFLASH" 0 THEN ;
     head_system(SLASHCFLASH,/CFLASH,docolon)
-        dw lit,cflash_init,CALL
+        dw CFLASH_INIT
         dw qbranch,SLASHCFLASH1
         dw XSQUOTE
         db 9,"NO CFLASH"
