@@ -1795,13 +1795,16 @@ CFLASH_IDENTIFY:
 
 ;Z CF-CAPACITY   ( -- ud )               Fetch Compact Flash capacity (blocks)
     head_system(CF_CAPACITY,CF-CAPACITY,docolon)
-        dw lit,512,HERE,PLUS,DUP,TOR,CFLASH_IDENTIFY,DROP  ; TODO: handle CFLASH_IDENTIFY return
+        dw lit,512,HERE,PLUS,DUP,TOR,CFLASH_IDENTIFY,ZEROEQUAL,qbranch,CF_CAPACITY_ERR
 ;       dw RFETCH,lit,256,MEMDUMP
         dw RFETCH,lit,120,PLUS,FETCH      ; low word of max LBA (sectors)
         dw RFROM,lit,122,PLUS,FETCH       ; high word of max LBA
         DW DTWOSLASH                      ; sectors -> 1024byte blocks
         DW EXIT
 
+CF_CAPACITY_ERR:
+        DW RFROM,DROP,ZERO,ZERO
+        DW EXIT
 
 SECTION data
 CF_CAPACITY_DATA:
