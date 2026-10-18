@@ -130,12 +130,11 @@ init_error:
     ret
 
 
-
+; get the IDE identity packet
+; Entry: buffer pointer in HL
+; Exit: carry flag true on success
 PUBLIC cflash_identify
 cflash_identify:
-    rst 0x28    ; read buffer_ptr from TOS
-    ld hl, bc
-
     call ide_wait_ready
 
     ld a,__IDE_CMD_ID
@@ -191,6 +190,7 @@ ide_setup_lba:
 ; and bit 3 (DRQ, value = 0x08) sets.
 ; Or until bit 0 (ERR, value = 0x01) or bit 5 (WFT, value = 0x20) sets.
 ; If neither error bit is set, the device is ready right then.
+; TODO: add a timeout, using a loop
 ; Uses AF, DE
 ; return carry on success
 

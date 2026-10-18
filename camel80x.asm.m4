@@ -1780,11 +1780,23 @@ SLASHCFLASH1:
         dw CF_DRIVE_ID
         dw EXIT
 
+CFLASH_IDENTIFY:
+        push bc
+        exx
+        pop hl
+        call cflash_identify
+        exx
+
+        jp c, toszero
+
+        ld bc, -21
+        next
+
 
 ;Z CF-CAPACITY   ( -- ud )               Fetch Compact Flash capacity (blocks)
     head_system(CF_CAPACITY,CF-CAPACITY,docolon)
-        dw lit,512,HERE,PLUS,DUP,TOR,lit,cflash_identify,CALL
-;        dw RFETCH,lit,256,MEMDUMP
+        dw lit,512,HERE,PLUS,DUP,TOR,CFLASH_IDENTIFY,DROP  ; TODO: handle CFLASH_IDENTIFY return
+;       dw RFETCH,lit,256,MEMDUMP
         dw RFETCH,lit,120,PLUS,FETCH      ; low word of max LBA (sectors)
         dw RFROM,lit,122,PLUS,FETCH       ; high word of max LBA
         DW DTWOSLASH                      ; sectors -> 1024byte blocks
