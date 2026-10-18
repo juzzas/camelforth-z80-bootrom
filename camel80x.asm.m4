@@ -1435,7 +1435,7 @@ WORDS_16K:
 ; ================================================
 
 ;X PICK   ( xu...x1 x0 u -- xu...x1 x0 xu )                 get u item in stack
-;\                               Remove u. Copy the xu to the top of the stack.
+;\                                Remove u. Copy the xu to the top of the stack.
 ; An ambiguous
 ; condition exists if there are less than u+2 items on the stack
 ; before PICK is executed.
@@ -1739,7 +1739,7 @@ BLK2LBN:
         dw EXIT
 
 
-;: CFLASH_INIT   ( -- ior )      initialise the Compact Flash driver (low level)
+;: CFLASH_INIT   ( -- ior )     initialise the Compact Flash driver (low level)
 EXTERN cflash_init
 CFLASH_INIT:
         push bc
@@ -1793,10 +1793,10 @@ CFLASH_IDENTIFY:
         next
 
 
-;Z CF-CAPACITY   ( -- ud )               Fetch Compact Flash capacity (blocks)
+;Z CF-CAPACITY   ( -- ud )                Fetch Compact Flash capacity (blocks)
     head_system(CF_CAPACITY,CF-CAPACITY,docolon)
-        dw lit,512,HERE,PLUS,DUP,TOR,CFLASH_IDENTIFY,ZEROEQUAL,qbranch,CF_CAPACITY_ERR
-;       dw RFETCH,lit,256,MEMDUMP
+        dw lit,512,HERE,PLUS,DUP,TOR,CFLASH_IDENTIFY
+        dw ZEROEQUAL,qbranch,CF_CAPACITY_ERR
         dw RFETCH,lit,120,PLUS,FETCH      ; low word of max LBA (sectors)
         dw RFROM,lit,122,PLUS,FETCH       ; high word of max LBA
         DW DTWOSLASH                      ; sectors -> 1024byte blocks
@@ -1814,7 +1814,7 @@ SECTION code_16k
 
 EXTERN cflash_read_block
 ;Z CF-BLOCK-READ   ( lbn-l lbn-h adrs -- ior )
-;\                                           Compact Flash read 1024byte block
+;\                                            Compact Flash read 1024byte block
 ; Reads 1024byte logical block number 'lbn' (two consecutive 512byte
 ; sectors) from the Compact Flash card into memory at 'adrs'.
 ; ior is -33 on failure.
@@ -1829,17 +1829,15 @@ EXTERN cflash_read_block
         call cflash_read_block
 
         exx
-        ld bc, 0
-        jr c, read_ok
+        jp c, toszero
 
         ld bc, -33                  ; else block-read exception
-read_ok:
         next
 
 
 EXTERN cflash_write_block
 ;Z CF-BLOCK-WRITE   ( lbn-l lbn-h adrs -- ior )
-;\                                          Compact Flash write 1024byte block
+;\                                           Compact Flash write 1024byte block
 ; Writes 1024byte logical block number 'lbn' (two consecutive 512byte
 ; sectors) to the Compact Flash card from memory at 'adrs'.
 ; ior is -34 on failure.
@@ -1854,11 +1852,9 @@ EXTERN cflash_write_block
         call cflash_write_block
 
         exx
-        ld bc, 0
-        jr c, write_ok
+        jp c, toszero
 
         ld bc, -34                  ; else block-write exception
-write_ok:
         next
 
 
