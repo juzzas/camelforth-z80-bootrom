@@ -7,14 +7,14 @@
 \ and improve it as you like. But don't remove this notice.
 \
 \   Thank you.
-\
+CR .( Loading Tetris... )
+1 23 +THRU
+CR .( Loaded Tetris... )
 
-ONLY FORTH ALSO DEFINITIONS
+tetris
 
-VOCABULARY TETRIS  TETRIS ALSO DEFINITIONS
 
 DECIMAL
-
 \ Variables, constants
 
 BL BL 2CONSTANT empty        \ an empty position
@@ -25,21 +25,21 @@ VARIABLE wiping         \ if true: wipe brick, else draw brick
 10 CONSTANT wide        \ size of pit in brick positions
 20 CONSTANT deep
 
-CHAR J   VALUE left-key     \ customize if you don't like them
-CHAR K   VALUE rot-key
-CHAR L   VALUE right-key
+CHAR S   VALUE left-key     \ customize if you don't like them
+CHAR L   VALUE rot-key
+CHAR D   VALUE right-key
 BL       VALUE drop-key
 CHAR P   VALUE pause-key
 12       VALUE refresh-key
 CHAR Q   VALUE quit-key
 
-VARIABLE score
-VARIABLE pieces
-VARIABLE levels
-VARIABLE delay
+VARIABLE score   0 score !
+VARIABLE pieces  0 pieces !
+VARIABLE levels  0 levels !
+VARIABLE delay   0 delay !
 
-VARIABLE brow            \ where the brick is
-VARIABLE bcol
+VARIABLE brow    0 brow !          \ where the brick is
+VARIABLE bcol    0 bcol !
 
 
 \ stupid random number generator
@@ -67,7 +67,7 @@ VARIABLE SEED      42 SEED !
 
 : D<>        D= 0= ;
 : >=         < 0= ;
-: <=         1- < ;
+: <=         1+ < ;
 
 \ Drawing primitives:
 
@@ -150,7 +150,6 @@ def-pit pit
 
 : def-brick    CREATE    4 0 DO
      ' EXECUTE    0 DO    DUP I CHARS + C@ C,    LOOP DROP
-     REFILL DROP
     LOOP
     DOES>    ROT 4 * ROT + 2* + ;
 
@@ -173,6 +172,7 @@ def-brick brick4   S"         "
                    S" ()()()  "
                    S"     ()  "
                    S"         "
+
 
 def-brick brick5   S"         "
                    S"   [][]  "
@@ -326,8 +326,9 @@ CREATE brick-val 1 C, 2 C, 3 C, 3 C, 4 C, 5 C, 5 C,
     ENDCASE    TRUE ;
 
 : initialize    \ --- ; prepare for playing
-    randomize empty-pit refresh
-    0 score !  0 pieces !  0 levels !  100 delay ! ;
+    FALSE wiping !
+    0 score !  0 pieces !  0 levels !  100 delay !
+    empty-pit refresh ;
 
 : adjust-delay    \ --- ; make it faster with increasing score
     levels @
@@ -355,15 +356,16 @@ CREATE brick-val 1 C, 2 C, 3 C, 3 C, 4 C, 5 C, 5 C,
      adjust-delay
     REPEAT ;
 
-FORTH DEFINITIONS
 
-: tt        \ --- ; play the tetris game
+: wait-key    \ --- ; wait for a key, stirring the random seed
+    BEGIN  1 SEED +!  KEY? UNTIL  KEY DROP ;
+
+: tetris        \ --- ; play the tetris game
     initialize
-    S"  Press any key " bottom-msg KEY DROP draw-bottom
+    S"  Press any key " bottom-msg wait-key draw-bottom
     BEGIN
      play-game
      S"    Again? " bottom-msg KEY to-upper [CHAR] Y =
     WHILE  initialize  REPEAT
     0 23 AT-XY CR ;
 
-ONLY FORTH ALSO DEFINITIONS
