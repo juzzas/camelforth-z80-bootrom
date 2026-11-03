@@ -1,3 +1,19 @@
+\ 2048 game
+
+CR .( Loading 2048... )
+1 18 +THRU
+CR .( Loaded 2048... )
+
+RUN
+
+
+
+
+
+
+
+
+
 \ in Forth, you do many things on your own. 
 \ This word is used to define 2D arrays
 : 2D-ARRAY ( height width )
@@ -33,6 +49,7 @@ HERE SEED !
 2 CONSTANT D-DOWN
 3 CONSTANT D-LEFT
 4 CONSTANT D-RIGHT
+5 CONSTANT D-END
 
 4 CONSTANT NROWS
 4 CONSTANT NCOLS
@@ -55,7 +72,8 @@ CREATE MOVE-SCORE CELL ALLOT
 : DASHES 0 ?DO [CHAR] - EMIT LOOP ;
 
 : DRAW ( -- )
-   CLS ." Score: "
+   CLS ." ++++++++++ 2048 ++++++++++"
+   CR CR  ." Score: "
    TOTAL-SCORE @ 0 U.R
    MOVE-SCORE  @ ?DUP IF
       ."  (+" 0 U.R ." )"
@@ -76,6 +94,9 @@ CREATE MOVE-SCORE CELL ALLOT
    LOOP
 
    25 DASHES CR
+   CR ." ++ S - left / D - right ++"
+   CR ." ++ E - up   / X - down  ++"
+   CR ." ++            Q - quit  ++"
 ;
 
 : COUNT-FREE-SPACES ( -- free-spaces )
@@ -217,20 +238,29 @@ ENDCASE DROP ;
 : GET-MOVE ( -- move )
    BEGIN
       KEY CASE
-         27 OF BYE ENDOF
-         [CHAR] q OF BYE ENDOF
-         [CHAR] Q OF BYE ENDOF
-         [CHAR] k OF D-UP TRUE ENDOF
-         [CHAR] K OF D-UP TRUE ENDOF
-         [CHAR] j OF D-DOWN TRUE ENDOF
-         [CHAR] J OF D-DOWN TRUE ENDOF
-         [CHAR] h OF D-LEFT TRUE ENDOF
-         [CHAR] H OF D-LEFT TRUE ENDOF
-         [CHAR] l OF D-RIGHT TRUE ENDOF
-         [CHAR] L OF D-RIGHT TRUE ENDOF
+         27 OF D-END TRUE ENDOF
+         [CHAR] q OF D-END TRUE ENDOF
+         [CHAR] Q OF D-END TRUE ENDOF
+         [CHAR] e OF D-UP TRUE ENDOF
+         [CHAR] E OF D-UP TRUE ENDOF
+         [CHAR] x OF D-DOWN TRUE ENDOF
+         [CHAR] X OF D-DOWN TRUE ENDOF
+         [CHAR] s OF D-LEFT TRUE ENDOF
+         [CHAR] S OF D-LEFT TRUE ENDOF
+         [CHAR] d OF D-RIGHT TRUE ENDOF
+         [CHAR] D OF D-RIGHT TRUE ENDOF
          FALSE SWAP
       ENDCASE
    UNTIL
+;
+
+: WAIT-KEY   ( -- )  \ wait for key, stirring the random seed
+   BEGIN  1 SEED +!  KEY? UNTIL  KEY DROP
+;
+
+: PRESS-TO-START
+   CR ." Press any key to start..."
+   WAIT-KEY DROP
 ;
 
 : INIT ( -- )
@@ -249,9 +279,14 @@ ENDCASE DROP ;
 
 : MAIN-LOOP ( -- )
    BEGIN
-      GET-MOVE TICK
-   AGAIN
+      GET-MOVE
+   DUP D-END <> WHILE
+      TICK
+   REPEAT DROP
 ;
 
-INIT
-MAIN-LOOP
+: RUN
+   PRESS-TO-START
+   INIT
+   MAIN-LOOP ;
+
