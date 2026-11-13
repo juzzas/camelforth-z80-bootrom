@@ -33,11 +33,14 @@ CREATE blkfile BLKFILE-CONTEXT ALLOT
 : current-block ( blkfile-id -- )
    DUP blk-cur @ BLOCK SWAP blk-ptr ! ;
 
+: wipe-block ( blkfile-id -- )
+   blk-cur @ BLOCK 1024 BL FILL ;
+
 : inc-block  ( blkfile-id -- ) 
    1 OVER blk-cur +!   ( blkfile-id )
    0 OVER blk-offset ! ( blkfile-id )
    DUP is-dirty? IF UPDATE THEN
-   current-block ;
+   DUP current-block wipe-block ;
 
 : inc-offset  ( blkfile-id -- )
    1 OVER blk-offset +! ( blkfile-id )
@@ -104,6 +107,7 @@ VARIABLE blkpos
 
 
 : open-input ( addr u -- )  R/O OPEN-FILE THROW TO fd-in ;
+: open-inbin ( addr u -- )  R/O OPEN-FILE THROW TO fd-in ;
 : open-output ( addr u -- )  W/O CREATE-FILE THROW TO fd-out ;
 : close-input ( -- )  fd-in CLOSE-FILE THROW ;
 : close-output ( -- )  fd-out CLOSE-FILE THROW ;
@@ -183,4 +187,28 @@ VARIABLE blkpos
 
 : +BLKFILE:  ( "filename" -- )
     blkpos+3!   BL PARSE (+blkfile)  ; IMMEDIATE
+
+: (+blkbin)  ( addr u -- )
+   2DUP TYPE ."  --> "
+   open-inbin
+   blkpos @ R/W BIN open-blkfile TO blk-out
+   blk-out
+   begin
+      block-line max-block-line fd-in read-file throw
+   ?dup while
+      block-line SWAP blk-out write-chars
+   REPEAT  DROP
+   blk-out .blkfile-info
+   blk-out close-blkfile
+
+   blkfile-size  blkpos+!
+
+   close-input 
+ ; 
+
+: BLKBIN:  ( blk "filename" -- )
+    blkpos !    BL PARSE (+blkbin)  ; IMMEDIATE
+
+: +BLKBIN:  ( "filename" -- )
+    blkpos+3!   BL PARSE (+blkbin)  ; IMMEDIATE
 

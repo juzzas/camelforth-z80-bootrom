@@ -1,10 +1,20 @@
-\ TMS9918 
+\ TMS9918 BASE
 
-ONLY FORTH
-VOCABULARY TMS
+VOCABULARY TMS ( --- )
+ALSO TMS DEFINITIONS
+CR .( Loading TMS9918... )
+1 8 +THRU
 
-ALSO TMS   DEFINITIONS
+PREVIOUS DEFINITIONS
 
+1635 CONSTANT TMS-TEXTING
+1650 CONSTANT TMS-TILING
+1665 CONSTANT TMS-BITMAPPING
+1680 CONSTANT TMS-PATTERNING
+1695 CONSTANT TMS-SPRITING
+
+
+\ TMS9918 BASE
 HEX
 
 \ IO port
@@ -24,7 +34,7 @@ TMSRAM 1+ CONSTANT TMSREG
 1800 CONSTANT TmsSpritePatternAddr
 
 \ sprite pattern table (multiples of 80H)
-3BC0 CONSTANT TmsSpriteAttrAddr
+3B00 CONSTANT TmsSpriteAttrAddr
 
 80 CONSTANT TmsCtrl0Reg           81 CONSTANT TmsCtrl1Reg
 82 CONSTANT TmsNameReg            83 CONSTANT TmsColorTableReg
@@ -64,30 +74,39 @@ TMSRAM 1+ CONSTANT TMSREG
 
 CREATE TmsRegs  8 ALLOT
 
-: TMSWRADDR   ( addr -- ) 
+: TMSWRADDR   ( vram-addr -- )
     DUP 00FF AND TMSREG PC!
     3F00 AND 8 RSHIFT 40 + TMSREG PC! ;
-: TMSRDADDR   ( addr -- )
+: TMSRDADDR   ( vram-addr -- )
     DUP 00FF AND TMSREG PC!
     3F00 AND 8 RSHIFT TMSREG PC! ;
 
-: TMS!  ( val -- )  TMSRAM PC! ;
-: TMS@  ( val -- )  TMSRAM PC@ ;
+: TMS!  ( c -- )  TMSRAM PC! ;
+: TMS@  ( -- c )  TMSRAM PC@ ;
 
 : TMSREG! ( val reg -- )
-    2DUP 7F AND TmsRegs + C!
-    SWAP
-    TMSREG PC!  TMSREG PC!  ;
+   2DUP 7F AND TmsRegs + C!
+   SWAP
+   TMSREG PC!  TMSREG PC!  ;
+
 : TMSREG@ ( reg -- val )
-    7F AND TmsRegs + C@  ;
+   7F AND TmsRegs + C@  ;
 
-: TMSWRITE ( src dest count -- )
-  SWAP TMSWRADDR
-  0 DO DUP C@ TMS! 1+ LOOP  ;
+: TMSPUTS ( c-addr u -- )
+   0 ?DO DUP C@ TMS! 1+ LOOP  ;
 
-: TMSFILL ( dest count c -- )
+: TMSWRITE ( c-addr vram-addr u -- )
+   SWAP TMSWRADDR  TMSPUTS ;
+
+: TMSGETS ( c-addr u -- )
+   0 ?DO TMS@ OVER  C! 1+ LOOP  ;
+
+: TMSREAD ( vram-addr c-addr u -- )
+   ROT TMSRDADDR  TMSGETS ;
+
+: TMSFILL ( vram-addr u c -- )
    ROT TMSWRADDR
-   SWAP  0 DO DUP TMS! LOOP  DROP  ;
+   SWAP  0 ?DO DUP TMS! LOOP  DROP  ;
 
 : TMSRESET
    0 TmsCtrl0Reg TMSREG!
@@ -106,106 +125,16 @@ CREATE TmsRegs  8 ALLOT
 
 : TMSBG     ( c -- )
    0F AND
-   TmsColorReg TMSREG@  F0 AND   OR 
+   TmsColorReg TMSREG@  F0 AND   OR
    TmsColorReg TMSREG!  ;
 
 : TMSFG     ( c -- )
    0F AND   4 LSHIFT
-   TmsColorReg TMSREG@  0F AND   OR 
+   TmsColorReg TMSREG@  0F AND   OR
    TmsColorReg TMSREG!  ;
 
+: TMSPATTERN-OFFSET ( n -- vram-addr )
+   3 LSHIFT  TmsPatternAddr + ;
 
-
-\ Text mode ======================
-
-: /TMSTEXT  ( -- )
-   TMSRESET
-   TmsNameAddr 400 / TmsNameReg  TMSREG!
-   TmsColorAddr 40 / TmsColorReg TMSREG!
-   TmsPatternAddr 800 / TmsPatternReg TMSREG!
-   TmsSpritePatternAddr 800 / TmsSpritePatternReg TMSREG!
-   TmsSpriteAttrAddr  80 / TmsSpriteAttrReg TMSREG!
-   00  TmsCtrl0Reg TMSREG!
-   D0  TmsCtrl1Reg TMSREG!
-;
-
-: TMSAT-XY ( x y -- )
-    $28 *  +    TmsNameAddr +  TMSWRADDR ;
-
-: TMSEMIT   ( c -- )
-    TMS!            ;
-
-: TMSTYPE   ( c-addr u -- )
-    0 DO
-        DUP C@ TMSEMIT 1+
-    LOOP  DROP  ;
-
-\ Tile mode =========================
-
-: /TMSTILE ( -- )
-   TMSRESET
-   TmsNameAddr 400 / TmsNameReg  TMSREG!
-   TmsColorAddr 40 / TmsColorReg TMSREG!
-   TmsPatternAddr 800 / TmsPatternReg TMSREG!
-   TmsSpritePatternAddr 800 / TmsSpritePatternReg TMSREG!
-   TmsSpriteAttrAddr  80 / TmsSpriteAttrReg TMSREG!
-   00  TmsCtrl0Reg TMSREG!
-   C0  TmsCtrl1Reg TMSREG!
-;
-
-: TMSTILE-XY  ( x y -- offset )
-    5 LSHIFT   +    TmsNameAddr  +    ;
-
-\ Bitmap mode ======================
-
-: /TMSBITMAP ( -- )
-   TMSRESET
-   FF TmsColorTableReg TMSREG!   ( 2000H )
-   03 TmsPatternReg TMSREG!      ( 0000H )
-   TmsNameAddr 400 / TmsNameReg  TMSREG!
-   TmsSpritePatternAddr 800 / TmsSpritePatternReg TMSREG!
-   TmsSpriteAttrAddr  80 / TmsSpriteAttrReg TMSREG!
-   TmsNameAddr TMSWRADDR
-   3 0 DO
-      100 0 DO
-         I TMS!
-      LOOP
-   LOOP
-   02  TmsCtrl0Reg TMSREG!
-   C0  TmsCtrl1Reg TMSREG!
-;
-
-
-\ byte address = 8(INT(X/8)) + 256(INT(Y/8)) + R(Y/8)
-\    where R(Y/8) is equal to the remainder of (Y/8)
-: tmsxy-offset     ( x y -- offset )
-   8 /MOD   8 LSHIFT   >R       ( x y%8  r: y/8*256 )
-   SWAP   F8  AND   R> + +  ;   (  y%8 + x&F8 + y/8*256 )
-
-CREATE masklut 80 C, 40 C, 20 C, 10 C, 8 C, 4 C, 2 C, 1 C,
-
-: TMSPLOT-XY ( x y -- )
-   OVER SWAP  tmsxy-offset      ( x offset )
-   TmsPatternAddr + >R           ( x  r: addr )
-   7 AND  masklut + C@          ( bitmask  r: addr )
-   R@ TMSRDADDR  TMS@
-   OR
-   R>  TMSWRADDR  TMS!  ;
-
-: TMSCLR-XY ( x y -- )
-
-                ;
-CR .( loaded TMS )
 DECIMAL
-TMSREG PC@ .
-0 0 tmsxy-offset .
-8 0 tmsxy-offset .
-0 191 tmsxy-offset .
-255 191 tmsxy-offset .
 
-CR .( started bitmap mode )
-/TMSBITMAP
-TmsPatternAddr TmsBitmapPatternLen 0 TMSFILL
-TmsColorAddr TmsBitmapColorLen $1F TMSFILL
-
-HEX 5 87 TMSREG!

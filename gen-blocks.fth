@@ -44,13 +44,25 @@ OPEN:  build/cf-image.blk
 1350 BLOCKS: examples/tetris.fth
 1380 BLOCKS: examples/banner.fth
 
-1500 BLOCKS: examples/tms/tms-ldr.fth
-+BLOCKS: examples/tms/tms.fth
-1530 BLOCKS: examples/tms/tms-fonts.fth
-+BLKFILE: examples/tms/font_8x8_msx_system.bin
-+BLKFILE: examples/tms/font_8x8_zx_system.bin
-+BLKFILE: examples/tms/font_8x8_sam_system.bin
-+BLKFILE: examples/tms/font_8x8_vga_rom.bin
+1500 BLOCKS: examples/tms/demo-text.fth
+1530 BLOCKS: examples/tms/demo-tile.fth
+1560 BLOCKS: examples/tms/demo-bitmap.fth
+1590 BLOCKS: examples/tms/demo-sprites.fth
+
+1620 BLOCKS: examples/tms/tms.fth
+1635 BLOCKS: examples/tms/tms-text.fth
+1650 BLOCKS: examples/tms/tms-tile.fth
+1665 BLOCKS: examples/tms/tms-bitmap.fth
+1680 BLOCKS: examples/tms/tms-pattern.fth
+1695 BLOCKS: examples/tms/tms-sprite.fth
++BLKBIN: examples/tms/tmsfont.rom
++BLKBIN: examples/tms/font_8x8_msx_system.bin
++BLKBIN: examples/tms/font_8x8_zx_system.bin
++BLKBIN: examples/tms/font_8x8_sam_system.bin
++BLKBIN: examples/tms/font_8x8_vga_rom.bin
+
+1740 BLOCKS: examples/tms/gate.fth
+1743 BLOCKS: examples/tms/gate-core.fth
 
 3000 BLOCKS: test/testsuite.fth
 +BLOCKS: test/ttester.fth

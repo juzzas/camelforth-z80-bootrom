@@ -1,0 +1,74 @@
+\ TMS Sprite definition helpers
+
+1 4 +THRU
+
+
+
+
+
+
+
+
+
+
+
+
+
+ALSO TMS DEFINITIONS
+
+BEGIN-STRUCTURE TMSSPRITE-ATTR
+  CFIELD: TMSSPRITE.Y
+  CFIELD: TMSSPRITE.X
+  CFIELD: TMSSPRITE.PATTERN-INDEX
+  CFIELD: TMSSPRITE.FLAGS
+END-STRUCTURE
+
+
+: TMSSPRITE-MAG+ ( -- )
+   TmsCtrl1Reg TMSREG@
+   TmsSpriteMag OR
+   TmsCtrl1Reg TMSREG!   ;
+
+: TMSSPRITE-MAG- ( -- )
+   TmsCtrl1Reg TMSREG@
+   TmsSpriteMag INVERT AND
+   TmsCtrl1Reg TMSREG!   ;
+
+: TMSSPRITE-32+ ( -- )
+   TmsCtrl1Reg TMSREG@
+   TmsSprite32 OR
+   TmsCtrl1Reg TMSREG!   ;
+
+: TMSSPRITE-32- ( -- )
+   TmsCtrl1Reg TMSREG@
+   TmsSprite32 INVERT AND
+   TmsCtrl1Reg TMSREG!   ;
+
+: TMSSPRITE-ATTR-ENTRY  ( n -- vram-addr )
+   2* 2* TmsSpriteAttrAddr + ; 
+
+: TMSSPRITE-PATTERN-OFFSET ( n -- vram-addr )
+   3 LSHIFT  TmsSpritePatternAddr + ;
+
+: TMSSPRITE-XY  ( x y sprite# -- )
+   TMSSPRITE-ATTR-ENTRY
+      TMSSPRITE.Y  TMSWRADDR  TMS!  TMS!
+;
+
+: TMSSPRITE-COLOR!   ( c sprite# -- )
+   TMSSPRITE-ATTR-ENTRY
+      TMSSPRITE.FLAGS TMSWRADDR  TMS!
+;
+
+: TMSSPRITE-PATTERN!   ( c sprite# -- )
+   TMSSPRITE-ATTR-ENTRY
+      TMSSPRITE.PATTERN-INDEX TMSWRADDR  TMS!
+;
+
+: TMSSPRITE-END!  ( sprite# -- )
+   TMSSPRITE-ATTR-ENTRY
+      TMSSPRITE.Y  TMSWRADDR   $D0 TMS!
+;
+
+PREVIOUS DEFINITIONS
+
