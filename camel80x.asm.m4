@@ -3059,7 +3059,7 @@ XRECOGNIZE2:
 ;: RECOGNIZE ( addr len -- i*x rectype-token | rectype-null )
 ;    ['] (recognize) recognizers_end recogizers MAP_UNTIL ( -- i*x rectype-token -1 | addr len 0 )
 ;    0= IF                           \ no recognizer did the job, remove addr/len
-;     2DROP RECTYPE-NULL
+;       2DROP RECTYPE-NULL
 ;    THEN    ;
 dnl ; head_system(RECOGNIZE,RECOGNIZE,docolon)
 RECOGNIZE:
@@ -3074,7 +3074,6 @@ RECOGNIZE1:
 RECOGNIZERS:
         DW REC_FIND
         DW REC_NUM
-        DW REC_DNUM
         DW REC_CHAR
 RECOGNIZERS_END:
 
@@ -3150,12 +3149,12 @@ dnl ; create num-bases 10 , 16 , 2 , 10 ,
 num_bases:
     defb 10,16,2,10
 
-dnl ; : set-base ( addr len -- addr' len' )
-dnl ;   over c@ [CHAR] # - dup 0 4 within if 
-dnl ;     cells num-bases + @ base ! 1 /string
-dnl ;   else
-dnl ;     drop
-dnl ;   then 
+dnl ; : SET-BASE ( addr len -- addr' len' )
+dnl ;    OVER C@ [CHAR] # - DUP 0 4 WITHIN IF
+dnl ;       CELLS NUM-BASES + @ BASE ! 1 /STRING
+dnl ;    ELSE
+dnl ;       DROP
+dnl ;    THEN
 SET_BASE:
         call docolon
         dw OVER,CFETCH,lit,'#',MINUS,DUP
@@ -3169,11 +3168,12 @@ SET_BASEX:
         dw EXIT
 
 
-dnl ; \ check for a character. return string is 
+dnl ; \ check for a character. return string is
 dnl ; \ without it if found. f is true if found.
-dnl ; : skip-char? ( addr len c -- addr' len' f)
-dnl ;   >r over c@ r> = dup >r
-dnl ;   if 1 /string then r> 
+dnl ; : SKIP-CHAR? ( addr len c -- addr' len' f)
+dnl ;    >R OVER C@ R>   = DUP >R
+dnl ;    IF   1 /STRING   THEN
+dnl ;    R>
 dnl ; ;
 SKIP_CHARQ:
        call docolon
@@ -3184,103 +3184,82 @@ SKIP_CHARQ1:
        DW RFROM
        DW EXIT
 
-dnl ; : -sign? ( addr len -- addr' len' f )
-dnl ;    [char] - skip-char?
-dnl ; ;
-MINUS_SIGNQ:
-       call docolon
-       DW lit,'-',SKIP_CHARQ
-       DW EXIT
-
-dnl ; : +sign  ( addr len -- addr' len' )
-dnl ;    [char] + skip-char? drop
-dnl ; ;
-PLUS_SIGN:
-       call docolon
-       DW lit,'+',SKIP_CHARQ,DROP
-       DW EXIT
-
-dnl ; \ allows $- and -$ combinations. skip +
-dnl ; \ f is true is - sign is found (and stripped off)
-dnl ; : base-and-sign? ( addr len -- addr' len' f)
-dnl ;   set-base +sign -sign? >r set-base r>
-dnl ; ;
-BASE_AND_SIGNQ:
-        call docolon
-        DW SET_BASE,PLUS_SIGN,MINUS_SIGNQ,TOR,SET_BASE,RFROM
-        DW EXIT
-
-dnl ; \ a factor the recognizers below.
-dnl ; : (rec-number) ( addr len -- d addr' len' f )
-dnl ;    base @ >r           \ save BASE
-dnl ;    base-and-sign? >r   \ handle prefix and sign characters
-dnl ;    2>r 0 0 2r> >number \ do the actual conversion
-dnl ;    r> r> base !        \ restore BASE and sign information
-dnl ; ;
-XREC_NUMBER:
+; convert a string to a numbers.
+; At least one digit must be converted, so a bare prefix
+; or sign (e.g. "$", "$." or "-") is not a number.
+; : (S>NUMBER) ( addr len -- d result )
+;    BASE @ >R             ( addr len   r: base )
+;    SET-BASE              \ optional prefix
+;    [CHAR] + SKIP-CHAR? DROP       \ optional +
+;    [CHAR] - SKIP-CHAR? >R         \ optional -   neg?
+;    SET-BASE              ( addr len neg  r: base )
+;    DUP >R                ( addr len neg   r: base len0 neg )
+;    2>R 0 0 2R> >NUMBER   \ convert  ( d addr' len'  r: base len0 neg )
+;    R> R> R> BASE !       \ restore BASE      ( d addr' len' len0 neg )
+;    >R OVER = IF          \ no digits converted? ( len' == len0 ? )
+;       2DROP R> DROP 0 EXIT
+;    THEN
+;    ?DUP IF               \ trailing dot?
+;       1- 0= SWAP C@ [CHAR] . = AND 0= IF  R> DROP 0 EXIT  THEN
+;       -1
+;    ELSE
+;       DROP 1
+;    THEN
+;    R> IF >R DNEGATE R> THEN
+;;
+XSTONUMBER:
         call docolon
         DW BASE,FETCH,TOR
-        DW BASE_AND_SIGNQ,TOR
-        DW TOR,TOR,ZERO,DUP,RFROM,RFROM,TONUMBER
-        DW RFROM,RFROM,BASE,STORE
+        DW SET_BASE,lit,'+',SKIP_CHARQ,DROP
+        DW lit,'-',SKIP_CHARQ,TOR,SET_BASE
+        DW DUP,TOR
+        DW TWOTOR,ZERO,DUP,TWORFROM,TONUMBER
+        DW RFROM,RFROM,RFROM,BASE,STORE
+        DW TOR,OVER,EQUAL,qbranch,XSTON1
+        DW TWODROP
+XSTON0:
+        DW RFROM,DROP,ZERO,EXIT
+
+XSTON1:
+        DW QDUP,qbranch,XSTON2
+        DW ONEMINUS,ZEROEQUAL,SWOP,CFETCH,lit,'.',EQUAL,AND
+        DW qbranch,XSTON0
+        DW ALLONES,branch,XSTON3
+XSTON2:
+        DW DROP,lit,1
+XSTON3:
+        DW RFROM,qbranch,XSTONX
+        DW TOR,DNEGATE,RFROM
+XSTONX:
         DW EXIT
 
-;: rec-dnum ( addr len -- d rectype-dnum | rectype-null )
-;    \ simple syntax check: last character in addr/len is a dot . ?
-;    2dup + 1- c@ [char] . = if
-;      1-              \ strip trailing dot
-;      (rec-number) >r \ do the dirty work
-;      \ a number and only a number?
-;      nip if
-;        2drop r> drop rectype-null
-;      else 
-;        r> if dnegate then rectype-dnum 
-;      then
-;    else 
-;      2drop rectype-null  \ no, it cannot be a double cell number.
-;    then   ;
-dnl ;    head_system(REC_DNUM,REC-DNUM,docolon)
-REC_DNUM:
-        call docolon
-        DW TWODUP,PLUS,ONEMINUS,CFETCH,lit,'.',EQUAL,qbranch,REC_DNUM3
-        DW ONEMINUS
-        DW XREC_NUMBER,TOR
-        DW NIP,qbranch,REC_DNUM1
-        DW TWODROP,RFROM,DROP,RECTYPE_NULL,EXIT
-
-REC_DNUM1:
-        DW RFROM,qbranch,REC_DNUM2
-        DW DNEGATE
-REC_DNUM2:
-        DW RECTYPE_DNUM,EXIT
-
-REC_DNUM3:
-        DW TWODROP,RECTYPE_NULL
+;Z S>NUMBER?   ( c-addr u -- d t | f )
+;\                                  string to number, accepting prefix and sign
+;   (S>NUMBER) 0<>
+;   DUP 0= IF  NIP NIP  THEN ;
+    head(STONUMBERQ,S>NUMBER?,docolon)
+        DW XSTONUMBER,ZERONOTEQUAL
+        DW DUP,ZEROEQUAL,qbranch,STONQ1
+        DW NIP,NIP
+STONQ1:
         DW EXIT
 
-
-dnl ;: rec-snum ( addr len -- n rectype-num | rectype-null )
-dnl ;    (rec-number) >r
-dnl ;    nip if 
-dnl ;      2drop r> drop rectype-null
-dnl ;    else
-dnl ;      \ drop the significant portion of the 'd' value
-dnl ;      drop  r> if negate then rectype-num
-dnl ;    then
-dnl ;;
+dnl ; : rec-num ( addr len -- n rectype-num | d rectype-dnum | rectype-null )
+dnl ;    (S>NUMBER) ?DUP 0= IF  2DROP RECTYPE-NULL EXIT  THEN
+dnl ;    0< IF  RECTYPE-DNUM EXIT  THEN
+dnl ;    DROP RECTYPE-NUM
+dnl ; ;
 dnl ;    head_system(REC_NUM,REC-NUM,docolon)
 REC_NUM:
         call docolon
-        DW XREC_NUMBER,TOR
-        DW NIP,qbranch,REC_SNUM1
-        DW TWODROP,RFROM,DROP,RECTYPE_NULL,EXIT
-
-REC_SNUM1:
-        DW DROP,RFROM,qbranch,REC_SNUM2
-        DW NEGATE
-REC_SNUM2:
-        DW RECTYPE_NUM
-        DW EXIT
+        DW XSTONUMBER
+        DW QDUP,qbranch,REC_NUM_NULL
+        DW ZEROLESS,qbranch,REC_NUM_S
+        DW RECTYPE_DNUM,EXIT
+REC_NUM_S:
+        DW DROP,RECTYPE_NUM,EXIT
+REC_NUM_NULL:
+        DW TWODROP,RECTYPE_NULL,EXIT
 
 dnl ;: rec-char ( addr len -- n rectype-num | rectype-null )
 dnl ;  3 = if                       \ a three character string
