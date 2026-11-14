@@ -332,7 +332,7 @@ CQUOTE1:
 
 
 
-;Z $,   ( \ caddr len -- )                                       compile string
+;Z $,   ( caddr len -- )                                         compile string
 ;\                          Lay the string into the dictionary at HERE, reserve
 ;\                                       space for it and ALIGN the dictionary.
 ;   HERE >counted HERE C@ 1+ ALIGNED ALLOT ;
@@ -341,7 +341,7 @@ CQUOTE1:
         DW HERE,CFETCH,ONEPLUS,ALIGNED,ALLOT
         DW EXIT
 
-;Z ",   ( \ "ccc<quote>" -- )                          parse and compile string
+;Z ",   ( "ccc<quote>" -- )                            parse and compile string
 ;\                          Parse text up to the closing quote and compile into
 ;\                                  the dictionary at HERE as a counted string.
 ;\                                            The end of the string is aligned.
@@ -1539,7 +1539,7 @@ ESAC2:
         DW EXIT
 
 
-;X BEGIN-STRUCTURE   ( -- addr 0 ; -- size )
+;X BEGIN-STRUCTURE   ( -- addr 0 ; -- size )       start a structure definition
 ;   CREATE   HERE 0 0 ,                ( mark stack, lay dummy )
 ;   DOES> @  ;                              ( -- record length )
     head(BEGIN_STRUCTURE,BEGIN-STRUCTURE,docolon)
@@ -1563,24 +1563,26 @@ ESAC2:
         DW EXIT
 
 
-;X FIELD:
+;X FIELD:   ( # -- #' )      define a cell-sized structure field with offset #
 ;   ALIGNED 1 CELLS +FIELD ;
     head(FIELDCOLON,FIELD:,docolon)
         DW CELL,PLUSFIELD
         DW EXIT
 
 
-;X CFIELD: 1 CHARS +FIELD ;
+;X CFIELD:   ( # -- #' )     define a byte-sized structure field with offset #
+;   1 CHARS +FIELD ;
     head(CFIELDCOLON,CFIELD:,docolon)
         DW lit,1,PLUSFIELD
         DW EXIT
 
-;X DFIELD: 2 CELLS +FIELD ;
+;X DFIELD:   ( # -- #' )   define a double-sized structure field with offset #
+;   2 CELLS +FIELD ;
     head(DFIELDCOLON,DFIELD:,docolon)
         DW lit,4,PLUSFIELD
         DW EXIT
 
-;X END-STRUCTURE
+;X END-STRUCTURE  ( -- )                           end a structure definition
 ;   SWAP ! ;
     head(END_STRUCTURE,END-STRUCTURE,docolon)
         DW SWOP,STORE
@@ -3460,13 +3462,12 @@ STOSCTX3:
         dw EXIT
 
 
+;X SOURCE-ID   ( -- n )                           fetch the value for SOURCE-ID
+;   'SOURCE-ID @ ;
+    head(SOURCE_ID,SOURCE-ID,docolon)
+        dw TICKSOURCE_ID,FETCH,EXIT
 
-
-;X SOURCE-ID   'SOURCE-ID @ ;
-        head(SOURCE_ID,SOURCE-ID,docolon)
-            dw TICKSOURCE_ID,FETCH,EXIT
-
-;Z SET-SOURCE   ( source-ctx -- )
+;Z SET-SOURCE   ( source-ctx -- )                   set the value for SOURCE-ID
 ;   'SOURCE-ID  !   0 BLK !  ;
     head_system(SET_SOURCE,SET-SOURCE,docode)
         jp XSET_SOURCE

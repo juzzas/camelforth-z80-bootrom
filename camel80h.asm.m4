@@ -934,7 +934,7 @@ TICKSOURCE_ID:
         call docon
         DW source_id_ptr
 
-;Z SET-SOURCE   ( source -- )
+;: (SET-SOURCE)   ( source -- )
 ;   'SOURCE-ID  !   0 BLK !  ;
 XSET_SOURCE:
         call docolon
@@ -943,20 +943,20 @@ XSET_SOURCE:
         dw EXIT
 
 
-;: save-input  ( -- x1...xn n )
-; DEFER SAVE-EXEC-RESTORE-INPUT
+;: SAVE-INPUT  ( -- x1...xn n )
+; DEFER VECTOR-RESTORE-INPUT
 VSAVE_INPUT:
        call dodeferv
        DW  xt_save_input
 
-;: restore-input  ( i*x xt -- j*x )
-;: restore-input  ( x1...xn n -- f )
-; DEFER SAVE-EXEC-RESTORE-INPUT
+;: RESTORE-INPUT  ( i*x xt -- j*x )
+;: RESTORE-INPUT  ( x1...xn n -- f )
+; DEFER VECTOR-RESTORE-INPUT
 VRESTORE_INPUT:
        call dodeferv
        DW  xt_restore_input
 
-;: save-input-8k  ( -- x1...xn n )
+;: SAVE-INPUT-8K  ( -- x1...xn n )
 ;   'SOURCE 2@
 ;   >IN @
 ;   SOURCE-ID
@@ -969,7 +969,7 @@ SAVE_INPUT_8K:
         DW lit,4
         DW EXIT
 
-;: restore-input-8k  ( x1...xn n -- f )
+;: RESTORE-INPUT-8K  ( x1...xn n -- f )
 ;    DROP   ( assume correct number of items )
 ;   'SOURCE-ID !
 ;   >IN ! 
