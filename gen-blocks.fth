@@ -86,5 +86,6 @@ OPEN:  build/cf-image.blk
 3900 BLOCKS: test/hexload_test.fth
 +BLOCKS: test/hexload_test2.fth
 +BLOCKS: test/multi_test.fth
++BLOCKS: test/rom_test.fth
 FLUSH
 BYE
