@@ -32,8 +32,7 @@ ALSO TMS DEFINITIONS
          OVER C@ [CHAR] ] = IF
             2DROP EXIT
          ELSE
-            0 0 2SWAP >NUMBER
-            2DROP DROP C,
+            S>NUMBER?  IF D>S  C,  THEN
          THEN
       THEN
    AGAIN
