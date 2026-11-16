@@ -64,7 +64,7 @@ CREATE toupperbuf 32 ALLOT
 
    \ forth2012 string wordlist                     jps  4 / 9
 CHAR % CONSTANT delim     \ Character used as the subst. delim.
-string-max BUFFER: Name   \ Holds subst. name as a counted str.
+CREATE Name string-max ALLOT  \ Holds subst. name as a cnt str.
 VARIABLE DestLen          \ Max. length of the dest buffer.
 2VARIABLE Dest            \ Holds dest. str. current length and
                           \ address.

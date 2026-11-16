@@ -4,7 +4,7 @@ blkfile-private-wid >ORDER
 
 128 CONSTANT loadbuffer%
 
-loadbuffer% BUFFER: loadbuffer
+CREATE loadbuffer loadbuffer% ALLOT
 0 VALUE pr-ptr
 0 VALUE pr-end
 

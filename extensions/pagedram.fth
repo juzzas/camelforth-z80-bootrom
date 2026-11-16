@@ -2,7 +2,7 @@
 
 ONLY FORTH ALSO SYSTEM DEFINITIONS
 
-1 4 +THRU
+1 6 +THRU
 
 PREVIOUS DEFINITIONS
 
@@ -16,6 +16,7 @@ PREVIOUS DEFINITIONS
 
 \ Fetch byte from paged RAM   ( addr -- c )
 ALSO ASSEMBLER
+
 CODE PRC@
    DI              \ DI
    $38 OUT         \ OUT $38,A
@@ -26,11 +27,6 @@ CODE PRC@
    A C MOV         \ LD C, A
    NEXT,
 ;CODE
-
-\ Fetch byte from paged RAM, increment address. Useful for memory walking.
-: PRC@+  ( addr -- addr' c )
-   DUP PRC@ >R 1+ R> ;
-
 
 \ Store byte to paged RAM   ( c addr -- )
 CODE PRC!
@@ -46,12 +42,8 @@ CODE PRC!
    NEXT,
 ;CODE
 
-\ Store byte into paged RAM, increment address. Useful for memory walking.
-: PRC!+  ( c addr -- addr' )
-   TUCK PRC! 1+ ;
-
 \ Copy block from paged RAM (move from bottom)
-CODE PRCMOVE  ( src dest u -- )
+CODE (PRMOVE)  ( src dest u -- )
    B PUSH           \ PUSH BC
    EXX              \ EXX
    B POP            \ POP BC   ; u
@@ -74,12 +66,12 @@ CODE PRCMOVE  ( src dest u -- )
 ;CODE
 
 \ Copy block from paged RAM (move from top)
-CODE PRCMOVE>  ( src dest u -- )
+CODE (PRMOVE>)  ( src dest u -- )
    B PUSH           \ PUSH BC
    EXX              \ EXX
    B POP            \ POP BC   ; u
-   H POP            \ POP DE   ; dest
-   D POP            \ POP HL   ; src
+   D POP            \ POP DE   ; dest
+   H POP            \ POP HL   ; src
 
    B A MOV          \ LD A,B
    C ORA            \ OR C
@@ -101,9 +93,19 @@ CODE PRCMOVE>  ( src dest u -- )
    NEXT,
 ;CODE
 
+PREVIOUS
+
+\ Fetch byte from paged RAM, increment address. Useful for memory walking.
+: PRC@+  ( addr -- addr' c )
+   DUP PRC@ >R 1+ R> ;
+
+\ Store byte into paged RAM, increment address. Useful for memory walking.
+: PRC!+  ( c addr -- addr' )
+   TUCK PRC! 1+ ;
+
 \ Smart paged ram move
-: PRMOVE    ( addr1 addr2 u -- )                         smart move
-  >R 2DUP SWAP DUP R@ +  \   -- ... dst src src+n
-  WITHIN IF  R> PRCMOVE>   \     src <= dst < src+n
-       ELSE  R> PRCMOVE  THEN ; \         otherwise
+: PRMOVE    ( addr1 addr2 u -- )
+   >R 2DUP SWAP DUP R@ +  \   -- ... dst src src+n
+   WITHIN IF  R> (PRMOVE>)   \     src <= dst < src+n
+          ELSE  R> (PRMOVE)  THEN ; \         otherwise
 

@@ -26,6 +26,10 @@ FORTH DEFINITIONS
 
 
 
+
+
+
+
    \ forth2012 string wordlist -- COMPARE          jps  2 / 5
 : COMPARE   ( caddr1 u1 caddr2 u2 -- flag )
    ROT SWAP                      \ c-addr1 c-addr2 u1 u2
