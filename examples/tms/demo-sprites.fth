@@ -162,7 +162,7 @@ Planet8  40 TMSSPRITE-PATTERN-OFFSET  32  TMSWRITE
 ;
 
 : planet-plot   ( deg -- x y )
-   >R 120 76 R> 40 POLAR>XY ;
+   >R 120 76 R> 80 POLAR>XY ;
 
 : demo-sprites
    0 0 TMSTILE-XY
